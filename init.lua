@@ -1,11 +1,65 @@
 --[[
 
 =====================================================================
+============================ CHEAT SHEET ============================
+=====================================================================
+
+  lists of useful things, - indicates a command, * indicates a note
+
+  -----------------------------------------------------------------
+
+  NOTE: <Esc> 'enter normal mode, cool to bind to something like Capslock'
+
+  NOTE: A lot of things are exposed with 'which-key', try pressing <spacebar>
+
+  Essential Normal Mode:
+
+    - h j k l     'move around'
+    - 0           'beginning of line'
+    - $           'end of line'
+    - _           'first character of line'
+    - A           'append after last character of line'
+    - I           'insert before first character of line'
+    - i           'insert before character'
+    - a           'append after character'
+    - o           'open new line below'
+    - O           'open new line above'
+
+  Convenient:
+
+
+    - Ex:                 'Open Netrw ... directory explorer'
+
+    - Ctrl + g            'show path to current buffer'
+
+    - <leader> <bs>       'list non leader bindings with *which-key*
+
+    - :Git <subcommand>   'actually alias for *Gitsigns* plugin
+                          'check out the *hunk* related subcommands'
+
+    - <shift> K           'lsp hover, NOTE: repeat <shift> K to enter' 
+
+    - <Ctrl> + i          'go into'
+    - <Ctrl> + o          'go out'
+
+    - :UndotreeToggle
+
+  Troubleshooting:
+
+    - :Lazy               'the package manager, get useful oversight'
+
+    - :Mason              'manage LSPs easily'
+
+    - :checkhealth        'useful for debuggin issues with your setup'
+
+    * logs lsp issues -> '/home/isak/.local/state/nvim/lsp.log'
+
+=====================================================================
 ==================== READ THIS BEFORE CONTINUING ====================
 =====================================================================
 ========                                    .-----.          ========
 ========         .----------------------.   | === |          ========
-========         |.-""""""""""""""""""-.|   |-----|          ========
+========         |.--------------------.|   |-----|          ========
 ========         ||                    ||   | === |          ========
 ========         ||   KICKSTART.NVIM   ||   |-----|          ========
 ========         ||                    ||   | === |          ========
@@ -15,7 +69,7 @@
 ========         `"")----------------(""`   ___________      ========
 ========        /::::::::::|  |::::::::::\  \ no mouse \     ========
 ========       /:::========|  |==hjkl==:::\  \ required \    ========
-========      '""""""""""""'  '""""""""""""'  '""""""""""'   ========
+========      '------------'  '------------'  '----------'   ========
 ========                                                     ========
 =====================================================================
 =====================================================================
@@ -25,6 +79,7 @@ What is Kickstart?
   Kickstart.nvim is *not* a distribution.
 
   Kickstart.nvim is a starting point for your own configuration.
+
     The goal is that you can read every line of code, top-to-bottom, understand
     what your configuration is doing, and modify it to suit your needs.
 
@@ -45,18 +100,8 @@ Kickstart Guide:
 
   TODO: The very first thing you should do is to run the command `:Tutor` in Neovim.
 
-    If you don't know what this means, type the following:
-      - <escape key>
-      - :
-      - Tutor
-      - <enter key>
-
-    (If you already know how the Neovim basics, you can skip this step)
-
-  Once you've completed that, you can continue working through **AND READING** the rest
-  of the kickstart init.lua
-
   Next, run AND READ `:help`.
+
     This will open up a help window with some basic information
     about reading, navigating and searching the builtin help documentation.
 
@@ -67,28 +112,21 @@ Kickstart Guide:
     which is very useful when you're not sure exactly what you're looking for.
 
   I have left several `:help X` comments throughout the init.lua
+
     These are hints about where to find more information about the relevant settings,
     plugins or neovim features used in kickstart.
 
-   NOTE: Look for lines like this
-
-    Throughout the file. These are for you, the reader, to help understand what is happening.
-    Feel free to delete them once you know what you're doing, but they should serve as a guide
-    for when you are first encountering a few different constructs in your nvim config.
+  NOTE: Pay attion to lines with NOTE: in them
 
 If you experience any errors while trying to install kickstart, run `:checkhealth` for more info
 
-I hope you enjoy your Neovim journey,
-- TJ
-
-P.S. You can delete this when you're done too. It's your config now! :)
 --]]
 
 -- Set <space> as the leader key
 -- See `:help mapleader`
 --  NOTE: Must happen before plugins are loaded (otherwise wrong leader will be used)
 vim.g.mapleader = ' '
-vim.g.maplocalleader = ' '
+vim.g.maplocalleader = ' ' -- TODO: what is this
 
 -- Set to true if you have a Nerd Font installed
 vim.g.have_nerd_font = false
@@ -102,7 +140,7 @@ vim.g.have_nerd_font = false
 vim.opt.number = true
 -- You can also add relative line numbers, for help with jumping.
 --  Experiment for yourself to see if you like it!
--- vim.opt.relativenumber = true
+vim.opt.relativenumber = true
 
 -- Enable mouse mode, can be useful for resizing splits for example!
 vim.opt.mouse = 'a'
@@ -175,11 +213,16 @@ vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagn
 -- or just use <C-\><C-n> to exit terminal mode
 vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
 
--- TIP: Disable arrow keys in normal mode
--- vim.keymap.set('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
--- vim.keymap.set('n', '<right>', '<cmd>echo "Use l to move!!"<CR>')
--- vim.keymap.set('n', '<up>', '<cmd>echo "Use k to move!!"<CR>')
--- vim.keymap.set('n', '<down>', '<cmd>echo "Use j to move!!"<CR>')
+-- [[ Disable arrow keys in most modes ]]
+vim.keymap.set({ 'v', 'i', 'n' }, '<left>', '<cmd>echo "Use h to move!!"<CR>')
+vim.keymap.set({ 'v', 'i', 'n' }, '<right>', '<cmd>echo "Use l to move!!"<CR>')
+vim.keymap.set({ 'v', 'i', 'n' }, '<up>', '<cmd>echo "Use k to move!!"<CR>')
+vim.keymap.set({ 'v', 'i', 'n' }, '<down>', '<cmd>echo "Use j to move!!"<CR>')
+
+vim.keymap.set({ 'v', 'i', 'n' }, '<C-left>', '<cmd>echo "Use h to move!!"<CR>')
+vim.keymap.set({ 'v', 'i', 'n' }, '<C-right>', '<cmd>echo "Use l to move!!"<CR>')
+vim.keymap.set({ 'v', 'i', 'n' }, '<C-up>', '<cmd>echo "Use k to move!!"<CR>')
+vim.keymap.set({ 'v', 'i', 'n' }, '<C-down>', '<cmd>echo "Use j to move!!"<CR>')
 
 -- Keybinds to make split navigation easier.
 --  Use CTRL+<hjkl> to switch between windows
@@ -190,10 +233,17 @@ vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right win
 vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
 vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
 
+-- [[ Toggle Undotree, see help :Undotree ]]
+vim.keymap.set('n', '<leader>u', ':UndotreeToggle<CR>', { desc = 'Toggle Undotree' })
+
+vim.keymap.set('n', '<leader>gn', ':Gitsigns next_hunk<CR>', { desc = 'goto next git diff hunk' })
+vim.keymap.set('n', '<leader>gd', ':Gitsigns diffthis<CR>', { desc = 'goto next git diff hunk' })
+
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
-
+--
 -- Highlight when yanking (copying) text
+--
 --  Try it with `yap` in normal mode
 --  See `:help vim.highlight.on_yank()`
 vim.api.nvim_create_autocmd('TextYankPost', {
@@ -206,10 +256,18 @@ vim.api.nvim_create_autocmd('TextYankPost', {
 
 -- [[ Install `lazy.nvim` plugin manager ]]
 --    See `:help lazy.nvim.txt` or https://github.com/folke/lazy.nvim for more info
+--
+--    This bootstraps lazy
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
 if not vim.loop.fs_stat(lazypath) then
-  local lazyrepo = 'https://github.com/folke/lazy.nvim.git'
-  vim.fn.system { 'git', 'clone', '--filter=blob:none', '--branch=stable', lazyrepo, lazypath }
+  vim.fn.system {
+    'git',
+    'clone',
+    '--filter=blob:none',
+    '--branch=stable',
+    'https://github.com/folke/lazy.nvim.git',
+    lazypath,
+  }
 end ---@diagnostic disable-next-line: undefined-field
 vim.opt.rtp:prepend(lazypath)
 
@@ -227,6 +285,11 @@ vim.opt.rtp:prepend(lazypath)
 require('lazy').setup({
   -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
   'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
+
+  -- lets try undo tree :D
+  'mbbill/undotree', -- Nice file change history
+
+  { 'f-person/git-blame.nvim' },
 
   -- NOTE: Plugins can also be added by using a table,
   -- with the first argument being the link and the following
@@ -256,6 +319,10 @@ require('lazy').setup({
         changedelete = { text = '~' },
       },
     },
+    -- config = function()
+    --   vim.keymap.set('n', '<leader>gn', ':Gitsigns', { desc = 'gitsigns' })
+    --   print 'configuring gitsigns ???'
+    -- end,
   },
 
   -- NOTE: Plugins can also be configured to run lua code when they are loaded.
@@ -286,6 +353,7 @@ require('lazy').setup({
         ['<leader>r'] = { name = '[R]ename', _ = 'which_key_ignore' },
         ['<leader>s'] = { name = '[S]earch', _ = 'which_key_ignore' },
         ['<leader>w'] = { name = '[W]orkspace', _ = 'which_key_ignore' },
+        ['<leader>g'] = { name = '[G]it', _ = 'which_key_ignore' },
       }
     end,
   },
@@ -549,7 +617,7 @@ require('lazy').setup({
         --    https://github.com/pmizio/typescript-tools.nvim
         --
         -- But for many setups, the LSP (`tsserver`) will work just fine
-        -- tsserver = {},
+        tsserver = {},
         --
 
         lua_ls = {
@@ -585,6 +653,7 @@ require('lazy').setup({
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
       require('mason-lspconfig').setup {
+        ensure_installed = { 'tsserver' },
         handlers = {
           function(server_name)
             local server = servers[server_name] or {}
@@ -620,7 +689,10 @@ require('lazy').setup({
         --
         -- You can use a sub-list to tell conform to run *until* a formatter
         -- is found.
+        -- TODO: actually configure to use prettier for javascript + typescript
         -- javascript = { { "prettierd", "prettier" } },
+        javascript = { 'prettier' },
+        typescript = { 'prettier' },
       },
     },
   },
@@ -692,7 +764,8 @@ require('lazy').setup({
           -- Accept ([y]es) the completion.
           --  This will auto-import if your LSP supports it.
           --  This will expand snippets if the LSP sent a snippet.
-          ['<C-y>'] = cmp.mapping.confirm { select = true },
+          -- ['<C-y>'] = cmp.mapping.confirm { select = true },
+          ['<Tab>'] = cmp.mapping.confirm { select = true },
 
           -- Manually trigger a completion from nvim-cmp.
           --  Generally you don't need this, because nvim-cmp will display
@@ -749,7 +822,12 @@ require('lazy').setup({
   },
 
   -- Highlight todo, notes, etc in comments
-  { 'folke/todo-comments.nvim', event = 'VimEnter', dependencies = { 'nvim-lua/plenary.nvim' }, opts = { signs = false } },
+  {
+    'folke/todo-comments.nvim',
+    event = 'VimEnter',
+    dependencies = { 'nvim-lua/plenary.nvim' },
+    opts = { signs = false },
+  },
 
   { -- Collection of various small independent plugins/modules
     'echasnovski/mini.nvim',
@@ -793,7 +871,7 @@ require('lazy').setup({
     'nvim-treesitter/nvim-treesitter',
     build = ':TSUpdate',
     opts = {
-      ensure_installed = { 'bash', 'c', 'html', 'lua', 'markdown', 'vim', 'vimdoc' },
+      ensure_installed = { 'bash', 'c', 'html', 'lua', 'markdown', 'vim', 'vimdoc', 'javascript' },
       -- Autoinstall languages that are not installed
       auto_install = true,
       highlight = {
