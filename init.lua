@@ -243,8 +243,10 @@ vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper win
 -- [[ Toggle Undotree, see help :Undotree ]]
 vim.keymap.set('n', '<leader>u', ':UndotreeToggle<CR>', { desc = 'Toggle Undotree' })
 
-vim.keymap.set('n', '<leader>gn', ':Gitsigns next_hunk<CR>', { desc = 'goto next git diff hunk' })
-vim.keymap.set('n', '<leader>gd', ':Gitsigns diffthis<CR>', { desc = 'goto next git diff hunk' })
+vim.keymap.set('n', '<leader>gn', ':Gitsigns next_hunk<cr>', { desc = 'goto next git diff hunk' })
+vim.keymap.set('n', '<leader>gp', ':Gitsigns preview_hunk<cr>', { desc = 'preview hunk' })
+vim.keymap.set('n', '<leader>gr', ':Gitsigns reset_hunk<cr>', { desc = 'reset hunk' })
+-- vim.keymap.set('n', '<leader>gd', ':Gitsigns diffthis<CR>', { desc = 'goto next git diff hunk' })
 
 vim.keymap.set('n', ',', function()
   local current_buffer = vim.api.nvim_get_current_buf()
@@ -322,6 +324,7 @@ require('lazy').setup({
     },
     config = function()
       vim.keymap.set('n', '<leader>gl', ':Flog -date=relative<cr>', { desc = '[G]it [L]og' })
+      -- vim.keymap.set('n', '<leader>gl', ':Flog -format=%ar%x20[%h]%x20%d%x20%an <cr>', { desc = '[G]it [L]og' })
       vim.keymap.set('n', '<leader>gs', ':Git<cr>', { desc = '[G]it [S]tatus' })
     end,
   },
@@ -388,9 +391,11 @@ require('lazy').setup({
         local diffviewOpen = string.match(current_buffer_name, '^diffview.*')
         local dv = require 'diffview'
         if diffviewOpen then
-          dv.close(args)
+          -- dv.close(args)
+          vim.cmd 'DiffviewClose'
         else
-          dv.open(args)
+          vim.cmd 'DiffviewOpen'
+          -- dv.open(args)
         end
       end, { desc = '[G]it [D]iff' })
 
@@ -1023,6 +1028,7 @@ require('lazy').setup({
         -- javascript = { { "prettierd", "prettier" } },
         javascript = { 'prettier' },
         typescript = { 'prettier' },
+        typescriptreact = { 'prettier' },
       },
     },
   },
