@@ -931,6 +931,14 @@ require('lazy').setup({
               callback = vim.lsp.buf.clear_references,
             })
           end
+
+          -- Lets give the hover information stuff a bit more style
+          vim.lsp.handlers['textDocument/hover'] = vim.lsp.with(vim.lsp.handlers.hover, {
+            -- Use a sharp border with `FloatBorder` highlights
+            border = 'single',
+            -- add the title in hover float window
+            title = 'hover',
+          })
         end,
       })
 
@@ -1214,6 +1222,9 @@ require('lazy').setup({
       -- ... and there is more!
       --  Check out: https://github.com/echasnovski/mini.nvim
     end,
+  },
+  {
+    'nvim-treesitter/nvim-treesitter-context',
   },
 
   { -- Highlight, edit, and navigate code
