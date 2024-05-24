@@ -1,209 +1,88 @@
---[[
+--[[========================= WELCOME =============================
 
-=====================================================================
-============================ CHEAT SHEET ============================
-=====================================================================
+  Troubleshooting
 
-  lists of useful things, - indicates a command, * indicates a note
+    :checkhealth 
+    :Lazy
+    :Mason
+    ~/.local/state/nvim/lsp.log
 
-  -----------------------------------------------------------------
+  ---------------------------------------------------------------
 
-  NOTE: <Esc> 'enter normal mode, cool to bind to something like Capslock'
+  Candy
 
-  NOTE: A lot of things are exposed with 'which-key', try pressing <spacebar>
+    :Tutor
+    :help lua-guide
+    :help
 
-  Essential Normal Mode:
+    https://learnxinyminutes.com/docs/lua/
 
-    - h j k l     'move around'
-    - 0           'beginning of line'
-    - $           'end of line'
-    - _           'first character of line'
-    - A           'append after last character of line'
-    - I           'insert before first character of line'
-    - i           'insert before character'
-    - a           'append after character'
-    - o           'open new line below'
-    - O           'open new line above'
+    <leader>sh 
+    <leader>sk
 
-  Convenient:
+  ---------------------------------------------------------------
 
+  Life Hacks
 
-    - Ex:                 'Open Netrw ... directory explorer'
+    Map `Capslock` to `<Esc>` in your operating system 
+    Also consider similar mappings of other keys that might be hard
+    To type on your keyboard, for example I've got a Norwegian
+    keyboard so without keymaps it's difficult for me to type 
 
-    - Ctrl + g            'show path to current buffer'
+      ~
+      `
+      $
 
-    - <leader> <bs>       'list non leader bindings with *which-key*
+    If you are using 'which-key' some keys are only shown if you
+    hit `<leader><backspace>` otherwise you'll only see keys
+    bound to `<leader> ... `
 
-    - :Git <subcommand>   'actually alias for *Gitsigns* plugin
-                          'check out the *hunk* related subcommands'
+    ... learn motions, and become a GOD => ciw caw yiw yaw ct' ca'
 
-    - <shift> K           'lsp hover, NOTE: repeat <shift> K to enter' 
-
-    - <Ctrl> + i          'go into'
-    - <Ctrl> + o          'go out'
-
-    - :UndotreeToggle
-
-  Troubleshooting:
-
-    - :Lazy               'the package manager, get useful oversight'
-
-    - :Mason              'manage LSPs easily'
-
-    - :checkhealth        'useful for debuggin issues with your setup'
-
-    * logs lsp issues -> '/home/isak/.local/state/nvim/lsp.log'
-
-=====================================================================
-==================== READ THIS BEFORE CONTINUING ====================
-=====================================================================
-========                                    .-----.          ========
-========         .----------------------.   | === |          ========
-========         |.--------------------.|   |-----|          ========
-========         ||                    ||   | === |          ========
-========         ||   KICKSTART.NVIM   ||   |-----|          ========
-========         ||                    ||   | === |          ========
-========         ||                    ||   |-----|          ========
-========         ||:Tutor              ||   |:::::|          ========
-========         |'-..................-'|   |____o|          ========
-========         `"")----------------(""`   ___________      ========
-========        /::::::::::|  |::::::::::\  \ no mouse \     ========
-========       /:::========|  |==hjkl==:::\  \ required \    ========
-========      '------------'  '------------'  '----------'   ========
-========                                                     ========
-=====================================================================
-=====================================================================
-
-What is Kickstart?
-
-  Kickstart.nvim is *not* a distribution.
-
-  Kickstart.nvim is a starting point for your own configuration.
-
-    The goal is that you can read every line of code, top-to-bottom, understand
-    what your configuration is doing, and modify it to suit your needs.
-
-    Once you've done that, you can start exploring, configuring and tinkering to
-    make Neovim your own! That might mean leaving kickstart just the way it is for a while
-    or immediately breaking it into modular pieces. It's up to you!
-
-    If you don't know anything about Lua, I recommend taking some time to read through
-    a guide. One possible example which will only take 10-15 minutes:
-      - https://learnxinyminutes.com/docs/lua/
-
-    After understanding a bit more about Lua, you can use `:help lua-guide` as a
-    reference for how Neovim integrates Lua.
-    - :help lua-guide
-    - (or HTML version): https://neovim.io/doc/user/lua-guide.html
-
-Kickstart Guide:
-
-  TODO: The very first thing you should do is to run the command `:Tutor` in Neovim.
-
-  Next, run AND READ `:help`.
-
-    This will open up a help window with some basic information
-    about reading, navigating and searching the builtin help documentation.
-
-    This should be the first place you go to look when you're stuck or confused
-    with something. It's one of my favorite neovim features.
-
-    MOST IMPORTANTLY, we provide a keymap "<space>sh" to [s]earch the [h]elp documentation,
-    which is very useful when you're not sure exactly what you're looking for.
-
-  I have left several `:help X` comments throughout the init.lua
-
-    These are hints about where to find more information about the relevant settings,
-    plugins or neovim features used in kickstart.
-
-  NOTE: Pay attion to lines with NOTE: in them
-
-If you experience any errors while trying to install kickstart, run `:checkhealth` for more info
-
---]]
+=================================================================--]]
 
 -- Set <space> as the leader key
 -- See `:help mapleader`
 --  NOTE: Must happen before plugins are loaded (otherwise wrong leader will be used)
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' ' -- TODO: what is this
-
--- Set to true if you have a Nerd Font installed
-vim.g.have_nerd_font = true
+vim.g.have_nerd_font = true -- Set to true if you have a Nerd Font installed
 
 -- [[ Setting options ]]
 -- See `:help vim.opt`
 -- NOTE: You can change these options as you wish!
 --  For more options, you can see `:help option-list`
-
--- Make line numbers default
 vim.opt.number = true
-
-vim.o.termguicolors = true
-vim.o.wrap = false
-
--- fillchars for diffview?
-vim.opt.fillchars:append { diff = '/' }
-
--- You can also add relative line numbers, for help with jumping.
---  Experiment for yourself to see if you like it!
 vim.opt.relativenumber = true
-
--- Enable mouse mode, can be useful for resizing splits for example!
-vim.opt.mouse = 'a'
-
--- Don't show the mode, since it's already in status line
-vim.opt.showmode = false
+vim.o.termguicolors = true -- yes use tempr gui colors
+vim.o.wrap = false -- don't wrap lines
+vim.opt.fillchars:append { diff = '/' } -- fillchars for diffview?
+vim.opt.mouse = 'a' -- Enable mouse mode, can be useful for resizing splits for example!
+vim.opt.showmode = false -- Don't show the mode, since it's already in status line
+vim.opt.breakindent = true -- Enable break indent
+vim.opt.undofile = true -- Save undo history
+vim.opt.ignorecase = true -- case insensitive search
+vim.opt.smartcase = true -- ... actually lets make it sensitive if an upper case is involved
+vim.opt.signcolumn = 'yes' -- Keep signcolumn on by default
 
 -- Sync clipboard between OS and Neovim.
---  Remove this option if you want your OS clipboard to remain independent.
---  See `:help 'clipboard'`
-vim.opt.clipboard = 'unnamedplus'
-
--- Enable break indent
-vim.opt.breakindent = true
-
--- Save undo history
-vim.opt.undofile = true
-
--- Case-insensitive searching UNLESS \C or capital in search
-vim.opt.ignorecase = true
-vim.opt.smartcase = true
-
--- Keep signcolumn on by default
-vim.opt.signcolumn = 'yes'
-
--- Decrease update time
-vim.opt.updatetime = 250
-
--- Decrease mapped sequence wait time
--- Displays which-key popup sooner
-vim.opt.timeoutlen = 300
-
--- Configure how new splits should be opened
-vim.opt.splitright = true
+-- Remove this option if you want your OS clipboard to remain independent.
+vim.opt.clipboard = 'unnamedplus' --  See `:help 'clipboard'`
+vim.opt.updatetime = 250 -- Decrease update time
+vim.opt.timeoutlen = 300 -- Decrease mapped sequence wait time : Displays which-key popup sooner
+vim.opt.splitright = true -- Configure how new splits should be opened
 vim.opt.splitbelow = true
 
--- Sets how neovim will display certain whitespace in the editor.
---  See `:help 'list'`
---  and `:help 'listchars'`
-vim.opt.list = true
+vim.opt.list = true -- Sets how neovim will display certain whitespace in the editor.
 vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
 
--- Preview substitutions live, as you type!
-vim.opt.inccommand = 'split'
-
--- Show which line your cursor is on
-vim.opt.cursorline = true
-
--- Minimal number of screen lines to keep above and below the cursor.
-vim.opt.scrolloff = 10
+vim.opt.inccommand = 'split' -- Preview substitutions live, as you type!
+vim.opt.cursorline = true -- Show which line your cursor is on
+vim.opt.scrolloff = 10 -- Minimal number of screen lines to keep above and below the cursor.
+vim.opt.hlsearch = true -- Set highlight on search, but clear on pressing <Esc> in normal mode
 
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
-
--- Set highlight on search, but clear on pressing <Esc> in normal mode
-vim.opt.hlsearch = true
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
 -- <leader> + number to jump to tabs
@@ -325,317 +204,6 @@ require('lazy').setup({
   'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
 
   'mbbill/undotree', -- Nice file change history
-
-  {
-    'rbong/vim-flog',
-    dependencies = {
-      'tpope/vim-fugitive',
-    },
-    config = function()
-      vim.keymap.set('n', '<leader>gl', ':Flog -all -date=relative<cr>', { desc = '[G]it [L]og' })
-      -- vim.keymap.set('n', '<leader>gl', ':Flog -format=%ar%x20[%h]%x20%d%x20%an <cr>', { desc = '[G]it [L]og' })
-      vim.keymap.set('n', '<leader>gs', ':Git<cr>', { desc = '[G]it [S]tatus' })
-    end,
-  },
-
-  {
-    -- [[ Git diff views ]]
-    --
-    -- The behaviour we are going for here is the following:
-    -- <leader>gd should toggle individual Diffview "panels".
-    -- If no Diffview is currently open or actively being viewed
-    -- then a new diffview is opened.
-    -- If a Diffview is currently being viewed, then it is closed.
-    -- :h diffview
-    -- :h diffview.defaults
-    --
-    --
-    -- TODO: CONSIDER neogit ....
-    --
-    --
-    'sindrets/diffview.nvim',
-    dependencies = {
-      'nvim-web-devicons',
-    },
-    -- opts = {
-    --   enhanced_diff_hl = true,
-    -- },
-    -- opts = {
-    --   enhanced_diff_hl = true, -- See |diffview-config-enhanced_diff_hl|
-    --   view = {
-    --     -- Configure the layout and behavior of different types of views.
-    --     -- Available layouts:
-    --     --  'diff1_plain'
-    --     --    |'diff2_horizontal'
-    --     --    |'diff2_vertical'
-    --     --    |'diff3_horizontal'
-    --     --    |'diff3_vertical'
-    --     --    |'diff3_mixed'
-    --     --    |'diff4_mixed'
-    --     -- For more info, see |diffview-config-view.x.layout|.
-    --     --
-    --     default = {
-    --       -- Config for changed files, and staged files in diff views.
-    --       -- layout = "diff2_vertical",
-    --       layout = 'diff2_horizontal',
-    --       winbar_info = false, -- See |diffview-config-view.x.winbar_info|
-    --     },
-    --     merge_tool = {
-    --       -- Config for conflicted files in diff views during a merge or rebase.
-    --       layout = 'diff3_horizontal',
-    --       disable_diagnostics = true, -- Temporarily disable diagnostics for conflict buffers while in the view.
-    --       winbar_info = true, -- See |diffview-config-view.x.winbar_info|
-    --     },
-    --     file_history = {
-    --       -- Config for changed files in file history views.
-    --       layout = 'diff2_horizontal',
-    --       winbar_info = false, -- See |diffview-config-view.x.winbar_info|
-    --     },
-    --   },
-    -- },
-    config = function()
-      vim.keymap.set('n', '<leader>gd', function()
-        -- first need to focus files panel so we can read expected diffview name of buffer
-        vim.cmd 'DiffviewFocusFiles'
-
-        local current_buffer = vim.api.nvim_get_current_buf()
-        local current_buffer_name = vim.api.nvim_buf_get_name(current_buffer)
-        local diffviewOpen = string.match(current_buffer_name, '^diffview.*')
-        if diffviewOpen then
-          vim.cmd 'DiffviewClose'
-        else
-          vim.cmd 'DiffviewOpen'
-        end
-      end, { desc = '[G]it [D]iff' })
-
-      local actions = require 'diffview.actions'
-
-      -- TODO: this is a literal copy of default settings from the documentation, with the
-      -- exception of the single option "enhanced_diff_hl: true" ... which by default is set to false
-      -- ... find a way to only add to the opts, instead of having to replace them all
-      require('diffview').setup {
-        diff_binaries = false, -- Show diffs for binaries
-        enhanced_diff_hl = true, -- See |diffview-config-enhanced_diff_hl|
-        git_cmd = { 'git' }, -- The git executable followed by default args.
-        hg_cmd = { 'hg' }, -- The hg executable followed by default args.
-        use_icons = true, -- Requires nvim-web-devicons
-        show_help_hints = true, -- Show hints for how to open the help panel
-        watch_index = true, -- Update views and index buffers when the git index changes.
-        icons = { -- Only applies when use_icons is true.
-          folder_closed = '',
-          folder_open = '',
-        },
-        signs = {
-          fold_closed = '',
-          fold_open = '',
-          done = '✓',
-        },
-        view = {
-          -- Configure the layout and behavior of different types of views.
-          -- Available layouts:
-          --  'diff1_plain'
-          --    |'diff2_horizontal'
-          --    |'diff2_vertical'
-          --    |'diff3_horizontal'
-          --    |'diff3_vertical'
-          --    |'diff3_mixed'
-          --    |'diff4_mixed'
-          -- For more info, see |diffview-config-view.x.layout|.
-          default = {
-            -- Config for changed files, and staged files in diff views.
-            layout = 'diff2_horizontal',
-            winbar_info = false, -- See |diffview-config-view.x.winbar_info|
-          },
-          merge_tool = {
-            -- Config for conflicted files in diff views during a merge or rebase.
-            layout = 'diff3_horizontal',
-            disable_diagnostics = true, -- Temporarily disable diagnostics for conflict buffers while in the view.
-            winbar_info = true, -- See |diffview-config-view.x.winbar_info|
-          },
-          file_history = {
-            -- Config for changed files in file history views.
-            layout = 'diff2_horizontal',
-            winbar_info = false, -- See |diffview-config-view.x.winbar_info|
-          },
-        },
-        file_panel = {
-          listing_style = 'tree', -- One of 'list' or 'tree'
-          tree_options = { -- Only applies when listing_style is 'tree'
-            flatten_dirs = true, -- Flatten dirs that only contain one single dir
-            folder_statuses = 'only_folded', -- One of 'never', 'only_folded' or 'always'.
-          },
-          win_config = { -- See |diffview-config-win_config|
-            position = 'left',
-            width = 35,
-            win_opts = {},
-          },
-        },
-        file_history_panel = {
-          log_options = { -- See |diffview-config-log_options|
-            git = {
-              single_file = {
-                diff_merges = 'combined',
-              },
-              multi_file = {
-                diff_merges = 'first-parent',
-              },
-            },
-            hg = {
-              single_file = {},
-              multi_file = {},
-            },
-          },
-          win_config = { -- See |diffview-config-win_config|
-            position = 'bottom',
-            height = 16,
-            win_opts = {},
-          },
-        },
-        commit_log_panel = {
-          win_config = {}, -- See |diffview-config-win_config|
-        },
-        default_args = { -- Default args prepended to the arg-list for the listed commands
-          DiffviewOpen = {},
-          DiffviewFileHistory = {},
-        },
-        hooks = {}, -- See |diffview-config-hooks|
-        keymaps = {
-          disable_defaults = false, -- Disable the default keymaps
-          view = {
-            -- The `view` bindings are active in the diff buffers, only when the current
-            -- tabpage is a Diffview.
-            { 'n', '<tab>', actions.select_next_entry, { desc = 'Open the diff for the next file' } },
-            { 'n', '<s-tab>', actions.select_prev_entry, { desc = 'Open the diff for the previous file' } },
-            { 'n', 'gf', actions.goto_file_edit, { desc = 'Open the file in the previous tabpage' } },
-            { 'n', '<C-w><C-f>', actions.goto_file_split, { desc = 'Open the file in a new split' } },
-            { 'n', '<C-w>gf', actions.goto_file_tab, { desc = 'Open the file in a new tabpage' } },
-            { 'n', '<leader>e', actions.focus_files, { desc = 'Bring focus to the file panel' } },
-            { 'n', '<leader>b', actions.toggle_files, { desc = 'Toggle the file panel.' } },
-            { 'n', 'g<C-x>', actions.cycle_layout, { desc = 'Cycle through available layouts.' } },
-            { 'n', '[x', actions.prev_conflict, { desc = 'In the merge-tool: jump to the previous conflict' } },
-            { 'n', ']x', actions.next_conflict, { desc = 'In the merge-tool: jump to the next conflict' } },
-            { 'n', '<leader>co', actions.conflict_choose 'ours', { desc = 'Choose the OURS version of a conflict' } },
-            { 'n', '<leader>ct', actions.conflict_choose 'theirs', { desc = 'Choose the THEIRS version of a conflict' } },
-            { 'n', '<leader>cb', actions.conflict_choose 'base', { desc = 'Choose the BASE version of a conflict' } },
-            { 'n', '<leader>ca', actions.conflict_choose 'all', { desc = 'Choose all the versions of a conflict' } },
-            { 'n', 'dx', actions.conflict_choose 'none', { desc = 'Delete the conflict region' } },
-            { 'n', '<leader>cO', actions.conflict_choose_all 'ours', { desc = 'Choose the OURS version of a conflict for the whole file' } },
-            { 'n', '<leader>cT', actions.conflict_choose_all 'theirs', { desc = 'Choose the THEIRS version of a conflict for the whole file' } },
-            { 'n', '<leader>cB', actions.conflict_choose_all 'base', { desc = 'Choose the BASE version of a conflict for the whole file' } },
-            { 'n', '<leader>cA', actions.conflict_choose_all 'all', { desc = 'Choose all the versions of a conflict for the whole file' } },
-            { 'n', 'dX', actions.conflict_choose_all 'none', { desc = 'Delete the conflict region for the whole file' } },
-          },
-          diff1 = {
-            -- Mappings in single window diff layouts
-            { 'n', 'g?', actions.help { 'view', 'diff1' }, { desc = 'Open the help panel' } },
-          },
-          diff2 = {
-            -- Mappings in 2-way diff layouts
-            { 'n', 'g?', actions.help { 'view', 'diff2' }, { desc = 'Open the help panel' } },
-          },
-          diff3 = {
-            -- Mappings in 3-way diff layouts
-            { { 'n', 'x' }, '2do', actions.diffget 'ours', { desc = 'Obtain the diff hunk from the OURS version of the file' } },
-            { { 'n', 'x' }, '3do', actions.diffget 'theirs', { desc = 'Obtain the diff hunk from the THEIRS version of the file' } },
-            { 'n', 'g?', actions.help { 'view', 'diff3' }, { desc = 'Open the help panel' } },
-          },
-          diff4 = {
-            -- Mappings in 4-way diff layouts
-            { { 'n', 'x' }, '1do', actions.diffget 'base', { desc = 'Obtain the diff hunk from the BASE version of the file' } },
-            { { 'n', 'x' }, '2do', actions.diffget 'ours', { desc = 'Obtain the diff hunk from the OURS version of the file' } },
-            { { 'n', 'x' }, '3do', actions.diffget 'theirs', { desc = 'Obtain the diff hunk from the THEIRS version of the file' } },
-            { 'n', 'g?', actions.help { 'view', 'diff4' }, { desc = 'Open the help panel' } },
-          },
-          file_panel = {
-            { 'n', 'j', actions.next_entry, { desc = 'Bring the cursor to the next file entry' } },
-            { 'n', '<down>', actions.next_entry, { desc = 'Bring the cursor to the next file entry' } },
-            { 'n', 'k', actions.prev_entry, { desc = 'Bring the cursor to the previous file entry' } },
-            { 'n', '<up>', actions.prev_entry, { desc = 'Bring the cursor to the previous file entry' } },
-            { 'n', '<cr>', actions.select_entry, { desc = 'Open the diff for the selected entry' } },
-            { 'n', 'o', actions.select_entry, { desc = 'Open the diff for the selected entry' } },
-            { 'n', 'l', actions.select_entry, { desc = 'Open the diff for the selected entry' } },
-            { 'n', '<2-LeftMouse>', actions.select_entry, { desc = 'Open the diff for the selected entry' } },
-            { 'n', '-', actions.toggle_stage_entry, { desc = 'Stage / unstage the selected entry' } },
-            { 'n', 's', actions.toggle_stage_entry, { desc = 'Stage / unstage the selected entry' } },
-            { 'n', 'S', actions.stage_all, { desc = 'Stage all entries' } },
-            { 'n', 'U', actions.unstage_all, { desc = 'Unstage all entries' } },
-            { 'n', 'X', actions.restore_entry, { desc = 'Restore entry to the state on the left side' } },
-            { 'n', 'L', actions.open_commit_log, { desc = 'Open the commit log panel' } },
-            { 'n', 'zo', actions.open_fold, { desc = 'Expand fold' } },
-            { 'n', 'h', actions.close_fold, { desc = 'Collapse fold' } },
-            { 'n', 'zc', actions.close_fold, { desc = 'Collapse fold' } },
-            { 'n', 'za', actions.toggle_fold, { desc = 'Toggle fold' } },
-            { 'n', 'zR', actions.open_all_folds, { desc = 'Expand all folds' } },
-            { 'n', 'zM', actions.close_all_folds, { desc = 'Collapse all folds' } },
-            { 'n', '<c-b>', actions.scroll_view(-0.25), { desc = 'Scroll the view up' } },
-            { 'n', '<c-f>', actions.scroll_view(0.25), { desc = 'Scroll the view down' } },
-            { 'n', '<tab>', actions.select_next_entry, { desc = 'Open the diff for the next file' } },
-            { 'n', '<s-tab>', actions.select_prev_entry, { desc = 'Open the diff for the previous file' } },
-            { 'n', 'gf', actions.goto_file_edit, { desc = 'Open the file in the previous tabpage' } },
-            { 'n', '<C-w><C-f>', actions.goto_file_split, { desc = 'Open the file in a new split' } },
-            { 'n', '<C-w>gf', actions.goto_file_tab, { desc = 'Open the file in a new tabpage' } },
-            { 'n', 'i', actions.listing_style, { desc = "Toggle between 'list' and 'tree' views" } },
-            { 'n', 'f', actions.toggle_flatten_dirs, { desc = 'Flatten empty subdirectories in tree listing style' } },
-            { 'n', 'R', actions.refresh_files, { desc = 'Update stats and entries in the file list' } },
-            { 'n', '<leader>e', actions.focus_files, { desc = 'Bring focus to the file panel' } },
-            { 'n', '<leader>b', actions.toggle_files, { desc = 'Toggle the file panel' } },
-            { 'n', 'g<C-x>', actions.cycle_layout, { desc = 'Cycle available layouts' } },
-            { 'n', '[x', actions.prev_conflict, { desc = 'Go to the previous conflict' } },
-            { 'n', ']x', actions.next_conflict, { desc = 'Go to the next conflict' } },
-            { 'n', 'g?', actions.help 'file_panel', { desc = 'Open the help panel' } },
-            { 'n', '<leader>cO', actions.conflict_choose_all 'ours', { desc = 'Choose the OURS version of a conflict for the whole file' } },
-            { 'n', '<leader>cT', actions.conflict_choose_all 'theirs', { desc = 'Choose the THEIRS version of a conflict for the whole file' } },
-            { 'n', '<leader>cB', actions.conflict_choose_all 'base', { desc = 'Choose the BASE version of a conflict for the whole file' } },
-            { 'n', '<leader>cA', actions.conflict_choose_all 'all', { desc = 'Choose all the versions of a conflict for the whole file' } },
-            { 'n', 'dX', actions.conflict_choose_all 'none', { desc = 'Delete the conflict region for the whole file' } },
-          },
-          file_history_panel = {
-            { 'n', 'g!', actions.options, { desc = 'Open the option panel' } },
-            { 'n', '<C-A-d>', actions.open_in_diffview, { desc = 'Open the entry under the cursor in a diffview' } },
-            { 'n', 'y', actions.copy_hash, { desc = 'Copy the commit hash of the entry under the cursor' } },
-            { 'n', 'L', actions.open_commit_log, { desc = 'Show commit details' } },
-            { 'n', 'X', actions.restore_entry, { desc = 'Restore file to the state from the selected entry' } },
-            { 'n', 'zr', actions.open_fold, { desc = 'Expand fold' } },
-            { 'n', 'zo', actions.open_fold, { desc = 'Expand fold' } },
-            { 'n', 'zm', actions.close_fold, { desc = 'Collapse fold' } },
-            { 'n', 'zc', actions.close_fold, { desc = 'Collapse fold' } },
-            { 'n', 'h', actions.close_fold, { desc = 'Collapse fold' } },
-            { 'n', 'za', actions.toggle_fold, { desc = 'Toggle fold' } },
-            { 'n', 'zR', actions.open_all_folds, { desc = 'Expand all folds' } },
-            { 'n', 'zM', actions.close_all_folds, { desc = 'Collapse all folds' } },
-            { 'n', 'j', actions.next_entry, { desc = 'Bring the cursor to the next file entry' } },
-            { 'n', '<down>', actions.next_entry, { desc = 'Bring the cursor to the next file entry' } },
-            { 'n', 'k', actions.prev_entry, { desc = 'Bring the cursor to the previous file entry' } },
-            { 'n', '<up>', actions.prev_entry, { desc = 'Bring the cursor to the previous file entry' } },
-            { 'n', '<cr>', actions.select_entry, { desc = 'Open the diff for the selected entry' } },
-            { 'n', 'o', actions.select_entry, { desc = 'Open the diff for the selected entry' } },
-            { 'n', 'l', actions.select_entry, { desc = 'Open the diff for the selected entry' } },
-            { 'n', '<2-LeftMouse>', actions.select_entry, { desc = 'Open the diff for the selected entry' } },
-            { 'n', '<c-b>', actions.scroll_view(-0.25), { desc = 'Scroll the view up' } },
-            { 'n', '<c-f>', actions.scroll_view(0.25), { desc = 'Scroll the view down' } },
-            { 'n', '<tab>', actions.select_next_entry, { desc = 'Open the diff for the next file' } },
-            { 'n', '<s-tab>', actions.select_prev_entry, { desc = 'Open the diff for the previous file' } },
-            { 'n', 'gf', actions.goto_file_edit, { desc = 'Open the file in the previous tabpage' } },
-            { 'n', '<C-w><C-f>', actions.goto_file_split, { desc = 'Open the file in a new split' } },
-            { 'n', '<C-w>gf', actions.goto_file_tab, { desc = 'Open the file in a new tabpage' } },
-            { 'n', '<leader>e', actions.focus_files, { desc = 'Bring focus to the file panel' } },
-            { 'n', '<leader>b', actions.toggle_files, { desc = 'Toggle the file panel' } },
-            { 'n', 'g<C-x>', actions.cycle_layout, { desc = 'Cycle available layouts' } },
-            { 'n', 'g?', actions.help 'file_history_panel', { desc = 'Open the help panel' } },
-          },
-          option_panel = {
-            { 'n', '<tab>', actions.select_entry, { desc = 'Change the current option' } },
-            { 'n', 'q', actions.close, { desc = 'Close the panel' } },
-            { 'n', 'g?', actions.help 'option_panel', { desc = 'Open the help panel' } },
-          },
-          help_panel = {
-            { 'n', 'q', actions.close, { desc = 'Close help menu' } },
-            { 'n', '<esc>', actions.close, { desc = 'Close help menu' } },
-          },
-        },
-      }
-    end,
-  },
 
   { 'f-person/git-blame.nvim' },
 
@@ -811,6 +379,45 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>sn', function()
         builtin.find_files { cwd = vim.fn.stdpath 'config' }
       end, { desc = '[S]earch [N]eovim files' })
+    end,
+  },
+
+  {
+    'rbong/vim-flog',
+    dependencies = {
+      'tpope/vim-fugitive',
+    },
+    config = function()
+      vim.keymap.set('n', '<leader>gl', ':Flog -all -date=relative<cr>', { desc = '[G]it [L]og' })
+      -- vim.keymap.set('n', '<leader>gl', ':Flog -format=%ar%x20[%h]%x20%d%x20%an <cr>', { desc = '[G]it [L]og' })
+      vim.keymap.set('n', '<leader>gs', ':Git<cr>', { desc = '[G]it [S]tatus' })
+    end,
+  },
+
+  {
+    -- TODO: CONSIDER neogit ....
+    'sindrets/diffview.nvim',
+    name = 'diffview',
+    dependencies = {
+      'nvim-web-devicons',
+    },
+    opts = {
+      enhanced_diff_hl = true,
+    },
+    init = function()
+      -- <leader>gd should toggle diffview
+      vim.keymap.set('n', '<leader>gd', function()
+        -- first need to focus files panel so we can read expected diffview name of buffer
+        vim.cmd 'DiffviewFocusFiles'
+        local current_buffer = vim.api.nvim_get_current_buf()
+        local current_buffer_name = vim.api.nvim_buf_get_name(current_buffer)
+        local diffviewOpen = string.match(current_buffer_name, '^diffview.*')
+        if diffviewOpen then
+          vim.cmd 'DiffviewClose'
+        else
+          vim.cmd 'DiffviewOpen'
+        end
+      end, { desc = '[G]it [D]iff' })
     end,
   },
 
