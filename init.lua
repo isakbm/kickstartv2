@@ -206,6 +206,15 @@ vim.opt.scrolloff = 10
 vim.opt.hlsearch = true
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
+-- <leader> + number to jump to tabs
+-- TODO: can we make this more terse by getting the numeric value passed as some arg?
+vim.keymap.set('n', '<leader>1', '1gt')
+vim.keymap.set('n', '<leader>2', '2gt')
+vim.keymap.set('n', '<leader>3', '3gt')
+vim.keymap.set('n', '<leader>4', '4gt')
+vim.keymap.set('n', '<leader>5', '5gt')
+vim.keymap.set('n', '<leader>6', '6gt')
+
 -- Diagnostic keymaps
 vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, { desc = 'Go to previous [D]iagnostic message' })
 vim.keymap.set('n', ']d', vim.diagnostic.goto_next, { desc = 'Go to next [D]iagnostic message' })
