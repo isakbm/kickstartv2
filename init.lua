@@ -54,8 +54,8 @@ vim.g.have_nerd_font = true -- Set to true if you have a Nerd Font installed
 --  For more options, you can see `:help option-list`
 vim.opt.number = true
 vim.opt.relativenumber = true
-vim.o.termguicolors = true -- yes use tempr gui colors
-vim.o.wrap = false -- don't wrap lines
+vim.opt.termguicolors = true -- yes use tempr gui colors
+vim.opt.wrap = false -- don't wrap lines
 vim.opt.fillchars:append { diff = '/' } -- fillchars for diffview?
 vim.opt.mouse = 'a' -- Enable mouse mode, can be useful for resizing splits for example!
 vim.opt.showmode = false -- Don't show the mode, since it's already in status line
