@@ -323,7 +323,7 @@ require('lazy').setup({
       'tpope/vim-fugitive',
     },
     config = function()
-      vim.keymap.set('n', '<leader>gl', ':Flog -date=relative<cr>', { desc = '[G]it [L]og' })
+      vim.keymap.set('n', '<leader>gl', ':Flog -all -date=relative<cr>', { desc = '[G]it [L]og' })
       -- vim.keymap.set('n', '<leader>gl', ':Flog -format=%ar%x20[%h]%x20%d%x20%an <cr>', { desc = '[G]it [L]og' })
       vim.keymap.set('n', '<leader>gs', ':Git<cr>', { desc = '[G]it [S]tatus' })
     end,
@@ -385,17 +385,17 @@ require('lazy').setup({
     --   },
     -- },
     config = function()
-      vim.keymap.set('n', '<leader>gd', function(args)
+      vim.keymap.set('n', '<leader>gd', function()
+        -- first need to focus files panel so we can read expected diffview name of buffer
+        vim.cmd 'DiffviewFocusFiles'
+
         local current_buffer = vim.api.nvim_get_current_buf()
         local current_buffer_name = vim.api.nvim_buf_get_name(current_buffer)
         local diffviewOpen = string.match(current_buffer_name, '^diffview.*')
-        local dv = require 'diffview'
         if diffviewOpen then
-          -- dv.close(args)
           vim.cmd 'DiffviewClose'
         else
           vim.cmd 'DiffviewOpen'
-          -- dv.open(args)
         end
       end, { desc = '[G]it [D]iff' })
 
