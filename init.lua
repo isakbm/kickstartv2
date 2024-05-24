@@ -41,17 +41,17 @@
 
 =================================================================--]]
 
--- Set <space> as the leader key
--- See `:help mapleader`
---  NOTE: Must happen before plugins are loaded (otherwise wrong leader will be used)
-vim.g.mapleader = ' '
-vim.g.maplocalleader = ' ' -- TODO: what is this
+-- NOTE: :help localleader
+vim.g.mapleader = ' ' -- Set <space> as the leader key
+vim.g.maplocalleader = ' ' --- Set <space> as the local leader key
 vim.g.have_nerd_font = true -- Set to true if you have a Nerd Font installed
 
--- [[ Setting options ]]
--- See `:help vim.opt`
--- NOTE: You can change these options as you wish!
---  For more options, you can see `:help option-list`
+-- NOTE::help option-list
+-- Sync clipboard between OS and Neovim.
+-- Remove this option if you want your OS clipboard to remain independent.
+vim.opt.clipboard = 'unnamedplus' --  See `:help 'clipboard'`
+vim.opt.updatetime = 250 -- Decrease update time
+vim.opt.timeoutlen = 300 -- Decrease mapped sequence wait time : Displays which-key popup sooner
 vim.opt.number = true
 vim.opt.relativenumber = true
 vim.opt.termguicolors = true -- yes use tempr gui colors
@@ -64,29 +64,19 @@ vim.opt.undofile = true -- Save undo history
 vim.opt.ignorecase = true -- case insensitive search
 vim.opt.smartcase = true -- ... actually lets make it sensitive if an upper case is involved
 vim.opt.signcolumn = 'yes' -- Keep signcolumn on by default
-
--- Sync clipboard between OS and Neovim.
--- Remove this option if you want your OS clipboard to remain independent.
-vim.opt.clipboard = 'unnamedplus' --  See `:help 'clipboard'`
-vim.opt.updatetime = 250 -- Decrease update time
-vim.opt.timeoutlen = 300 -- Decrease mapped sequence wait time : Displays which-key popup sooner
 vim.opt.splitright = true -- Configure how new splits should be opened
 vim.opt.splitbelow = true
-
 vim.opt.list = true -- Sets how neovim will display certain whitespace in the editor.
 vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
-
 vim.opt.inccommand = 'split' -- Preview substitutions live, as you type!
 vim.opt.cursorline = true -- Show which line your cursor is on
 vim.opt.scrolloff = 10 -- Minimal number of screen lines to keep above and below the cursor.
 vim.opt.hlsearch = true -- Set highlight on search, but clear on pressing <Esc> in normal mode
 
--- [[ Basic Keymaps ]]
---  See `:help vim.keymap.set()`
+-- NOTE::help vim.keymap.set()
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
--- <leader> + number to jump to tabs
--- TODO: can we make this more terse by getting the numeric value passed as some arg?
+-- Jump between tabs
 vim.keymap.set('n', '<leader>1', '1gt')
 vim.keymap.set('n', '<leader>2', '2gt')
 vim.keymap.set('n', '<leader>3', '3gt')
@@ -127,34 +117,6 @@ vim.keymap.set('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left wind
 vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
 vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
 vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
-
--- [[ Toggle Undotree, see help :Undotree ]]
-vim.keymap.set('n', '<leader>u', ':UndotreeToggle<CR>', { desc = 'Toggle Undotree' })
-
-vim.keymap.set('n', '<leader>gn', ':Gitsigns next_hunk<cr>', { desc = 'goto next git diff hunk' })
-vim.keymap.set('n', '<leader>gp', ':Gitsigns preview_hunk<cr>', { desc = 'preview hunk' })
-vim.keymap.set('n', '<leader>gr', ':Gitsigns reset_hunk<cr>', { desc = 'reset hunk' })
--- vim.keymap.set('n', '<leader>gd', ':Gitsigns diffthis<CR>', { desc = 'goto next git diff hunk' })
-
-vim.keymap.set('n', ',', function()
-  local current_buffer = vim.api.nvim_get_current_buf()
-  local current_buffer_name = vim.api.nvim_buf_get_name(current_buffer)
-  -- see lua pattern matching documentation for explanation of the below non-regex pattern
-  local patrn_flog = '/?flog%-%d+'
-  local patrn_max_count = '%[max_count=%d+%]'
-  local patrn_all = '%[all%]'
-
-  -- NOTE the need for two patters because we are not able to match optionally on a subpatter in lua patterns
-  local flog_buffer_active = string.match(current_buffer_name, patrn_flog .. ' ' .. patrn_max_count)
-
-  local flog_buffer_active_all = string.match(current_buffer_name, patrn_flog .. ' ' .. patrn_all .. ' ' .. patrn_max_count)
-
-  if not (flog_buffer_active or flog_buffer_active_all) then
-    return
-  end
-
-  return '<Plug>(FlogStartCommand) DiffviewOpen<cr>'
-end, { expr = true })
 
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
@@ -203,7 +165,12 @@ require('lazy').setup({
   -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
   'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
 
-  'mbbill/undotree', -- Nice file change history
+  {
+    'mbbill/undotree', -- Nice file change history
+    config = function()
+      vim.keymap.set('n', '<leader>u', ':UndotreeToggle<CR>', { desc = 'Toggle Undotree' })
+    end,
+  },
 
   {
     'f-person/git-blame.nvim',
@@ -241,6 +208,12 @@ require('lazy').setup({
         changedelete = { text = '~' },
       },
     },
+    init = function()
+      vim.keymap.set('n', '<leader>gn', ':Gitsigns next_hunk<cr>', { desc = 'goto next git diff hunk' })
+      vim.keymap.set('n', '<leader>gp', ':Gitsigns preview_hunk<cr>', { desc = 'preview hunk' })
+      vim.keymap.set('n', '<leader>gr', ':Gitsigns reset_hunk<cr>', { desc = 'reset hunk' })
+      -- vim.keymap.set('n', '<leader>gd', ':Gitsigns diffthis<CR>', { desc = 'goto next git diff hunk' })
+    end,
   },
 
   -- NOTE: Plugins can also be configured to run lua code when they are loaded.
@@ -388,22 +361,44 @@ require('lazy').setup({
     end,
   },
 
+  -- TODO: CONSIDER neogit ....
+  -- NOTE: Git plugins ...
   {
     'rbong/vim-flog',
     dependencies = {
       'tpope/vim-fugitive',
+      'sindrets/diffview.nvim',
     },
     config = function()
       vim.keymap.set('n', '<leader>gl', ':Flog -all -date=relative<cr>', { desc = '[G]it [L]og' })
       -- vim.keymap.set('n', '<leader>gl', ':Flog -format=%ar%x20[%h]%x20%d%x20%an <cr>', { desc = '[G]it [L]og' })
       vim.keymap.set('n', '<leader>gs', ':Git<cr>', { desc = '[G]it [S]tatus' })
+
+      -- NOTE: When in the git graph view, pressing ',' opens up diffview relative to that commit
+      vim.keymap.set('n', ',', function()
+        local current_buffer = vim.api.nvim_get_current_buf()
+        local current_buffer_name = vim.api.nvim_buf_get_name(current_buffer)
+        -- see lua pattern matching documentation for explanation of the below non-regex pattern
+        local patrn_flog = '/?flog%-%d+'
+        local patrn_max_count = '%[max_count=%d+%]'
+        local patrn_all = '%[all%]'
+
+        -- NOTE the need for two patters because we are not able to match optionally on a subpatter in lua patterns
+        local flog_buffer_active = string.match(current_buffer_name, patrn_flog .. ' ' .. patrn_max_count)
+
+        local flog_buffer_active_all = string.match(current_buffer_name, patrn_flog .. ' ' .. patrn_all .. ' ' .. patrn_max_count)
+
+        if not (flog_buffer_active or flog_buffer_active_all) then
+          return
+        end
+
+        return '<Plug>(FlogStartCommand) DiffviewOpen<cr>'
+      end, { expr = true })
     end,
   },
 
   {
-    -- TODO: CONSIDER neogit ....
     'sindrets/diffview.nvim',
-    name = 'diffview',
     dependencies = {
       'nvim-web-devicons',
     },
