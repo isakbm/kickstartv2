@@ -34,7 +34,7 @@
       $
 
     If you are using 'which-key' some keys are only shown if you
-    hit `<leader><backspace>` otherwise you'll only see keys
+    hit `<leader><backspace>` otherwise you'll only see keysgg
     bound to `<leader> ... `
 
     ... learn motions, and become a GOD => ciw caw yiw yaw ct' ca'
@@ -69,7 +69,7 @@ vim.opt.splitbelow = true
 vim.opt.list = true -- Sets how neovim will display certain whitespace in the editor.
 vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
 vim.opt.inccommand = 'split' -- Preview substitutions live, as you type!
-vim.opt.cursorline = true -- Show which line your cursor is on
+-- vim.opt.cursorline = true -- Show which line your cursor is on
 vim.opt.scrolloff = 10 -- Minimal number of screen lines to keep above and below the cursor.
 vim.opt.hlsearch = true -- Set highlight on search, but clear on pressing <Esc> in normal mode
 
@@ -77,12 +77,13 @@ vim.opt.hlsearch = true -- Set highlight on search, but clear on pressing <Esc> 
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
 -- Jump between tabs
-vim.keymap.set('n', '<leader>1', '1gt')
-vim.keymap.set('n', '<leader>2', '2gt')
-vim.keymap.set('n', '<leader>3', '3gt')
-vim.keymap.set('n', '<leader>4', '4gt')
-vim.keymap.set('n', '<leader>5', '5gt')
-vim.keymap.set('n', '<leader>6', '6gt')
+for i = 1, 9 do
+  vim.keymap.set('n', '<leader>t' .. i, i .. 'gt', { desc = '[T]ab ' .. i })
+end
+
+-- Experimental alternative to `Ctrl + V` which is blocked by some terminals
+-- NOTE: this brings you into block visual select mode ... on windows it's Ctrl + Q, and on Linux Ctrl + V ... cool to have something OS independent :)
+vim.keymap.set('n', 'VV', '<C-v>')
 
 -- Diagnostic keymaps
 vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, { desc = 'Go to previous [D]iagnostic message' })
@@ -212,6 +213,7 @@ require('lazy').setup({
         ['<leader>r'] = { name = '[R]ename', _ = 'which_key_ignore' },
         ['<leader>s'] = { name = '[S]earch', _ = 'which_key_ignore' },
         ['<leader>w'] = { name = '[W]orkspace', _ = 'which_key_ignore' },
+        ['<leader>t'] = { name = '[T]ab', _ = 'which_key_ignore' },
         ['<leader>g'] = { name = '[G]it', _ = 'which_key_ignore' },
       }
     end,
