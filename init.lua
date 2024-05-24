@@ -381,12 +381,12 @@ require('lazy').setup({
     },
     init = function()
       -- hunks
-      vim.keymap.set('n', '<leader>gn', ':Gitsigns next_hunk<cr>', { desc = 'goto next git diff hunk' })
-      vim.keymap.set('n', '<leader>gp', ':Gitsigns preview_hunk<cr>', { desc = 'preview hunk' })
-      vim.keymap.set('n', '<leader>gr', ':Gitsigns reset_hunk<cr>', { desc = 'reset hunk' })
+      vim.keymap.set('n', '<leader>gn', ':Gitsigns next_hunk<cr>', { desc = '[Git] [N]ext diff hunk' })
+      vim.keymap.set('n', '<leader>gp', ':Gitsigns preview_hunk<cr>', { desc = '[G]it [P]review hunk' })
+      vim.keymap.set('n', '<leader>gr', ':Gitsigns reset_hunk<cr>', { desc = '[G]it [R]eset hunk' })
 
       -- blame
-      vim.keymap.set('n', '<leader>gb', ':Gitsigns toggle_current_line_blame<CR>')
+      vim.keymap.set('n', '<leader>gb', ':Gitsigns toggle_current_line_blame<CR>', { desc = '[G]it [B]lame toggle' })
     end,
   },
 
@@ -432,24 +432,8 @@ require('lazy').setup({
       { 'folke/neodev.nvim', opts = {} },
     },
     config = function()
-      -- Brief Aside: **What is LSP?**
-      --
-      -- LSP is an acronym you've probably heard, but might not understand what it is.
-      --
       -- LSP stands for Language Server Protocol. It's a protocol that helps editors
       -- and language tooling communicate in a standardized fashion.
-      --
-      -- In general, you have a "server" which is some tool built to understand a particular
-      -- language (such as `gopls`, `lua_ls`, `rust_analyzer`, etc). These Language Servers
-      -- (sometimes called LSP servers, but that's kind of like ATM Machine) are standalone
-      -- processes that communicate with some "client" - in this case, Neovim!
-      --
-      -- LSP provides Neovim with features like:
-      --  - Go to definition
-      --  - Find references
-      --  - Autocompletion
-      --  - Symbol Search
-      --  - and more!
       --
       -- Thus, Language Servers are external tools that must be installed separately from
       -- Neovim. This is where `mason` and related plugins come into play.
