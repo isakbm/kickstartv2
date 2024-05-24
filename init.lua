@@ -205,7 +205,13 @@ require('lazy').setup({
 
   'mbbill/undotree', -- Nice file change history
 
-  { 'f-person/git-blame.nvim' },
+  {
+    'f-person/git-blame.nvim',
+    opts = { enabled = false },
+    init = function()
+      vim.keymap.set('n', '<leader>gb', ':GitBlameToggle<CR>')
+    end,
+  },
 
   -- NOTE: Plugins can also be added by using a table,
   -- with the first argument being the link and the following
