@@ -1225,6 +1225,9 @@ require('lazy').setup({
   },
   {
     'nvim-treesitter/nvim-treesitter-context',
+    opts = {
+      multiline_threshold = 1,
+    },
   },
 
   { -- Highlight, edit, and navigate code
