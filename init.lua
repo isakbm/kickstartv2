@@ -2,7 +2,7 @@
 
   Troubleshooting
 
-    :checkhealth 
+    :checkhealth
     :Lazy
     :Mason
     ~/.local/state/nvim/lsp.log
@@ -172,14 +172,6 @@ require('lazy').setup({
     end,
   },
 
-  {
-    'f-person/git-blame.nvim',
-    opts = { enabled = false },
-    init = function()
-      vim.keymap.set('n', '<leader>gb', ':GitBlameToggle<CR>')
-    end,
-  },
-
   -- NOTE: Plugins can also be added by using a table,
   -- with the first argument being the link and the following
   -- keys can be used to configure plugin behavior/loading/etc.
@@ -191,30 +183,6 @@ require('lazy').setup({
 
   -- "gc" to comment visual regions/lines
   { 'numToStr/Comment.nvim', opts = {} },
-
-  -- Here is a more advanced example where we pass configuration
-  -- options to `gitsigns.nvim`. This is equivalent to the following lua:
-  --    require('gitsigns').setup({ ... })
-  --
-  -- See `:help gitsigns` to understand what the configuration keys do
-  { -- Adds git related signs to the gutter, as well as utilities for managing changes
-    'lewis6991/gitsigns.nvim',
-    opts = {
-      signs = {
-        add = { text = '+' },
-        change = { text = '~' },
-        delete = { text = '_' },
-        topdelete = { text = '‾' },
-        changedelete = { text = '~' },
-      },
-    },
-    init = function()
-      vim.keymap.set('n', '<leader>gn', ':Gitsigns next_hunk<cr>', { desc = 'goto next git diff hunk' })
-      vim.keymap.set('n', '<leader>gp', ':Gitsigns preview_hunk<cr>', { desc = 'preview hunk' })
-      vim.keymap.set('n', '<leader>gr', ':Gitsigns reset_hunk<cr>', { desc = 'reset hunk' })
-      -- vim.keymap.set('n', '<leader>gd', ':Gitsigns diffthis<CR>', { desc = 'goto next git diff hunk' })
-    end,
-  },
 
   -- NOTE: Plugins can also be configured to run lua code when they are loaded.
   --
@@ -394,6 +362,31 @@ require('lazy').setup({
 
         return '<Plug>(FlogStartCommand) DiffviewOpen<cr>'
       end, { expr = true })
+    end,
+  },
+
+  {
+    'lewis6991/gitsigns.nvim',
+    opts = {
+      signs = {
+        add = { text = '+' },
+        change = { text = '~' },
+        delete = { text = '_' },
+        topdelete = { text = '‾' },
+        changedelete = { text = '~' },
+      },
+      current_line_blame_opts = {
+        delay = 200,
+      },
+    },
+    init = function()
+      -- hunks
+      vim.keymap.set('n', '<leader>gn', ':Gitsigns next_hunk<cr>', { desc = 'goto next git diff hunk' })
+      vim.keymap.set('n', '<leader>gp', ':Gitsigns preview_hunk<cr>', { desc = 'preview hunk' })
+      vim.keymap.set('n', '<leader>gr', ':Gitsigns reset_hunk<cr>', { desc = 'reset hunk' })
+
+      -- blame
+      vim.keymap.set('n', '<leader>gb', ':Gitsigns toggle_current_line_blame<CR>')
     end,
   },
 
