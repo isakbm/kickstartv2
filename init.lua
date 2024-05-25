@@ -411,6 +411,28 @@ require('lazy').setup({
         return flog_buffer_active or flog_buffer_active_all
       end
 
+      -- Returns the selected commit by fugitive, the one selected by hitting enter
+      -- ... we are able to do this by finding the loaded buffer for fugitive
+      -- that flog uses, and extract its commit hash
+      --- @return string
+      local function flogSelectedCommit()
+        local buffers = vim.api.nvim_list_bufs()
+        for _, buffer in ipairs(buffers) do
+          local name = vim.api.nvim_buf_get_name(buffer)
+          local loaded = vim.api.nvim_buf_is_loaded(buffer)
+          if loaded and name then
+            local isFugitive = string.match(name, 'fugitive:.*git//%x*')
+            if isFugitive then
+              local h = string.match(name, '%x*$')
+              if h then
+                return string.sub(h, 1, 7)
+              end
+            end
+          end
+        end
+        return ''
+      end
+
       -- NOTE: When in the git graph view, pressing ',' opens up diffview relative to that commit
       vim.keymap.set('n', ',', function()
         if flogActive() then
@@ -426,6 +448,17 @@ require('lazy').setup({
           return '<Plug>(FlogStartCommand)DiffviewOpen<End>^!<cr>'
         end
       end, { expr = true, desc = 'display changes introduced by commit under cursor' })
+
+      vim.keymap.set('n', '-', function()
+        local h = flogSelectedCommit()
+        if h ~= '' and flogActive() then
+          print('selected commit: ' .. h .. '$')
+          -- this uses diffview to display changes of the commit under cursor
+          -- local gd = 'DiffviewOpen ' .. h
+
+          return '<Plug>(FlogStartCommand)DiffviewOpen<End>..' .. h .. '<cr>'
+        end
+      end, { expr = true })
     end,
   },
 
