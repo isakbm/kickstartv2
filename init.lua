@@ -49,9 +49,13 @@
 
     ... learn motions, and become a GOD => ciw caw yiw yaw ct' ca'
 
-  Neat stuff:
+  FAQ:
 
-      n | * | search for nearest word around cursor and jump to it
+    Q: how do I swap lines
+    A: Atl + j / k  when in normal mode
+
+    Q: how do I do something like Ctrl + backspace when in insert mode
+    A: Ctrl + W
 
 =================================================================--]]
 
@@ -114,6 +118,10 @@ vim.keymap.set({ 'n', 'i' }, '<C-k>', '<C-u>', { desc = 'navigate up half a page
 for i = 1, 9 do
   vim.keymap.set('n', '<M-' .. i .. '>', i .. 'gt', { desc = '[T]ab ' .. i })
 end
+
+vim.keymap.set({ 'i' }, '<C-<bs>>', function()
+  print 'yes'
+end)
 
 -- NOTE: this brings you into block visual select mode ... on windows it's Ctrl + Q, and on Linux Ctrl + V ... cool to have something OS independent :)
 --
