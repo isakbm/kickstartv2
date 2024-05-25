@@ -55,7 +55,7 @@
     A: Atl + j / k  when in normal mode
 
     Q: how do I do something like Ctrl + backspace when in insert mode
-    A: Ctrl + W
+    A: Ctrl + w
 
     Q: how do I get back to where I was in the file when I closed it
     A: `"    when in normal mode thanks to marks
