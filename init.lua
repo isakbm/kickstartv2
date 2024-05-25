@@ -44,10 +44,14 @@
       $
 
     If you are using 'which-key' some keys are only shown if you
-    hit `<leader><backspace>` otherwise you'll only see keysgg
+    hit `<leader><backspace>` otherwise you'll only see keys
     bound to `<leader> ... `
 
     ... learn motions, and become a GOD => ciw caw yiw yaw ct' ca'
+
+  Neat stuff:
+
+      n | * | search for nearest word around cursor and jump to it
 
 =================================================================--]]
 
@@ -83,9 +87,24 @@ vim.opt.inccommand = 'split' -- Preview substitutions live, as you type!
 vim.opt.scrolloff = 10 -- Minimal number of screen lines to keep above and below the cursor.
 vim.opt.hlsearch = true -- Set highlight on search, but clear on pressing <Esc> in normal mode
 
+--=========================== KEYMAPS =============================
+--
+-- The follow keymaps are suppsed to be independet of plugins.
+-- Keymaps that depend on plugins are grouped together with the
+-- plugin configuration. Search for 'Gitsigns' for an example
+--
 -- NOTE::help vim.keymap.set()
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
+-- Nice swap lines like in vscode but with `jk` insteasd of `<down><up>`
+-- NOTE: we've bound <M-*> so the `Alt` or `Modifier` key, however, see :h :map-alt and you'll notice that
+--       vim is not able to distinguish between `Esc` and `Alt` if key press is fast enough, we'll just live
+--       with this, it rarely causes issues, but if you press `Esc` + j  or `Esc + k` very quickly while
+--       in normal mode, you'll also trigger the below keymaps.
+vim.keymap.set('n', '<M-j>', ':m+1<cr>', { noremap = 'true', desc = 'swap line with line below' }) -- vscode <alt> + <up>
+vim.keymap.set('n', '<M-k>', ':m-2<cr>', { noremap = 'true', desc = 'swap line with line above' }) -- vscode <alt> + <down>
+
+-- inspired from vscode
 -- Jump between tabs
 for i = 1, 9 do
   vim.keymap.set('n', '<leader>t' .. i, i .. 'gt', { desc = '[T]ab ' .. i })
