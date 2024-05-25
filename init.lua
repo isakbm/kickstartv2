@@ -60,6 +60,18 @@
     Q: how do I get back to where I was in the file when I closed it
     A: `"    when in normal mode thanks to marks
 
+    Q: how do I see my current changes in a nice way
+    A: <leader>gd
+
+    Q: how do I see my current changes relative to some older commit
+    A: <leader>gl  and then hover some older commit and press ','
+
+    Q: how do I see changes intoruded by a single commit?
+    A: <leader>gl  and then hover some commit and press ';'
+
+    Q: how do I see changes introduced by a range of commits?
+    A: ... working on it, coming soon! :)
+
 =================================================================--]]
 
 -- NOTE: :help localleader
