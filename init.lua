@@ -9,6 +9,16 @@
 
   ---------------------------------------------------------------
 
+  Keybinding Conflicts
+
+    :checkhealth which-key
+    :verbose nmap <the key binding>
+
+    NOTE: which-key warnings can be safely ignored
+          https://github.com/folke/which-key.nvim/issues/218#issuecomment-2117036351
+
+  ---------------------------------------------------------------
+
   Candy
 
     :Tutor
