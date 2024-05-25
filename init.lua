@@ -57,6 +57,9 @@
     Q: how do I do something like Ctrl + backspace when in insert mode
     A: Ctrl + W
 
+    Q: how do I get back to where I was in the file when I closed it
+    A: `"    when in normal mode thanks to marks
+
 =================================================================--]]
 
 -- NOTE: :help localleader
@@ -118,10 +121,6 @@ vim.keymap.set({ 'n', 'i' }, '<C-k>', '<C-u>', { desc = 'navigate up half a page
 for i = 1, 9 do
   vim.keymap.set('n', '<M-' .. i .. '>', i .. 'gt', { desc = '[T]ab ' .. i })
 end
-
-vim.keymap.set({ 'i' }, '<C-<bs>>', function()
-  print 'yes'
-end)
 
 -- NOTE: this brings you into block visual select mode ... on windows it's Ctrl + Q, and on Linux Ctrl + V ... cool to have something OS independent :)
 --
