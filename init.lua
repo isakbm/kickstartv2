@@ -61,6 +61,7 @@ vim.g.maplocalleader = ' ' --- Set <space> as the local leader key
 vim.g.have_nerd_font = true -- Set to true if you have a Nerd Font installed
 
 -- NOTE::help option-list
+--
 -- Sync clipboard between OS and Neovim.
 -- Remove this option if you want your OS clipboard to remain independent.
 vim.opt.clipboard = 'unnamedplus' --  See `:help 'clipboard'`
@@ -90,28 +91,33 @@ vim.opt.hlsearch = true -- Set highlight on search, but clear on pressing <Esc> 
 --=========================== KEYMAPS =============================
 --
 -- The follow keymaps are suppsed to be independet of plugins.
--- Keymaps that depend on plugins are grouped together with the
--- plugin configuration. Search for 'Gitsigns' for an example
 --
--- NOTE::help vim.keymap.set()
+-- NOTE: hide higlights after hitting <Esc>
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
--- Nice swap lines like in vscode but with `jk` insteasd of `<down><up>`
--- NOTE: we've bound <M-*> so the `Alt` or `Modifier` key, however, see :h :map-alt and you'll notice that
---       vim is not able to distinguish between `Esc` and `Alt` if key press is fast enough, we'll just live
---       with this, it rarely causes issues, but if you press `Esc` + j  or `Esc + k` very quickly while
---       in normal mode, you'll also trigger the below keymaps.
-vim.keymap.set('n', '<M-j>', ':m+1<cr>', { noremap = 'true', desc = 'swap line with line below' }) -- vscode <alt> + <up>
-vim.keymap.set('n', '<M-k>', ':m-2<cr>', { noremap = 'true', desc = 'swap line with line above' }) -- vscode <alt> + <down>
+-- NOTE: swap lines like in vscode
+--
+--   we've bound <M-*> so the `Alt` or `Modifier` key, however, see :h :map-alt and you'll notice that
+--   nvim is not able to distinguish between `Esc` and `Alt` if key press is fast enough, we'll just live
+--   with this, it rarely causes issues, but if you press `Esc` + j  or `Esc + k` very quickly while
+--   in normal mode, you'll also trigger the below keymaps.
+vim.keymap.set('n', '<M-j>', ':m+1<cr>', { desc = 'swap line with line below' }) -- vscode <alt> + <up>
+vim.keymap.set('n', '<M-k>', ':m-2<cr>', { desc = 'swap line with line above' }) -- vscode <alt> + <down>
 
--- inspired from vscode
--- Jump between tabs
+-- NOTE: scroll with Ctrl + j / k is easier that Ctr + U / D
+--
+-- -> :h scroll
+vim.keymap.set({ 'n', 'i' }, '<C-j>', '<C-d>', { desc = 'navigate down half a page' })
+vim.keymap.set({ 'n', 'i' }, '<C-k>', '<C-u>', { desc = 'navigate up half a page' })
+
+-- NOTE: Jump between tabs using 'Alt + number'
 for i = 1, 9 do
-  vim.keymap.set('n', '<leader>t' .. i, i .. 'gt', { desc = '[T]ab ' .. i })
+  vim.keymap.set('n', '<M-' .. i .. '>', i .. 'gt', { desc = '[T]ab ' .. i })
 end
 
--- Experimental alternative to `Ctrl + V` which is blocked by some terminals
 -- NOTE: this brings you into block visual select mode ... on windows it's Ctrl + Q, and on Linux Ctrl + V ... cool to have something OS independent :)
+--
+-- Experimental alternative to `Ctrl + V` which is blocked by some terminals
 vim.keymap.set('n', 'VV', '<C-v>')
 
 -- Diagnostic keymaps
@@ -128,33 +134,28 @@ vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagn
 -- or just use <C-\><C-n> to exit terminal mode
 vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
 
--- [[ Disable arrow keys in most modes ]]
-vim.keymap.set({ 'v', 'i', 'n' }, '<left>', '<cmd>echo "Use h to move!!"<CR>')
-vim.keymap.set({ 'v', 'i', 'n' }, '<right>', '<cmd>echo "Use l to move!!"<CR>')
-vim.keymap.set({ 'v', 'i', 'n' }, '<up>', '<cmd>echo "Use k to move!!"<CR>')
-vim.keymap.set({ 'v', 'i', 'n' }, '<down>', '<cmd>echo "Use j to move!!"<CR>')
-
-vim.keymap.set({ 'v', 'i', 'n' }, '<C-left>', '<cmd>echo "Use h to move!!"<CR>')
-vim.keymap.set({ 'v', 'i', 'n' }, '<C-right>', '<cmd>echo "Use l to move!!"<CR>')
-vim.keymap.set({ 'v', 'i', 'n' }, '<C-up>', '<cmd>echo "Use k to move!!"<CR>')
-vim.keymap.set({ 'v', 'i', 'n' }, '<C-down>', '<cmd>echo "Use j to move!!"<CR>')
-
--- Keybinds to make split navigation easier.
---  Use CTRL+<hjkl> to switch between windows
+-- NOTE: Disable arrow keys in most modes
 --
---  See `:help wincmd` for a list of all window commands
-vim.keymap.set('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left window' })
-vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
-vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
-vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
+-- uncomment tese if you are still not used to using `hjkl` you'll learn way faster
+--
+-- vim.keymap.set({ 'v', 'i', 'n' }, '<left>', '<cmd>echo "Use h to move!!"<CR>')
+-- vim.keymap.set({ 'v', 'i', 'n' }, '<right>', '<cmd>echo "Use l to move!!"<CR>')
+-- vim.keymap.set({ 'v', 'i', 'n' }, '<up>', '<cmd>echo "Use k to move!!"<CR>')
+-- vim.keymap.set({ 'v', 'i', 'n' }, '<down>', '<cmd>echo "Use j to move!!"<CR>')
+-- vim.keymap.set({ 'v', 'i', 'n' }, '<C-left>', '<cmd>echo "Use h to move!!"<CR>')
+-- vim.keymap.set({ 'v', 'i', 'n' }, '<C-right>', '<cmd>echo "Use l to move!!"<CR>')
+-- vim.keymap.set({ 'v', 'i', 'n' }, '<C-up>', '<cmd>echo "Use k to move!!"<CR>')
+-- vim.keymap.set({ 'v', 'i', 'n' }, '<C-down>', '<cmd>echo "Use j to move!!"<CR>')
 
--- [[ Basic Autocommands ]]
---  See `:help lua-guide-autocommands`
+--=========================== PLUGIN KEYMAPS =============================
 --
--- Highlight when yanking (copying) text
+-- we configure plugins here using Lazy, and we define keybindings
+-- that rely on them here as well
+
+-- NOTE: Highlight when yanking (copying) text
 --
---  Try it with `yap` in normal mode
---  See `:help vim.highlight.on_yank()`
+--  -> :help lua-guide-autocommands
+--  -> :help vim.highlight.on_yank()
 vim.api.nvim_create_autocmd('TextYankPost', {
   desc = 'Highlight when yanking (copying) text',
   group = vim.api.nvim_create_augroup('kickstart-highlight-yank', { clear = true }),
