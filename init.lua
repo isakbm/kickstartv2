@@ -147,6 +147,12 @@ end
 -- Experimental alternative to `Ctrl + V` which is blocked by some terminals
 vim.keymap.set('n', 'VV', '<C-v>')
 
+vim.diagnostic.config {
+  signs = {
+    priority = 100, -- we want high priority, higher than gitsigns and marks.nvim
+  },
+}
+
 -- Diagnostic keymaps
 vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, { desc = 'Go to previous [D]iagnostic message' })
 vim.keymap.set('n', ']d', vim.diagnostic.goto_next, { desc = 'Go to next [D]iagnostic message' })
