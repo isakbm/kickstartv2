@@ -132,14 +132,8 @@ vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 --   nvim is not able to distinguish between `Esc` and `Alt` if key press is fast enough, we'll just live
 --   with this, it rarely causes issues, but if you press `Esc` + j  or `Esc + k` very quickly while
 --   in normal mode, you'll also trigger the below keymaps.
-vim.keymap.set('n', '<M-j>', ':m+1<cr>', { desc = 'swap line with line below' }) -- vscode <alt> + <up>
-vim.keymap.set('n', '<M-k>', ':m-2<cr>', { desc = 'swap line with line above' }) -- vscode <alt> + <down>
-
--- NOTE: scroll with Ctrl + j / k is easier that Ctr + U / D
---
--- -> :h scroll
-vim.keymap.set({ 'n', 'i' }, '<C-j>', '<C-d>', { desc = 'navigate down half a page' })
-vim.keymap.set({ 'n', 'i' }, '<C-k>', '<C-u>', { desc = 'navigate up half a page' })
+vim.keymap.set('n', '<C-j>', ':m+1<cr>', { desc = 'swap line with line below' }) -- vscode <alt> + <up>
+vim.keymap.set('n', '<C-k>', ':m-2<cr>', { desc = 'swap line with line above' }) -- vscode <alt> + <down>
 
 -- NOTE: Jump between tabs using 'Alt + number'
 for i = 1, 9 do
