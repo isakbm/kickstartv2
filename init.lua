@@ -157,7 +157,7 @@ vim.keymap.set('n', 'VV', '<C-v>')
 
 vim.diagnostic.config {
   signs = {
-    priority = 100, -- we want high priority, higher than gitsigns and marks.nvim
+    priority = 100, -- we want high priority, higher than gitsigns and marks
   },
 }
 
@@ -168,12 +168,8 @@ vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, { desc = 'Show diagn
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
 
 -- useful for figuring out what higlight groups are relevant for stuff under cursor
-vim.keymap.set('n', '<C-i>', function()
-  -- print(vim.inspect(vim.inspect_pos()))
-
-  -- print('... did I just make a buffer? ' .. id .. ' maybe not? ' .. state)
+vim.keymap.set('n', '<leader>I', function()
   vim.show_pos()
-  -- vim.cmd ':Inspect'
 end)
 
 -- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
