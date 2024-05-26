@@ -63,7 +63,7 @@
     Q: how do I see my current changes in a nice way
     A: <leader>gd
 
-    Q: how do I see my current changes relative to some older commit
+    Q: how do I see my carrot changes relative to some older commit
     A: <leader>gl  and then hover some older commit and press ','
 
     Q: how do I see changes intoruded by a single commit?
@@ -179,6 +179,14 @@ vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' }
 -- vim.keymap.set({ 'v', 'i', 'n' }, '<C-right>', '<cmd>echo "Use l to move!!"<CR>')
 -- vim.keymap.set({ 'v', 'i', 'n' }, '<C-up>', '<cmd>echo "Use k to move!!"<CR>')
 -- vim.keymap.set({ 'v', 'i', 'n' }, '<C-down>', '<cmd>echo "Use j to move!!"<CR>')
+
+-- Nice to start off where you left off
+vim.api.nvim_create_autocmd('BufWinEnter', {
+  desc = 'Start off where you left off',
+  group = vim.api.nvim_create_augroup('kickstart-buf-enter', { clear = true }),
+  -- NOTE: this is just the command '"  in lua [[ and ]] are similar to ``` in other languages
+  command = [['"]], -- see :h :mark
+})
 
 --=========================== PLUGIN KEYMAPS =============================
 --
@@ -945,9 +953,8 @@ require('lazy').setup({
       -- There are additional nvim-treesitter modules that you can use to interact
       -- with nvim-treesitter. You should go explore a few and see what interests you:
       --
-      --    - Incremental selection: Included, see `:help nvim-treesitter-incremental-selection-mod`
-      --    - Show your current context: https://github.com/nvim-treesitter/nvim-treesitter-context
-      --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
+      --   TODO: - Incremental selection: Included, see `:help nvim-treesitter-incremental-selection-mod`
+      --   TODO: - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
     end,
   },
 
