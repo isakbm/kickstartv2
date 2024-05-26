@@ -72,6 +72,18 @@
     Q: how do I see changes introduced by a range of commits?
     A: ... working on it, coming soon! :)
 
+  TODO / PLANS:
+
+    >> Figure out how to run vim script functions, something like
+
+          local result = vim.fn.name(args)
+
+          -- if "name" contains special characters, you need this variant:
+          local result = vim.fn["flog#Exec"](args)
+
+    >> Figure out how to get better suggestions for autocomplete of
+       function args.
+
 =================================================================--]]
 
 -- NOTE: :help localleader
