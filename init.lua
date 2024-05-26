@@ -81,10 +81,18 @@
        - dmx -> delete mark x
        - mx -> create mark x
 
-  TODO / PLANS:
+  TODO: 
 
     >> Figure out how to get better suggestions for autocomplete of
        function args.
+
+    >> Get a nice way to jump to parent scopes locally. Currently
+       we can do something like this with treesitter-context, but
+       that jumps to the context that is 'off screen' try '[c'
+
+    >> [x and ]x are clearly very common vim keybindings
+       on a Norwegian keyboard these are a pain to type
+       Need to figure out some clever bindings in auto hotkey maybe.
 
 =================================================================--]]
 
@@ -158,6 +166,15 @@ vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, { desc = 'Go to previous [D]
 vim.keymap.set('n', ']d', vim.diagnostic.goto_next, { desc = 'Go to next [D]iagnostic message' })
 vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, { desc = 'Show diagnostic [E]rror messages' })
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
+
+-- useful for figuring out what higlight groups are relevant for stuff under cursor
+vim.keymap.set('n', '<C-i>', function()
+  -- print(vim.inspect(vim.inspect_pos()))
+
+  -- print('... did I just make a buffer? ' .. id .. ' maybe not? ' .. state)
+  vim.show_pos()
+  -- vim.cmd ':Inspect'
+end)
 
 -- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
 -- for people to discover. Otherwise, you normally need to press <C-\><C-n>, which
@@ -926,6 +943,11 @@ require('lazy').setup({
     opts = {
       multiline_threshold = 1,
     },
+    config = function()
+      vim.keymap.set('n', '[c', function()
+        require('treesitter-context').go_to_context(vim.v.count1)
+      end, { silent = true, desc = 'jump to line of parent context' })
+    end,
   },
 
   { -- Highlight, edit, and navigate code
@@ -949,6 +971,60 @@ require('lazy').setup({
 
       ---@diagnostic disable-next-line: missing-fields
       require('nvim-treesitter.configs').setup(opts)
+
+      vim.keymap.set('n', '<C- >', function()
+        local id = vim.api.nvim_create_buf(true, true)
+        -- vim.api.nvim_buf_set_name(id, 'yoyoma')
+
+        -- TODO: now that we know how to create a buffer somewhat ... lets find out how to make a window that kinda pops up?
+        ------------------------------r  c  r  c
+        vim.api.nvim_buf_set_text(id, 0, 0, 0, 0, {
+          'hello world? why is this allowed?',
+          'this is surely not allowed?',
+          'oh it seems like it just takes up as much space as is available if 0 0 0 0 is passed?',
+        })
+
+        -- sets the buffer we just create to the active window
+        vim.api.nvim_win_set_buf(0, id)
+
+        -- demonstrating how one can listen to events in a buffer
+        vim.api.nvim_buf_attach(id, true, {
+          on_lines = function()
+            print 'on_lines'
+          end,
+          on_detach = function()
+            print 'on_detach'
+          end,
+          on_changedtick = function()
+            print 'on_changedtick'
+          end,
+          on_bytes = function()
+            print 'on_bytes'
+          end,
+          on_reload = function()
+            print 'on_reloa'
+          end,
+        })
+      end)
+
+      vim.keymap.set('n', '<C-e>', function()
+        for _, id in pairs(vim.api.nvim_list_bufs()) do
+          local name = vim.api.nvim_buf_get_name(id)
+          local isLoaded = vim.api.nvim_buf_is_loaded(id)
+          local isValid = vim.api.nvim_buf_is_valid(id)
+
+          -- vim.api.nvim_buf_set_name(id, 'YoYoMa')
+          local status = 'invalid'
+          if isValid then
+            status = 'valid'
+          end
+
+          -- vim.api.nvim_buf_get_option(id, name)
+          if isLoaded then
+            print('buffer -> ' .. id .. ' called ' .. name .. ' is ' .. status)
+          end
+        end
+      end)
 
       -- There are additional nvim-treesitter modules that you can use to interact
       -- with nvim-treesitter. You should go explore a few and see what interests you:
