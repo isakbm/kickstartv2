@@ -69,17 +69,19 @@
     Q: how do I see changes intoruded by a single commit?
     A: <leader>gl  and then hover some commit and press ';'
 
-    Q: how do I see changes introduced by a range of commits?
-    A: ... working on it, coming soon! :)
+    Q: how do I see changes introduced by a range of commits, like diff a..b
+    A: <leader>gl  put cursor on b hit enter place cursor on a hit - 
+
+    Q: can I mark places to go to somehow?
+    A: use vim marks, see h: marks.nvim and h: mark. also there's a plugin I've added
+       that shows you in the signs column where your jumps are,
+       not that mark signs take precedence over gitsigns ...
+
+       - dm<space> -> delete all marks
+       - dmx -> delete mark x
+       - mx -> create mark x
 
   TODO / PLANS:
-
-    >> Figure out how to run vim script functions, something like
-
-          local result = vim.fn.name(args)
-
-          -- if "name" contains special characters, you need this variant:
-          local result = vim.fn["flog#Exec"](args)
 
     >> Figure out how to get better suggestions for autocomplete of
        function args.
@@ -226,6 +228,11 @@ require('lazy').setup({
     config = function()
       vim.keymap.set('n', '<leader>u', ':UndotreeToggle<CR>', { desc = 'Toggle Undotree' })
     end,
+  },
+
+  {
+    'chentoast/marks.nvim',
+    opts = {},
   },
 
   -- NOTE: Plugins can also be added by using a table,
@@ -422,7 +429,7 @@ require('lazy').setup({
       end
 
       -- get the commit under the cursor
-      --- @return boolean, string
+      --- @return boolean, string asdfasdf
       local function flogCommitUnderCursor()
         return pcall(vim.fn['flog#Format'], '%H')
       end
@@ -459,6 +466,7 @@ require('lazy').setup({
   {
     'lewis6991/gitsigns.nvim',
     opts = {
+      sign_priority = 9,
       signs = {
         add = { text = '+' },
         change = { text = '~' },
