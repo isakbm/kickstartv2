@@ -399,24 +399,6 @@ require('lazy').setup({
       -- vim.keymap.set('n', '<leader>gl', ':Flog -format=%ar%x20[%h]%x20%d%x20%an <cr>', { desc = '[G]it [L]og' })
       vim.keymap.set('n', '<leader>gs', ':Git<cr>', { desc = '[G]it [S]tatus' })
 
-      -- Returns true if current buffer is a flog buffer
-      --- @return boolean
-      local function flogActive()
-        local current_buffer = vim.api.nvim_get_current_buf()
-        local current_buffer_name = vim.api.nvim_buf_get_name(current_buffer)
-        -- see lua pattern matching documentation for explanation of the below non-regex pattern
-        local patrn_flog = '/?flog%-%d+'
-        local patrn_max_count = '%[max_count=%d+%]'
-        local patrn_all = '%[all%]'
-
-        -- NOTE: the need for two patters because we are not able to match optionally on a subpatter in lua patterns
-        local flog_buffer_active = string.match(current_buffer_name, patrn_flog .. ' ' .. patrn_max_count)
-
-        local flog_buffer_active_all = string.match(current_buffer_name, patrn_flog .. ' ' .. patrn_all .. ' ' .. patrn_max_count)
-
-        return flog_buffer_active or flog_buffer_active_all
-      end
-
       -- Returns the selected commit by fugitive, the one selected by hitting enter
       -- ... we are able to do this by finding the loaded buffer for fugitive
       -- that flog uses, and extract its commit hash
@@ -439,30 +421,36 @@ require('lazy').setup({
         return ''
       end
 
-      -- NOTE: When in the git graph view, pressing ',' opens up diffview relative to that commit
+      -- get the commit under the cursor
+      --- @return boolean, string
+      local function flogCommitUnderCursor()
+        return pcall(vim.fn['flog#Format'], '%H')
+      end
+
+      -- NOTE: opens up diffview relative to commit under cursor
       vim.keymap.set('n', ',', function()
-        if flogActive() then
-          -- this uses diffview to display changes of HEAD relative to commit under cursor
-          return '<Plug>(FlogStartCommand)DiffviewOpen<End><cr>'
+        local ok, commit = flogCommitUnderCursor()
+        if ok then
+          return ':DiffviewOpen ' .. commit .. '<cr>'
         end
       end, { expr = true, desc = 'display changes of HEAD relative to commit under cursor' })
 
-      -- NOTE: When in the git graph view, pressing ';' opens up diffview for change introduced by single commit
+      -- NOTE: opens up diffview for change introduced by commit under cursor
       vim.keymap.set('n', ';', function()
-        if flogActive() then
-          -- this uses diffview to display changes of the commit under cursor
-          return '<Plug>(FlogStartCommand)DiffviewOpen<End>^!<cr>'
+        local ok, commit = flogCommitUnderCursor()
+        if ok then
+          return ':DiffviewOpen ' .. commit .. '^!<cr>'
         end
       end, { expr = true, desc = 'display changes introduced by commit under cursor' })
 
       vim.keymap.set('n', '-', function()
-        local h = flogSelectedCommit()
-        if h ~= '' and flogActive() then
-          print('selected commit: ' .. h .. '$')
-          -- this uses diffview to display changes of the commit under cursor
-          -- local gd = 'DiffviewOpen ' .. h
-
-          return '<Plug>(FlogStartCommand)DiffviewOpen<End>..' .. h .. '<cr>'
+        local ok, cc = flogCommitUnderCursor()
+        if ok then
+          local h = flogSelectedCommit()
+          if h == '' then
+            return
+          end
+          return ':DiffviewOpen ' .. cc .. '..' .. h .. '<cr>'
         end
       end, { expr = true })
     end,
