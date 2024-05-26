@@ -1,103 +1,103 @@
 --[[========================= WELCOME =============================
 
  WARN: Troubleshooting
-  .
+
     :checkhealth
     :Lazy
     :Mason
     ~/.local/state/nvim/lsp.log
 
-  ---------------------------------------------------------------
+    Keybinding Conflicts
 
- NOTE: Keybinding Conflicts
-  .
-    :checkhealth which-key
-    :verbose nmap <the key binding>
-  .
-    which-key warnings can be safely ignored
-    https://github.com/folke/which-key.nvim/issues/218#issuecomment-2117036351
+      :checkhealth which-key
+      :verbose nmap <the key binding>
+
+      which-key warnings can be safely ignored
+      https://github.com/folke/which-key.nvim/issues/218#issuecomment-2117036351
 
   ---------------------------------------------------------------
 
- WARN: Candy
-  .
+ WARN: Getting Started
+
     :Tutor
     :help lua-guide
     :help
-  .
+
     https://learnxinyminutes.com/docs/lua/
-  .
-    <leader>sh 
-    <leader>sk
+
+    <leader>sh   and   <leader>sk
+
+ WARN: Motions
+
+    :help text-object
+
+    ciw caw cip dap dapu
+    vi] vi} va] va} vap vip
+
+    D C I A O P Y
+    _ 0 $ %
 
   ---------------------------------------------------------------
 
  NOTE: OS Keys ?
-  .
-    Map `Capslock` to `<Esc>` in your operating system 
-    Also consider similar mappings of other keys that might be hard
-    To type on your keyboard, for example I've got a Norwegian
-    keyboard so without keymaps it's difficult for me to type 
-  .
+
+    Map `Capslock` to `<Esc>` in your operating system
+
+    Also consider similar mappings of other keys like
+
         ~
         `
         $
-  .
-    If you are using 'which-key' some keys are only shown if you
-    hit `<leader><backspace>` otherwise you'll only see keys
-    bound to `<leader> ... `
-  .
-    ... learn motions, and become a GOD => ciw caw yiw yaw ct' ca'
 
- WARN: M O T I O N S 
-  -
-  - ciw caw cip dap dapu
-  - vi] vi} va] va} vap vip
+  ---------------------------------------------------------------
 
  NOTE: F A Q
-  .
+
     Q: how do I swap lines
     A: Atl + j / k  when in normal mode
-  .
+
     Q: how do I do something like Ctrl + backspace when in insert mode
     A: Ctrl + w
-  .
+
     Q: how do I get back to where I was in the file when I closed it
     A: `"    when in normal mode thanks to marks
-  .
+
     Q: how do I see my current changes in a nice way
     A: <leader>gd
-  .
+
     Q: how do I see my carrot changes relative to some older commit
     A: <leader>gl  and then hover some older commit and press ','
-  .
+
     Q: how do I see changes intoruded by a single commit?
     A: <leader>gl  and then hover some commit and press ';'
-  .
+
     Q: how do I see changes introduced by a range of commits, like diff a..b
     A: <leader>gl  put cursor on b hit enter place cursor on a hit - 
-    .
+
     Q: can I mark places to go to somehow?
     A: use vim marks, see h: marks.nvim and h: mark. also there's a plugin I've added
        that shows you in the signs column where your jumps are,
        not that mark signs take precedence over gitsigns ...
-  .
+
        - dm<space> -> delete all marks
        - dmx -> delete mark x
        - mx -> create mark x
 
   TODO: 
-  .
+
     >> Figure out how to get better suggestions for autocomplete of
        function args.
-  .
+
     >> Get a nice way to jump to parent scopes locally. Currently
        we can do something like this with treesitter-context, but
        that jumps to the context that is 'off screen' try '[c'
-  .
+
     >> [x and ]x are clearly very common vim keybindings
        on a Norwegian keyboard these are a pain to type
        Need to figure out some clever bindings in auto hotkey maybe.
+
+    >> Currently you can move a line up or down with <C-i> and <C-j>.
+       Consider also supporting this in visual line mode for several lines.
 
 =================================================================--]]
 
