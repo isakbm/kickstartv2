@@ -939,7 +939,7 @@ require('lazy').setup({
     opts = {
       multiline_threshold = 1,
     },
-    config = function()
+    init = function()
       vim.keymap.set('n', '[c', function()
         require('treesitter-context').go_to_context(vim.v.count1)
       end, { silent = true, desc = 'jump to line of parent context' })
