@@ -99,6 +99,11 @@
     >> Currently you can move a line up or down with <C-i> and <C-j>.
        Consider also supporting this in visual line mode for several lines.
 
+    >> when doing gr to go to references, telescope is shwing
+       file path and the start of the line of code ...
+       would be nice to only show file path, because the start of code
+       obscures long file paths.
+
 =================================================================--]]
 
 -- NOTE: :help localleader
@@ -298,7 +303,7 @@ require('lazy').setup({
     'folke/which-key.nvim',
     event = 'VimEnter', -- Sets the loading event to 'VimEnter'
     config = function() -- This is the function that runs, AFTER loading
-      require('which-key').setup()
+      require('which-key').setup { window = { border = 'single' } }
 
       -- Document existing key chains
       require('which-key').register {
@@ -556,7 +561,17 @@ require('lazy').setup({
 
       -- Useful status updates for LSP.
       -- NOTE: `opts = {}` is the same as calling `require('fidget').setup({})`
-      { 'j-hui/fidget.nvim', opts = {} },
+      {
+        'j-hui/fidget.nvim',
+        opts = {
+          notification = {
+            window = {
+              -- this makes notifications have transparent background
+              winblend = 0,
+            },
+          },
+        },
+      },
 
       -- `neodev` configures Lua LSP for your Neovim config, runtime and plugins
       -- used for completion, annotations and signatures of Neovim apis
@@ -710,7 +725,11 @@ require('lazy').setup({
       --    :Mason
       --
       --  You can press `g?` for help in this menu
-      require('mason').setup()
+      require('mason').setup {
+        ui = {
+          border = 'single',
+        },
+      }
 
       -- You can add other tools here that you want Mason to install
       -- for you, so that they are available from within Neovim.
@@ -879,6 +898,7 @@ require('lazy').setup({
     -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`
     'folke/tokyonight.nvim',
     priority = 1000, -- make sure to load this before all the other start plugins
+    -- opts = { transparent = true },
     init = function()
       -- Load the colorscheme here.
       -- Like many other themes, this one has different styles, and you could load
@@ -891,6 +911,50 @@ require('lazy').setup({
       -- Set style of deletion filler sections, must enable `enhanced_diff_hl` in diffview opts
       -- NOTE:, we seemed unable to set this option using opts and had to do it in setup for some reason.
       vim.api.nvim_set_hl(0, 'DiffviewDiffDeleteDim', { fg = '#440000' })
+
+      do
+        -- here we set some backgrounds to transparent ...
+        -- it's just a fun little test we're doing ^ ^
+        local groups = {
+          -- these two turn the background to transparent for normal buffer
+          'Normal',
+          'NormalNC',
+          -- 'NonText',
+          --
+          -- these three groups turn the background to transparent for the which key popup
+          'NormalFloat',
+          'FloatBorder',
+          --
+          'SignColumn',
+          --
+          'WhichKeyFloat',
+          'WhichKey',
+          --
+          'TelescopeNormal',
+          'TelescopeBorder',
+          'TelescopePromptBorder',
+          'TelescopePromptTitle',
+          --
+          'NotifyBackground',
+          'LazyProgress',
+          'LazyTodo',
+
+          'NotifyINFOBody',
+          'NvimFloat',
+          -- 'LspFloatWinNormal',
+          -- 'StatusLine',
+          -- 'StatusLineNC',
+          -- 'EndOfBuffer',
+        }
+
+        -- require('fidget').notify('hello world',
+
+        for _, group in pairs(groups) do
+          local hlg = vim.api.nvim_get_hl(0, { name = group })
+          hlg.bg = 'none'
+          vim.api.nvim_set_hl(0, group, hlg)
+        end
+      end
     end,
   },
 
@@ -1063,6 +1127,7 @@ require('lazy').setup({
   -- { import = 'custom.plugins' },
 }, {
   ui = {
+    border = 'single',
     -- If you have a Nerd Font, set icons to an empty table which will use the
     -- default lazy.nvim defined Nerd Font icons otherwise define a unicode icons table
     icons = vim.g.have_nerd_font and {} or {
