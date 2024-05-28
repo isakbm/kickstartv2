@@ -912,6 +912,21 @@ require('lazy').setup({
       -- NOTE:, we seemed unable to set this option using opts and had to do it in setup for some reason.
       vim.api.nvim_set_hl(0, 'DiffviewDiffDeleteDim', { fg = '#440000' })
 
+      -- Reduce brightness of some backgrounds on some highlight groups
+      do
+        -- reduce it for diffview
+        local groups = { 'DiffChange', 'DiffAdd', 'DiffDelete' }
+
+        -- reduce it for forlded regions
+        table.insert(groups, 'Folded')
+
+        for _, name in pairs(groups) do
+          local g = vim.api.nvim_get_hl(0, { name = name })
+          g.bg = '#202020' -- light grey
+          vim.api.nvim_set_hl(0, name, g)
+        end
+      end
+
       do
         -- here we set some backgrounds to transparent ...
         -- it's just a fun little test we're doing ^ ^
