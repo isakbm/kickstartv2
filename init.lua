@@ -899,6 +899,79 @@ require('lazy').setup({
     'folke/tokyonight.nvim',
     priority = 1000, -- make sure to load this before all the other start plugins
     -- opts = { transparent = true },
+    opts = {
+      -- TODO: add function args ... see docs
+      on_colors = function(colors)
+        colors.black = '#000000'
+      end,
+      on_highlights = function(hl, colors)
+        hl.TodoBgFIX = {
+          bg = colors.error,
+          fg = colors.black,
+        }
+        hl.DiffAdd = {
+          bg = colors.diff.add,
+        }
+        hl.DiffChange = {
+          bg = colors.diff.add,
+        }
+        hl.DiffText = {
+          bg = colors.delta.delete,
+        }
+        hl.Folded = { 
+          bg = "none",
+          fg = colors.magenta2,
+        }
+        hl.GitSignsAdd = {
+          fg = colors.hint,
+        }
+        -- FIXME: hello
+        --
+        -- hack to get a list of all the colors without bloat
+        -- ... to show the list type AAAA in the search bar of :Telescope highlights
+        local ccolors = {}
+        for k, v in pairs(colors) do
+          if type(v) == 'table' then
+            for kk, vv in pairs(v) do
+           ccolors[k .. "." .. kk] = vv
+            end
+          else
+           ccolors[k] = v
+          end
+        end
+
+        local ucolors = {}
+        for k, v in pairs(ccolors) do
+           for kk, cc in pairs(ucolors) do
+            if v == cc then
+              print("collision: " .. k .. " <> " .. kk)
+              goto continue -- already have it -> continue
+            end
+          end
+              ucolors[k] = v -- dont have it --> add it
+            ::continue::
+        end
+
+        local n = 0
+        for name, color in pairs(ucolors) do
+          if type(color) == 'table' then
+            print ("skipping: " .. name .. vim.inspect(color))
+            goto continue
+          end
+          n = n + 1
+          hl['bg_' .. n ..'_________' .. name] = {
+            bg = color,
+            fg = '#000000',
+          }
+          hl['fg_' .. n .. '_________' .. name] = {
+            fg = color,
+            bg = '#000000',
+          }
+          ::continue::
+        end
+      end,
+    },
+
     init = function()
       -- Load the colorscheme here.
       -- Like many other themes, this one has different styles, and you could load
@@ -911,21 +984,6 @@ require('lazy').setup({
       -- Set style of deletion filler sections, must enable `enhanced_diff_hl` in diffview opts
       -- NOTE:, we seemed unable to set this option using opts and had to do it in setup for some reason.
       vim.api.nvim_set_hl(0, 'DiffviewDiffDeleteDim', { fg = '#440000' })
-
-      -- Reduce brightness of some backgrounds on some highlight groups
-      do
-        -- reduce it for diffview
-        local groups = { 'DiffChange', 'DiffAdd', 'DiffDelete' }
-
-        -- reduce it for forlded regions
-        table.insert(groups, 'Folded')
-
-        for _, name in pairs(groups) do
-          local g = vim.api.nvim_get_hl(0, { name = name })
-          g.bg = '#202020' -- light grey
-          vim.api.nvim_set_hl(0, name, g)
-        end
-      end
 
       do
         -- here we set some backgrounds to transparent ...
