@@ -104,6 +104,10 @@
        would be nice to only show file path, because the start of code
        obscures long file paths.
 
+    >> when doing an action using `fugitive` like `:Git checkout -b foo`
+       it would be ideal if any open `flog` buffer would update so
+       that we can see the effect the command had on the graph!
+
 =================================================================--]]
 
 -- NOTE: :help localleader
@@ -129,6 +133,7 @@ vim.opt.breakindent = true -- Enable break indent
 vim.opt.undofile = true -- Save undo history
 vim.opt.ignorecase = true -- case insensitive search
 vim.opt.smartcase = true -- ... actually lets make it sensitive if an upper case is involved
+-- vim.opt.smartindent = true -- ... smart indentation --- need to figure out what to do, want vscode like auto indenting when opening a function or { ... local foo = function() <cr> does not indend body of function in lua for instance
 vim.opt.signcolumn = 'yes' -- Keep signcolumn on by default
 vim.opt.splitright = true -- Configure how new splits should be opened
 vim.opt.splitbelow = true
@@ -146,6 +151,8 @@ vim.opt.hlsearch = true -- Set highlight on search, but clear on pressing <Esc> 
 -- NOTE: hide higlights after hitting <Esc>
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
+vim.keymap.set('n', '<leader>W', ':w<CR>', { desc = 'write buffer' }) -- Easier way to write buffer
+vim.keymap.set('n', '<leader>Q', ':q<CR>', { desc = 'write buffer' }) -- Easier way to quit buffer
 -- NOTE: swap lines like in vscode
 --
 --   we've bound <M-*> so the `Alt` or `Modifier` key, however, see :h :map-alt and you'll notice that
@@ -283,6 +290,22 @@ require('lazy').setup({
 
   -- "gc" to comment visual regions/lines
   { 'numToStr/Comment.nvim', opts = {} },
+
+  {
+    'folke/trouble.nvim',
+    dependencies = { 'nvim-tree/nvim-web-devicons' },
+    opts = {
+      -- your configuration comes here
+      -- or leave it empty to use the default settings
+      -- refer to the configuration section below
+    },
+    config = function(opts)
+      require('trouble').setup(opts)
+      vim.keymap.set('n', '<leader>n', function()
+        require('trouble').next { skip_groups = true, jump = true }
+      end, { desc = 'goto next trouble' })
+    end,
+  },
 
   -- NOTE: Plugins can also be configured to run lua code when they are loaded.
   --
@@ -700,7 +723,7 @@ require('lazy').setup({
         --    https://github.com/pmizio/typescript-tools.nvim
         --
         -- But for many setups, the LSP (`tsserver`) will work just fine
-        tsserver = {},
+        -- tsserver = {},
         --
 
         lua_ls = {
@@ -753,6 +776,19 @@ require('lazy').setup({
         },
       }
     end,
+  },
+
+  -- {
+  --   'pmizio/typescript-tools.nvim',
+  --   dependencies = { 'nvim-lua/plenary.nvim', 'neovim/nvim-lspconfig' },
+  --   opts = {},
+  -- },
+  --
+  {
+    'dmmulroy/tsc.nvim',
+    opts = {
+      use_trouble_qflist = true,
+    },
   },
 
   { -- Autoformat
@@ -898,7 +934,6 @@ require('lazy').setup({
     -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`
     'folke/tokyonight.nvim',
     priority = 1000, -- make sure to load this before all the other start plugins
-    -- opts = { transparent = true },
     opts = {
       -- TODO: add function args ... see docs
       on_colors = function(colors)
@@ -918,48 +953,47 @@ require('lazy').setup({
         hl.DiffText = {
           bg = colors.delta.delete,
         }
-        hl.Folded = { 
-          bg = "none",
+        hl.Folded = {
+          bg = 'none',
           fg = colors.magenta2,
         }
         hl.GitSignsAdd = {
           fg = colors.hint,
         }
-        -- FIXME: hello
-        --
         -- hack to get a list of all the colors without bloat
-        -- ... to show the list type AAAA in the search bar of :Telescope highlights
+        -- ... to show the list type fg_____ or bg_____ in the search bar of :Telescope highlights
         local ccolors = {}
         for k, v in pairs(colors) do
           if type(v) == 'table' then
             for kk, vv in pairs(v) do
-           ccolors[k .. "." .. kk] = vv
+              ccolors[k .. '.' .. kk] = vv
             end
           else
-           ccolors[k] = v
+            ccolors[k] = v
           end
         end
 
         local ucolors = {}
         for k, v in pairs(ccolors) do
-           for kk, cc in pairs(ucolors) do
+          for _, cc in pairs(ucolors) do
             if v == cc then
-              print("collision: " .. k .. " <> " .. kk)
-              goto continue -- already have it -> continue
+              -- print('collision: ' .. k .. ' <> ' .. kk)
+              goto continue
             end
           end
-              ucolors[k] = v -- dont have it --> add it
-            ::continue::
+          ucolors[k] = v
+          local _ -- dummy local that gets around stylua lua52 issue
+          ::continue::
         end
 
         local n = 0
         for name, color in pairs(ucolors) do
           if type(color) == 'table' then
-            print ("skipping: " .. name .. vim.inspect(color))
+            -- print('skipping: ' .. name .. vim.inspect(color))
             goto continue
           end
           n = n + 1
-          hl['bg_' .. n ..'_________' .. name] = {
+          hl['bg_' .. n .. '_________' .. name] = {
             bg = color,
             fg = '#000000',
           }
@@ -967,6 +1001,7 @@ require('lazy').setup({
             fg = color,
             bg = '#000000',
           }
+          local _ -- dummy local that gets around stylua lua52 issue
           ::continue::
         end
       end,
@@ -1092,7 +1127,7 @@ require('lazy').setup({
     'nvim-treesitter/nvim-treesitter',
     build = ':TSUpdate',
     opts = {
-      ensure_installed = { 'bash', 'c', 'html', 'lua', 'markdown', 'vim', 'vimdoc', 'javascript' },
+      ensure_installed = { 'bash', 'c', 'rust', 'typescript', 'html', 'lua', 'markdown', 'vim', 'vimdoc', 'javascript' },
       -- Autoinstall languages that are not installed
       auto_install = true,
       highlight = {
@@ -1117,6 +1152,14 @@ require('lazy').setup({
     config = function(_, opts)
       ---@diagnostic disable-next-line: missing-fields
       require('nvim-treesitter.configs').setup(opts)
+
+      -- testing treesitter nodes ...
+      vim.keymap.set('n', '<leader>J', function()
+        local node = vim.treesitter.get_node()
+        if node then
+          print('node type is: ' .. node:type())
+        end
+      end)
 
       vim.keymap.set('n', '<C- >', function()
         local id = vim.api.nvim_create_buf(true, true)
