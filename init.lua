@@ -758,6 +758,12 @@ require('lazy').setup({
       -- for you, so that they are available from within Neovim.
       local ensure_installed = vim.tbl_keys(servers or {})
       vim.list_extend(ensure_installed, {
+        -- NOTE: At the time of writing stylua that comes with Mason does not support lua52
+        --       this can cause issues with goto statements not getting auto formatted correctly
+        --       by formatters like conform.nvim. To get around this simply do (assuming you have rust / cargo)
+        --       1. cargo install stylua --features lua52.
+        --       2. go to the directory of your mason plugins, should be somewhere like ~/.local/share/nvim/mason
+        --       3. inside mason/packages/stylua delete or rename stylua to old_stylua, now the stylua you installed will be used instead
         'stylua', -- Used to format lua code
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
@@ -982,7 +988,6 @@ require('lazy').setup({
             end
           end
           ucolors[k] = v
-          local _ -- dummy local that gets around stylua lua52 issue
           ::continue::
         end
 
@@ -1001,7 +1006,6 @@ require('lazy').setup({
             fg = color,
             bg = '#000000',
           }
-          local _ -- dummy local that gets around stylua lua52 issue
           ::continue::
         end
       end,
