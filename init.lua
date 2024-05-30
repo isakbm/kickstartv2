@@ -574,6 +574,25 @@ require('lazy').setup({
     end,
   },
 
+  {
+    -- NOTE: we currently only use this for typescript projects, see on_attach for tsserver further down
+    'artemave/workspace-diagnostics.nvim',
+    config = function()
+      require('workspace-diagnostics').setup {
+        workspace_files = function()
+          -- TODO: find better way to guess project root .. see documentation of root_dir for tsserver etc
+          local root_dir = vim.fn.systemlist('git rev-parse --show-toplevel')[1]
+          -- TODO: filter out directories or files that we don't want?
+          -- print('git path: ' .. vim.inspect(root_dir))
+          local workspace_files = vim.fn.split(vim.fn.system('git ls-files ' .. root_dir), '\n')
+          -- print 'workspace files ... '
+          -- print(vim.inspect(workspace_files))
+          return workspace_files
+        end,
+      }
+    end,
+  },
+
   { -- LSP Configuration & Plugins
     'neovim/nvim-lspconfig',
     dependencies = {
@@ -777,6 +796,14 @@ require('lazy').setup({
             -- by the server configuration above. Useful when disabling
             -- certain features of an LSP (for example, turning off formatting for tsserver)
             server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
+
+            if server_name == 'tsserver' then
+              server.on_attach = function(client, buffer)
+                print(server_name .. ' is attaching to buffer ' .. buffer)
+                require('workspace-diagnostics').populate_workspace_diagnostics(client, buffer)
+              end
+            end
+
             require('lspconfig')[server_name].setup(server)
           end,
         },
