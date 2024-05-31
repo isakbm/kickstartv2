@@ -550,6 +550,9 @@ require('lazy').setup({
 
       -- blame
       vim.keymap.set('n', '<leader>gb', ':Gitsigns toggle_current_line_blame<CR>', { desc = '[G]it [B]lame toggle' })
+
+      -- diff this
+      vim.keymap.set('n', '<leader>dt', ':Gitsigns diffthis<cr>', { desc = 'See changes in the current buffer' })
     end,
   },
 
