@@ -151,8 +151,12 @@ vim.opt.hlsearch = true -- Set highlight on search, but clear on pressing <Esc> 
 -- NOTE: hide higlights after hitting <Esc>
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
-vim.keymap.set('n', '<leader>W', ':w<CR>', { desc = 'write buffer' }) -- Easier way to write buffer
-vim.keymap.set('n', '<leader>Q', ':q<CR>', { desc = 'write buffer' }) -- Easier way to quit buffer
+-- NOTE: these maps are to try to save me some pain with index finger always reaching for : . -  .... not sure what to do about that these maps are probably not sufficient
+vim.keymap.set('n', '<leader>W', ':w<CR>', { desc = ':w -> write buffer' })
+vim.keymap.set('n', '<leader>Q', ':q<CR>', { desc = ':q -> quit buffer' })
+vim.keymap.set('n', '<leader>C', ':', { desc = ': -> command' })
+vim.keymap.set({ 'i', 'n' }, '§', '.', { desc = 'replacement for . key' })
+
 -- NOTE: swap lines like in vscode
 --
 --   we've bound <M-*> so the `Alt` or `Modifier` key, however, see :h :map-alt and you'll notice that
@@ -978,17 +982,19 @@ require('lazy').setup({
           fg = colors.black,
         }
         hl.DiffAdd = {
-          bg = colors.diff.add,
+          bg = colors.diff.change,
         }
         hl.DiffChange = {
-          bg = colors.diff.add,
+          bg = colors.diff.change,
         }
         hl.DiffText = {
-          bg = colors.delta.delete,
+          bg = colors.diff.add,
+          underline = true,
         }
         hl.Folded = {
           bg = 'none',
           fg = colors.magenta2,
+          underline = true,
         }
         hl.GitSignsAdd = {
           fg = colors.hint,
