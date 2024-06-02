@@ -72,7 +72,7 @@
     A: <leader>gl  and then hover some commit and press ';'
 
     Q: how do I see changes introduced by a range of commits, like diff a..b
-    A: <leader>gl  put cursor on b hit enter place cursor on a hit - 
+    A: <leader>gl  put cursor on b hit enter place cursor on a hit -
 
     Q: can I mark places to go to somehow?
     A: use vim marks, see h: marks.nvim and h: mark. also there's a plugin I've added
@@ -83,7 +83,7 @@
        - dmx -> delete mark x
        - mx -> create mark x
 
-  TODO: 
+  TODO:
 
     >> Figure out how to get better suggestions for autocomplete of
        function args.
@@ -111,8 +111,8 @@
 =================================================================--]]
 
 -- NOTE: :help localleader
-vim.g.mapleader = ' ' -- Set <space> as the leader key
-vim.g.maplocalleader = ' ' --- Set <space> as the local leader key
+vim.g.mapleader = ' '       -- Set <space> as the leader key
+vim.g.maplocalleader = ' '  --- Set <space> as the local leader key
 vim.g.have_nerd_font = true -- Set to true if you have a Nerd Font installed
 
 -- NOTE::help option-list
@@ -120,29 +120,29 @@ vim.g.have_nerd_font = true -- Set to true if you have a Nerd Font installed
 -- Sync clipboard between OS and Neovim.
 -- Remove this option if you want your OS clipboard to remain independent.
 vim.opt.clipboard = 'unnamedplus' --  See `:help 'clipboard'`
-vim.opt.updatetime = 250 -- Decrease update time
-vim.opt.timeoutlen = 300 -- Decrease mapped sequence wait time : Displays which-key popup sooner
+vim.opt.updatetime = 250          -- Decrease update time
+vim.opt.timeoutlen = 300          -- Decrease mapped sequence wait time : Displays which-key popup sooner
 vim.opt.number = true
 vim.opt.relativenumber = true
-vim.opt.termguicolors = true -- yes use tempr gui colors
-vim.opt.wrap = false -- don't wrap lines
+vim.opt.termguicolors = true            -- yes use tempr gui colors
+vim.opt.wrap = false                    -- don't wrap lines
 vim.opt.fillchars:append { diff = '/' } -- fillchars for diffview?
-vim.opt.mouse = 'a' -- Enable mouse mode, can be useful for resizing splits for example!
-vim.opt.showmode = false -- Don't show the mode, since it's already in status line
-vim.opt.breakindent = true -- Enable break indent
-vim.opt.undofile = true -- Save undo history
-vim.opt.ignorecase = true -- case insensitive search
-vim.opt.smartcase = true -- ... actually lets make it sensitive if an upper case is involved
+vim.opt.mouse = 'a'                     -- Enable mouse mode, can be useful for resizing splits for example!
+vim.opt.showmode = false                -- Don't show the mode, since it's already in status line
+vim.opt.breakindent = true              -- Enable break indent
+vim.opt.undofile = true                 -- Save undo history
+vim.opt.ignorecase = true               -- case insensitive search
+vim.opt.smartcase = true                -- ... actually lets make it sensitive if an upper case is involved
 -- vim.opt.smartindent = true -- ... smart indentation --- need to figure out what to do, want vscode like auto indenting when opening a function or { ... local foo = function() <cr> does not indend body of function in lua for instance
-vim.opt.signcolumn = 'yes' -- Keep signcolumn on by default
-vim.opt.splitright = true -- Configure how new splits should be opened
+vim.opt.signcolumn = 'yes'              -- Keep signcolumn on by default
+vim.opt.splitright = true               -- Configure how new splits should be opened
 vim.opt.splitbelow = true
-vim.opt.list = true -- Sets how neovim will display certain whitespace in the editor.
+vim.opt.list = true                     -- Sets how neovim will display certain whitespace in the editor.
 vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
-vim.opt.inccommand = 'split' -- Preview substitutions live, as you type!
+vim.opt.inccommand = 'split'            -- Preview substitutions live, as you type!
 -- vim.opt.cursorline = true -- Show which line your cursor is on
-vim.opt.scrolloff = 10 -- Minimal number of screen lines to keep above and below the cursor.
-vim.opt.hlsearch = true -- Set highlight on search, but clear on pressing <Esc> in normal mode
+vim.opt.scrolloff = 10                  -- Minimal number of screen lines to keep above and below the cursor.
+vim.opt.hlsearch = true                 -- Set highlight on search, but clear on pressing <Esc> in normal mode
 
 --=========================== KEYMAPS =============================
 --
@@ -295,21 +295,24 @@ require('lazy').setup({
   -- "gc" to comment visual regions/lines
   { 'numToStr/Comment.nvim', opts = {} },
 
-  {
-    'folke/trouble.nvim',
-    dependencies = { 'nvim-tree/nvim-web-devicons' },
-    opts = {
-      -- your configuration comes here
-      -- or leave it empty to use the default settings
-      -- refer to the configuration section below
-    },
-    config = function(opts)
-      require('trouble').setup(opts)
-      vim.keymap.set('n', '<leader>n', function()
-        require('trouble').next { skip_groups = true, jump = true }
-      end, { desc = 'goto next trouble' })
-    end,
-  },
+  -- {
+  --   'folke/trouble.nvim',
+  --   dependencies = { 'nvim-tree/nvim-web-devicons' },
+  --   opts = {
+  --     -- your configuration comes here
+  --     -- or leave it empty to use the default settings
+  --     -- refer to the configuration section below
+  --   },
+  --   init = function()
+  --     vim.keymap.set('n', '<leader>n', ':Trouble diagnostics next <cr>')
+  --   end
+  --   -- config = function(opts)
+  --   -- require('trouble').setup(opts)
+  --   -- vim.keymap.set('n', '<leader>n', function()
+  --   -- require('trouble').next { skip_groups = true, jump = true }
+  --   -- end, { desc = 'goto next trouble' })
+  --   -- end,
+  -- },
 
   -- NOTE: Plugins can also be configured to run lua code when they are loaded.
   --
@@ -326,7 +329,7 @@ require('lazy').setup({
   -- after the plugin has been loaded:
   --  config = function() ... end
 
-  { -- Useful plugin to show you pending keybinds.
+  {                     -- Useful plugin to show you pending keybinds.
     'folke/which-key.nvim',
     event = 'VimEnter', -- Sets the loading event to 'VimEnter'
     config = function() -- This is the function that runs, AFTER loading
@@ -374,7 +377,7 @@ require('lazy').setup({
       { 'nvim-telescope/telescope-ui-select.nvim' },
 
       -- Useful for getting pretty icons, but requires a Nerd Font.
-      { 'nvim-tree/nvim-web-devicons', enabled = vim.g.have_nerd_font },
+      { 'nvim-tree/nvim-web-devicons',            enabled = vim.g.have_nerd_font },
     },
     config = function()
       -- Telescope is a fuzzy finder that comes with a lot of different things that
@@ -818,19 +821,6 @@ require('lazy').setup({
     end,
   },
 
-  -- {
-  --   'pmizio/typescript-tools.nvim',
-  --   dependencies = { 'nvim-lua/plenary.nvim', 'neovim/nvim-lspconfig' },
-  --   opts = {},
-  -- },
-  --
-  {
-    'dmmulroy/tsc.nvim',
-    opts = {
-      use_trouble_qflist = true,
-    },
-  },
-
   { -- Autoformat
     'stevearc/conform.nvim',
     opts = {
@@ -896,6 +886,7 @@ require('lazy').setup({
       --  into multiple repos for maintenance purposes.
       'hrsh7th/cmp-nvim-lsp',
       'hrsh7th/cmp-path',
+      'hrsh7th/cmp-nvim-lsp-signature-help',
     },
     config = function()
       -- See `:help cmp`
@@ -960,6 +951,7 @@ require('lazy').setup({
         },
         sources = {
           { name = 'nvim_lsp' },
+          { name = 'nvim_lsp_signature_help' },
           { name = 'luasnip' },
           { name = 'path' },
         },
@@ -1002,6 +994,45 @@ require('lazy').setup({
         hl.GitSignsAdd = {
           fg = colors.hint,
         }
+
+        hl.DiffviewDiffDeleteDim = { fg = colors.diff.delete }
+
+        hl.Comment.style.italic = false
+
+        do
+          -- here we set some backgrounds to transparent ...
+          -- it's just a fun little test we're doing ^ ^
+          local groups = {
+            'Normal',
+            'NormalNC',
+            --
+            'NormalFloat',
+            'FloatBorder',
+            'WhichKeyFloat',
+            --
+            'SignColumn',
+            --
+            'TelescopeNormal',
+            'TelescopeBorder',
+            'TelescopePromptBorder',
+            'TelescopePromptTitle',
+            --
+            'NotifyBackground',
+            'NotifyINFOBody',
+          }
+          for _, group in pairs(groups) do
+            local g = hl[group]
+
+            if g then
+              if g.bg then
+                print("GROUO: " .. group .. " has bg")
+              end
+              g.bg = nil
+            end
+          end
+        end
+
+
         -- hack to get a list of all the colors without bloat
         -- ... to show the list type fg_____ or bg_____ in the search bar of :Telescope highlights
         local ccolors = {}
@@ -1054,55 +1085,7 @@ require('lazy').setup({
       vim.cmd.colorscheme 'tokyonight-night'
 
       -- You can configure highlights by doing something like
-      vim.cmd.hi 'Comment gui=none'
-
-      -- Set style of deletion filler sections, must enable `enhanced_diff_hl` in diffview opts
-      -- NOTE:, we seemed unable to set this option using opts and had to do it in setup for some reason.
-      vim.api.nvim_set_hl(0, 'DiffviewDiffDeleteDim', { fg = '#440000' })
-
-      do
-        -- here we set some backgrounds to transparent ...
-        -- it's just a fun little test we're doing ^ ^
-        local groups = {
-          -- these two turn the background to transparent for normal buffer
-          'Normal',
-          'NormalNC',
-          -- 'NonText',
-          --
-          -- these three groups turn the background to transparent for the which key popup
-          'NormalFloat',
-          'FloatBorder',
-          --
-          'SignColumn',
-          --
-          'WhichKeyFloat',
-          'WhichKey',
-          --
-          'TelescopeNormal',
-          'TelescopeBorder',
-          'TelescopePromptBorder',
-          'TelescopePromptTitle',
-          --
-          'NotifyBackground',
-          'LazyProgress',
-          'LazyTodo',
-
-          'NotifyINFOBody',
-          'NvimFloat',
-          -- 'LspFloatWinNormal',
-          -- 'StatusLine',
-          -- 'StatusLineNC',
-          -- 'EndOfBuffer',
-        }
-
-        -- require('fidget').notify('hello world',
-
-        for _, group in pairs(groups) do
-          local hlg = vim.api.nvim_get_hl(0, { name = group })
-          hlg.bg = 'none'
-          vim.api.nvim_set_hl(0, group, hlg)
-        end
-      end
+      -- vim.cmd.hi 'Comment gui=none'
     end,
   },
 
