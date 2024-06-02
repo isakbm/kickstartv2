@@ -995,9 +995,13 @@ require('lazy').setup({
           fg = colors.hint,
         }
 
+        hl.TreesitterContext.bg = nil
+        -- hl.TreesitterContextSeparator = { fg = colors.magenta2 }
+
         hl.DiffviewDiffDeleteDim = { fg = colors.diff.delete }
 
         hl.Comment.style.italic = false
+
 
         do
           -- here we set some backgrounds to transparent ...
@@ -1022,11 +1026,7 @@ require('lazy').setup({
           }
           for _, group in pairs(groups) do
             local g = hl[group]
-
             if g then
-              if g.bg then
-                print("GROUO: " .. group .. " has bg")
-              end
               g.bg = nil
             end
           end
@@ -1138,6 +1138,7 @@ require('lazy').setup({
     'nvim-treesitter/nvim-treesitter-context',
     opts = {
       multiline_threshold = 1,
+      separator = '─',
     },
     init = function()
       vim.keymap.set('n', '[c', function()
