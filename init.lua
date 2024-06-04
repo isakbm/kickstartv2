@@ -647,14 +647,6 @@ require('lazy').setup({
       --    That is to say, every time a new file is opened that is associated with
       --    an lsp (for example, opening `main.rs` is associated with `rust_analyzer`) this
       --    function will be executed to configure the current buffer
-      vim.api.nvim_create_autocmd('LspProgress', {
-        group = vim.api.nvim_create_augroup('kickstart-lsp-progress', { clear = true }),
-        callback = function(event)
-          -- TODO: can we use this somehow when loading typescript workspace diagnostics?
-          -- print 'progress !!!!'
-        end,
-      })
-
       vim.api.nvim_create_autocmd('LspAttach', {
         group = vim.api.nvim_create_augroup('kickstart-lsp-attach', { clear = true }),
         callback = function(event)
@@ -730,17 +722,25 @@ require('lazy').setup({
           end
 
           if client and client.name == 'tsserver' then
-            local buffer = vim.api.nvim_get_current_buf()
-            require('fidget').notify('starting diagnostics ...' .. ' name: ' .. client.name, '@comment.error', { annote = 'DIAG' })
-            require('fidget').notify('starting diagnostics ...' .. ' buf: ' .. buffer, '@comment.error', { annote = 'DIAG' })
-            require('workspace-diagnostics').populate_workspace_diagnostics(client, buffer)
-            require('fidget').notify('completed diagnostics ...', '@comment.error', { annote = 'DIAG' })
+            if vim.g.tsserver_loaded_workspace then
+            -- do nothing
+            else
+              local buffer = vim.api.nvim_get_current_buf()
+              require('fidget').notify(client.id .. 'starting diagnostics ...' .. ' name: ' .. client.name, '@comment.error', { annote = 'DIAG' })
+              require('fidget').notify(client.id .. 'starting diagnostics ...' .. ' buf: ' .. buffer, '@comment.error', { annote = 'DIAG' })
+              require('workspace-diagnostics').populate_workspace_diagnostics(client, buffer)
+              require('fidget').notify(client.id .. 'completed diagnostics ...', '@comment.error', { annote = 'DIAG' })
+              vim.g.tsserver_loaded_workspace = true
+            end
           end
 
-          vim.lsp.handlers['textDocument/publishDiagnostics'] = vim.lsp.with(function(err, res)
+          -- wraps normal diagnostics callback so we can get some extra information
+          -- useful to tell whether or not we are still loading workspace
+          vim.lsp.handlers['textDocument/publishDiagnostics'] = function(err, res, ctx)
             local uri = res.uri
             require('fidget').notify('-> ', '@comment.error', { key = 'diagnostic', annote = uri })
-          end, {})
+            vim.lsp.diagnostic.on_publish_diagnostics(err, res, ctx)
+          end
 
           -- Lets give the hover information stuff a bit more style
           vim.lsp.handlers['textDocument/hover'] = vim.lsp.with(vim.lsp.handlers.hover, {
