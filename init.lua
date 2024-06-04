@@ -111,8 +111,8 @@
 =================================================================--]]
 
 -- NOTE: :help localleader
-vim.g.mapleader = ' '       -- Set <space> as the leader key
-vim.g.maplocalleader = ' '  --- Set <space> as the local leader key
+vim.g.mapleader = ' ' -- Set <space> as the leader key
+vim.g.maplocalleader = ' ' --- Set <space> as the local leader key
 vim.g.have_nerd_font = true -- Set to true if you have a Nerd Font installed
 
 -- NOTE::help option-list
@@ -120,29 +120,29 @@ vim.g.have_nerd_font = true -- Set to true if you have a Nerd Font installed
 -- Sync clipboard between OS and Neovim.
 -- Remove this option if you want your OS clipboard to remain independent.
 vim.opt.clipboard = 'unnamedplus' --  See `:help 'clipboard'`
-vim.opt.updatetime = 250          -- Decrease update time
-vim.opt.timeoutlen = 300          -- Decrease mapped sequence wait time : Displays which-key popup sooner
+vim.opt.updatetime = 250 -- Decrease update time
+vim.opt.timeoutlen = 300 -- Decrease mapped sequence wait time : Displays which-key popup sooner
 vim.opt.number = true
 vim.opt.relativenumber = true
-vim.opt.termguicolors = true            -- yes use tempr gui colors
-vim.opt.wrap = false                    -- don't wrap lines
+vim.opt.termguicolors = true -- yes use tempr gui colors
+vim.opt.wrap = false -- don't wrap lines
 vim.opt.fillchars:append { diff = '/' } -- fillchars for diffview?
-vim.opt.mouse = 'a'                     -- Enable mouse mode, can be useful for resizing splits for example!
-vim.opt.showmode = false                -- Don't show the mode, since it's already in status line
-vim.opt.breakindent = true              -- Enable break indent
-vim.opt.undofile = true                 -- Save undo history
-vim.opt.ignorecase = true               -- case insensitive search
-vim.opt.smartcase = true                -- ... actually lets make it sensitive if an upper case is involved
+vim.opt.mouse = 'a' -- Enable mouse mode, can be useful for resizing splits for example!
+vim.opt.showmode = false -- Don't show the mode, since it's already in status line
+vim.opt.breakindent = true -- Enable break indent
+vim.opt.undofile = true -- Save undo history
+vim.opt.ignorecase = true -- case insensitive search
+vim.opt.smartcase = true -- ... actually lets make it sensitive if an upper case is involved
 -- vim.opt.smartindent = true -- ... smart indentation --- need to figure out what to do, want vscode like auto indenting when opening a function or { ... local foo = function() <cr> does not indend body of function in lua for instance
-vim.opt.signcolumn = 'yes'              -- Keep signcolumn on by default
-vim.opt.splitright = true               -- Configure how new splits should be opened
+vim.opt.signcolumn = 'yes' -- Keep signcolumn on by default
+vim.opt.splitright = true -- Configure how new splits should be opened
 vim.opt.splitbelow = true
-vim.opt.list = true                     -- Sets how neovim will display certain whitespace in the editor.
+vim.opt.list = true -- Sets how neovim will display certain whitespace in the editor.
 vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
-vim.opt.inccommand = 'split'            -- Preview substitutions live, as you type!
+vim.opt.inccommand = 'split' -- Preview substitutions live, as you type!
 -- vim.opt.cursorline = true -- Show which line your cursor is on
-vim.opt.scrolloff = 10                  -- Minimal number of screen lines to keep above and below the cursor.
-vim.opt.hlsearch = true                 -- Set highlight on search, but clear on pressing <Esc> in normal mode
+vim.opt.scrolloff = 10 -- Minimal number of screen lines to keep above and below the cursor.
+vim.opt.hlsearch = true -- Set highlight on search, but clear on pressing <Esc> in normal mode
 
 --=========================== KEYMAPS =============================
 --
@@ -295,24 +295,24 @@ require('lazy').setup({
   -- "gc" to comment visual regions/lines
   { 'numToStr/Comment.nvim', opts = {} },
 
-  -- {
-  --   'folke/trouble.nvim',
-  --   dependencies = { 'nvim-tree/nvim-web-devicons' },
-  --   opts = {
-  --     -- your configuration comes here
-  --     -- or leave it empty to use the default settings
-  --     -- refer to the configuration section below
-  --   },
-  --   init = function()
-  --     vim.keymap.set('n', '<leader>n', ':Trouble diagnostics next <cr>')
-  --   end
-  --   -- config = function(opts)
-  --   -- require('trouble').setup(opts)
-  --   -- vim.keymap.set('n', '<leader>n', function()
-  --   -- require('trouble').next { skip_groups = true, jump = true }
-  --   -- end, { desc = 'goto next trouble' })
-  --   -- end,
-  -- },
+  {
+    'folke/trouble.nvim',
+    dependencies = { 'nvim-tree/nvim-web-devicons' },
+    opts = {
+      -- your configuration comes here
+      -- or leave it empty to use the default settings
+      -- refer to the configuration section below
+    },
+    init = function()
+      vim.keymap.set('n', '<leader>n', ':Trouble diagnostics next <cr>')
+    end,
+    -- config = function(opts)
+    -- require('trouble').setup(opts)
+    -- vim.keymap.set('n', '<leader>n', function()
+    -- require('trouble').next { skip_groups = true, jump = true }
+    -- end, { desc = 'goto next trouble' })
+    -- end,
+  },
 
   -- NOTE: Plugins can also be configured to run lua code when they are loaded.
   --
@@ -329,7 +329,7 @@ require('lazy').setup({
   -- after the plugin has been loaded:
   --  config = function() ... end
 
-  {                     -- Useful plugin to show you pending keybinds.
+  { -- Useful plugin to show you pending keybinds.
     'folke/which-key.nvim',
     event = 'VimEnter', -- Sets the loading event to 'VimEnter'
     config = function() -- This is the function that runs, AFTER loading
@@ -377,7 +377,7 @@ require('lazy').setup({
       { 'nvim-telescope/telescope-ui-select.nvim' },
 
       -- Useful for getting pretty icons, but requires a Nerd Font.
-      { 'nvim-tree/nvim-web-devicons',            enabled = vim.g.have_nerd_font },
+      { 'nvim-tree/nvim-web-devicons', enabled = vim.g.have_nerd_font },
     },
     config = function()
       -- Telescope is a fuzzy finder that comes with a lot of different things that
@@ -590,13 +590,17 @@ require('lazy').setup({
     config = function()
       require('workspace-diagnostics').setup {
         workspace_files = function()
+          -- require('fidget').notify('hello world', '@comment.error', { annote = 'LOADING DIAGNOSTICS' })
           -- TODO: find better way to guess project root .. see documentation of root_dir for tsserver etc
           local root_dir = vim.fn.systemlist('git rev-parse --show-toplevel')[1]
           -- TODO: filter out directories or files that we don't want?
           -- print('git path: ' .. vim.inspect(root_dir))
-          local workspace_files = vim.fn.split(vim.fn.system('git ls-files ' .. root_dir), '\n')
+          -- local workspace_files = vim.fn.split(vim.fn.system('git ls-files ' .. root_dir), '\n')
+          local workspace_files = vim.fn.split(vim.fn.system('git ls-files ' .. root_dir .. [[ | grep -E "\.(ts|tsx|js|jsx|json|mjs|mts|cjs|cts)$"]]), '\n')
           -- print 'workspace files ... '
           -- print(vim.inspect(workspace_files))
+          -- local num = #workspace_files
+          -- print('we got ' .. num .. ' workspace files')
           return workspace_files
         end,
       }
@@ -643,6 +647,14 @@ require('lazy').setup({
       --    That is to say, every time a new file is opened that is associated with
       --    an lsp (for example, opening `main.rs` is associated with `rust_analyzer`) this
       --    function will be executed to configure the current buffer
+      vim.api.nvim_create_autocmd('LspProgress', {
+        group = vim.api.nvim_create_augroup('kickstart-lsp-progress', { clear = true }),
+        callback = function(event)
+          -- TODO: can we use this somehow when loading typescript workspace diagnostics?
+          -- print 'progress !!!!'
+        end,
+      })
+
       vim.api.nvim_create_autocmd('LspAttach', {
         group = vim.api.nvim_create_augroup('kickstart-lsp-attach', { clear = true }),
         callback = function(event)
@@ -715,6 +727,19 @@ require('lazy').setup({
             })
           end
 
+          if client and client.name == 'tsserver' then
+            local buffer = vim.api.nvim_get_current_buf()
+            require('fidget').notify('starting diagnostics ...' .. ' name: ' .. client.name, '@comment.error', { annote = 'DIAG' })
+            require('fidget').notify('starting diagnostics ...' .. ' buf: ' .. buffer, '@comment.error', { annote = 'DIAG' })
+            require('workspace-diagnostics').populate_workspace_diagnostics(client, buffer)
+            require('fidget').notify('completed diagnostics ...', '@comment.error', { annote = 'DIAG' })
+          end
+
+          vim.lsp.handlers['textDocument/publishDiagnostics'] = vim.lsp.with(function(err, res)
+            local uri = res.uri
+            require('fidget').notify('-> ', '@comment.error', { key = 'diagnostic', annote = uri })
+          end, {})
+
           -- Lets give the hover information stuff a bit more style
           vim.lsp.handlers['textDocument/hover'] = vim.lsp.with(vim.lsp.handlers.hover, {
             -- Use a sharp border with `FloatBorder` highlights
@@ -764,6 +789,9 @@ require('lazy').setup({
               completion = {
                 callSnippet = 'Replace',
               },
+              workspace = {
+                checkThirdParty = 'Disable',
+              },
               -- You can toggle below to ignore Lua_LS's noisy `missing-fields` warnings
               -- diagnostics = { disable = { 'missing-fields' } },
             },
@@ -806,13 +834,6 @@ require('lazy').setup({
             -- by the server configuration above. Useful when disabling
             -- certain features of an LSP (for example, turning off formatting for tsserver)
             server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
-
-            if server_name == 'tsserver' then
-              server.on_attach = function(client, buffer)
-                print(server_name .. ' is attaching to buffer ' .. buffer)
-                require('workspace-diagnostics').populate_workspace_diagnostics(client, buffer)
-              end
-            end
 
             require('lspconfig')[server_name].setup(server)
           end,
@@ -1002,8 +1023,8 @@ require('lazy').setup({
 
         hl.Comment.style.italic = false
 
-        hl.MiniStatuslineBranch = { fg = colors.magenta, bg = colors.bg_highlight }  --  bg = colors.magenta }
-        hl.MiniStatuslineChanges = { fg = colors.blue, bg = colors.bg_highlight }    --  bg = colors.blue }
+        hl.MiniStatuslineBranch = { fg = colors.magenta, bg = colors.bg_highlight } --  bg = colors.magenta }
+        hl.MiniStatuslineChanges = { fg = colors.blue, bg = colors.bg_highlight } --  bg = colors.blue }
         hl.MiniStatuslineDiagnostics = { fg = colors.red, bg = colors.bg_highlight } --  bg = colors.red }
 
         do
@@ -1034,7 +1055,6 @@ require('lazy').setup({
             end
           end
         end
-
 
         -- hack to get a list of all the colors without bloat
         -- ... to show the list type fg_____ or bg_____ in the search bar of :Telescope highlights
@@ -1122,37 +1142,39 @@ require('lazy').setup({
         local statusline = require 'mini.statusline'
 
         -- set use_icons to true if you have a Nerd Font
-        statusline.setup({
+        statusline.setup {
           use_icons = vim.g.have_nerd_font,
           content = {
             active = function()
-              local mode, mode_hl = MiniStatusline.section_mode({ trunc_width = 120 })
-              local git           = MiniStatusline.section_git({ trunc_width = 40 })
-              local diff          = MiniStatusline.section_diff({ icon = 'Δ', trunc_width = 75 })
-              local diagnostics   = MiniStatusline.section_diagnostics({ trunc_width = 75 })
-              local lsp           = MiniStatusline.section_lsp({ trunc_width = 75 })
-              local filename      = MiniStatusline.section_filename({ trunc_width = 140 })
-              local fileinfo      = MiniStatusline.section_fileinfo({ trunc_width = 120 })
-              local location      = MiniStatusline.section_location({ trunc_width = 75 })
-              local search        = MiniStatusline.section_searchcount({ trunc_width = 75 })
-              return MiniStatusline.combine_groups({
-                { hl = mode_hl,                     strings = { mode } },
-                { hl = 'MiniStatuslineBranch',      strings = { git } },
-                { hl = 'MiniStatuslineChanges',     strings = { diff } },
+              local mode, mode_hl = MiniStatusline.section_mode { trunc_width = 120 }
+              local git = MiniStatusline.section_git { trunc_width = 40 }
+              local diff = MiniStatusline.section_diff { icon = 'Δ', trunc_width = 75 }
+              local diagnostics = MiniStatusline.section_diagnostics { trunc_width = 75 }
+              local lsp = MiniStatusline.section_lsp { trunc_width = 75 }
+              local filename = MiniStatusline.section_filename { trunc_width = 140 }
+              local fileinfo = MiniStatusline.section_fileinfo { trunc_width = 120 }
+              local location = MiniStatusline.section_location { trunc_width = 75 }
+              local search = MiniStatusline.section_searchcount { trunc_width = 75 }
+              return MiniStatusline.combine_groups {
+                { hl = mode_hl, strings = { mode } },
+                { hl = 'MiniStatuslineBranch', strings = { git } },
+                { hl = 'MiniStatuslineChanges', strings = { diff } },
                 { hl = 'MiniStatuslineDiagnostics', strings = { diagnostics, lsp } },
                 '%<', -- Mark general truncate point
                 { hl = 'MiniStatuslineFilename', strings = { filename } },
                 '%=', -- End left alignment
                 { hl = 'MiniStatuslineFileinfo', strings = { fileinfo } },
-                { hl = mode_hl,                  strings = { search, location } },
-              })
-            end
-          }
-        })
+                { hl = mode_hl, strings = { search, location } },
+              }
+            end,
+          },
+        }
 
         -- always show relative path to file in statusline
         ---@diagnostic disable-next-line: duplicate-set-field
-        statusline.section_filename = function() return '%f%m%r' end
+        statusline.section_filename = function()
+          return '%f%m%r'
+        end
 
         -- You can configure sections in the statusline by overriding their
         -- default behavior. For example, here we set the section for
