@@ -1026,6 +1026,7 @@ require('lazy').setup({
         hl.Comment.style.italic = false
 
         hl.MiniStatuslineBranch = { fg = colors.magenta, bg = colors.bg_highlight } --  bg = colors.magenta }
+        hl.MiniStatuslineWorkspace = { fg = colors.hint, bg = colors.bg_highlight } --  bg = colors.magenta }
         hl.MiniStatuslineChanges = { fg = colors.blue, bg = colors.bg_highlight } --  bg = colors.blue }
         hl.MiniStatuslineDiagnostics = { fg = colors.red, bg = colors.bg_highlight } --  bg = colors.red }
 
@@ -1157,9 +1158,24 @@ require('lazy').setup({
               local fileinfo = MiniStatusline.section_fileinfo { trunc_width = 120 }
               local location = MiniStatusline.section_location { trunc_width = 75 }
               local search = MiniStatusline.section_searchcount { trunc_width = 75 }
+
+              -- get root_dir of the lsp client attached to this buffer
+              local bufnr = vim.api.nvim_get_current_buf()
+              local clients = vim.lsp.get_clients()
+              local client = nil
+              local root_dir = nil
+              for _, c in pairs(clients) do
+                if c.attached_buffers[bufnr] ~= nil then
+                  client = c
+                  root_dir = client.root_dir
+                  break
+                end
+              end
+
               return MiniStatusline.combine_groups {
                 { hl = mode_hl, strings = { mode } },
                 { hl = 'MiniStatuslineBranch', strings = { git } },
+                { hl = 'MiniStatuslineWorkspace', strings = { vim.fs.basename(root_dir) } },
                 { hl = 'MiniStatuslineChanges', strings = { diff } },
                 { hl = 'MiniStatuslineDiagnostics', strings = { diagnostics, lsp } },
                 '%<', -- Mark general truncate point
