@@ -1208,12 +1208,6 @@ require('lazy').setup({
           },
         }
 
-        -- always show relative path to file in statusline
-        ---@diagnostic disable-next-line: duplicate-set-field
-        statusline.section_filename = function()
-          return '%f%m%r'
-        end
-
         -- You can configure sections in the statusline by overriding their
         -- default behavior. For example, here we set the section for
         -- cursor location to LINE:COLUMN
