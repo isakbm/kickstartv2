@@ -1029,6 +1029,8 @@ require('lazy').setup({
         hl.MiniStatuslineWorkspace = { fg = colors.hint, bg = colors.bg_highlight } --  bg = colors.magenta }
         hl.MiniStatuslineChanges = { fg = colors.blue, bg = colors.bg_highlight } --  bg = colors.blue }
         hl.MiniStatuslineDiagnostics = { fg = colors.red, bg = colors.bg_highlight } --  bg = colors.red }
+        hl.MiniStatuslineFilename = { fg = colors.hint, bg = colors.bg_statusline } --  bg = colors.red }
+        hl.MiniStatuslineFilenameUnsaved = { fg = colors.red, bg = colors.bg_statusline } --  bg = colors.red }
 
         do
           -- here we set some backgrounds to transparent ...
@@ -1157,10 +1159,19 @@ require('lazy').setup({
 
               -- local filename = MiniStatusline.section_filename { trunc_width = 140 }
               local filename = vim.fn.expand '%f'
-              if #filename > 24 then
-                local ff = vim.fn.split(filename, '/')
-                if #ff > 3 then
-                  filename = ff[1] .. '/.../' .. ff[#ff - 1] .. '/' .. ff[#ff]
+              local filenam_hl = 'MiniStatuslineFilename'
+              do
+                if #filename > 24 then
+                  local ff = vim.fn.split(filename, '/')
+                  if #ff > 3 then
+                    filename = ff[1] .. '/.../' .. ff[#ff - 1] .. '/' .. ff[#ff]
+                  end
+                end
+
+                local unsaved = vim.api.nvim_get_option_value('modified', { buf = 0 })
+                if unsaved then
+                  filenam_hl = 'MiniStatuslineFilenameUnsaved'
+                  filename = filename .. ' *'
                 end
               end
 
@@ -1188,7 +1199,7 @@ require('lazy').setup({
                 { hl = 'MiniStatuslineChanges', strings = { diff } },
                 { hl = 'MiniStatuslineDiagnostics', strings = { diagnostics, lsp } },
                 '%<', -- Mark general truncate point
-                { hl = 'MiniStatuslineFilename', strings = { filename } },
+                { hl = filenam_hl, strings = { filename } },
                 '%=', -- End left alignment
                 { hl = 'MiniStatuslineFileinfo', strings = { fileinfo } },
                 { hl = mode_hl, strings = { search, location } },
