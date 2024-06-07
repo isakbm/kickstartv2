@@ -145,6 +145,8 @@ vim.opt.cursorline = true -- Show which line your cursor is on
 vim.opt.scrolloff = 10 -- Minimal number of screen lines to keep above and below the cursor.
 vim.opt.hlsearch = true -- Set highlight on search, but clear on pressing <Esc> in normal mode
 
+vim.o.foldcolumn = 'auto'
+
 --=========================== KEYMAPS =============================
 --
 -- The follow keymaps are suppsed to be independet of plugins.
@@ -591,8 +593,9 @@ require('lazy').setup({
               -- this delayed callback is optional
               -- it effectively goes to where you were in the file
               -- and centers on it
-              vim.cmd [[norm '"]]
-              vim.cmd [[norm zz]]
+              -- vim.cmd [[norm '"]]
+              -- vim.cmd [[norm zz]]
+              vim.api.nvim_feedkeys([['"zz]], 'n', false)
             end
           )
           return [[:DiffviewOpen<cr>:nohlsearch<cr><C-w><C-w><C-w><C-w>]]
@@ -1035,14 +1038,21 @@ require('lazy').setup({
           bg = colors.diff.add,
           underline = true,
         }
+
         hl.Folded = {
           bg = 'none',
           fg = colors.magenta2,
           underline = true,
         }
+
         hl.GitSignsAdd = {
           fg = colors.hint,
         }
+        hl.GitSignsChange = {
+          fg = colors.magenta,
+        }
+
+        hl.FoldColumn = hl.LineNr
 
         hl.TreesitterContext.bg = nil
         -- hl.TreesitterContextSeparator = { fg = colors.magenta2 }
