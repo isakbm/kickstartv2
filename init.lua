@@ -140,7 +140,7 @@ vim.opt.splitbelow = true
 vim.opt.list = true -- Sets how neovim will display certain whitespace in the editor.
 vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
 vim.opt.inccommand = 'split' -- Preview substitutions live, as you type!
--- vim.opt.cursorline = true -- Show which line your cursor is on
+vim.opt.cursorline = true -- Show which line your cursor is on
 vim.opt.scrolloff = 10 -- Minimal number of screen lines to keep above and below the cursor.
 vim.opt.hlsearch = true -- Set highlight on search, but clear on pressing <Esc> in normal mode
 
@@ -995,6 +995,8 @@ require('lazy').setup({
         colors.black = '#000000'
       end,
       on_highlights = function(hl, colors)
+        hl.CursorLine.bg = colors.bg_statusline
+
         hl.TodoBgFIX = {
           bg = colors.error,
           fg = colors.black,
