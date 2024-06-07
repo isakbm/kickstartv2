@@ -114,6 +114,7 @@
 vim.g.mapleader = ' ' -- Set <space> as the leader key
 vim.g.maplocalleader = ' ' --- Set <space> as the local leader key
 vim.g.have_nerd_font = true -- Set to true if you have a Nerd Font installed
+-- vim.g.enable_whichkey = false -- Set to true when learning, turn off later for better flow :)
 
 -- NOTE::help option-list
 --
@@ -150,6 +151,8 @@ vim.opt.hlsearch = true -- Set highlight on search, but clear on pressing <Esc> 
 --
 -- NOTE: hide higlights after hitting <Esc>
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
+-- NOTE: nice way to escape lots of plugins like diffview and flog
+vim.keymap.set('n', '<Esc><Esc>', ':tabc<CR>')
 
 -- NOTE: these maps are to try to save me some pain with index finger always reaching for : . -  .... not sure what to do about that these maps are probably not sufficient
 vim.keymap.set('n', '<leader>W', ':w<CR>', { desc = ':w -> write buffer' })
@@ -215,7 +218,7 @@ vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' }
 -- vim.keymap.set({ 'v', 'i', 'n' }, '<C-down>', '<cmd>echo "Use j to move!!"<CR>')
 
 -- Nice to start off where you left off
-vim.api.nvim_create_autocmd('BufWinEnter', {
+vim.api.nvim_create_autocmd('BufEnter', {
   desc = 'Start off where you left off',
   group = vim.api.nvim_create_augroup('kickstart-buf-enter', { clear = true }),
   -- NOTE: this is just the command '"  in lua [[ and ]] are similar to ``` in other languages
@@ -332,6 +335,7 @@ require('lazy').setup({
   { -- Useful plugin to show you pending keybinds.
     'folke/which-key.nvim',
     event = 'VimEnter', -- Sets the loading event to 'VimEnter'
+    enabled = vim.g.enable_whichkey, -- To allow easy toggling of this above
     config = function() -- This is the function that runs, AFTER loading
       require('which-key').setup { window = { border = 'single' } }
 
@@ -469,7 +473,7 @@ require('lazy').setup({
       'sindrets/diffview.nvim',
     },
     config = function()
-      vim.keymap.set('n', '<leader>gl', ':Flog -all -date=relative<cr>', { desc = '[G]it [L]og' })
+      vim.keymap.set('n', '<leader>gl', ':Flog -all -max-count=999999 -date=relative<cr>', { desc = '[G]it [L]og' })
       -- vim.keymap.set('n', '<leader>gl', ':Flog -format=%ar%x20[%h]%x20%d%x20%an <cr>', { desc = '[G]it [L]og' })
       vim.keymap.set('n', '<leader>gs', ':Git<cr>', { desc = '[G]it [S]tatus' })
 
@@ -568,19 +572,37 @@ require('lazy').setup({
       enhanced_diff_hl = true,
     },
     init = function()
-      -- <leader>gd should toggle diffview
-      vim.keymap.set('n', '<leader>gd', function()
-        -- first need to focus files panel so we can read expected diffview name of buffer
-        vim.cmd 'DiffviewFocusFiles'
-        local current_buffer = vim.api.nvim_get_current_buf()
-        local current_buffer_name = vim.api.nvim_buf_get_name(current_buffer)
-        local diffviewOpen = string.match(current_buffer_name, '^diffview.*')
-        if diffviewOpen then
-          vim.cmd 'DiffviewClose'
-        else
-          vim.cmd 'DiffviewOpen'
-        end
-      end, { desc = '[G]it [D]iff' })
+      vim.keymap.set(
+        'n',
+        '<leader>gd',
+        --[[
+             1. open diffview
+             2. turn off any highlighted search matches
+             3. jump two windows (should end us up at current buffer)
+             4. go to last location in buffer ... not we have to do this
+                after a delay ... 100 ms seems to be sufficient, increase
+                if you don't get deisred result
+        --]]
+        --
+        function()
+          vim.fn.timer_start(
+            100, -- delay ms ... increase this if you dont see desired result
+            function()
+              -- this delayed callback is optional
+              -- it effectively goes to where you were in the file
+              -- and centers on it
+              vim.cmd [[norm '"]]
+              vim.cmd [[norm zz]]
+            end
+          )
+          return [[:DiffviewOpen<cr>:nohlsearch<cr><C-w><C-w><C-w><C-w>]]
+        end,
+
+        {
+          desc = '[G]it [D]iff',
+          expr = true,
+        }
+      )
     end,
   },
 
@@ -715,9 +737,11 @@ require('lazy').setup({
               callback = vim.lsp.buf.document_highlight,
             })
 
-            vim.api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI' }, {
+            vim.api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI', 'BufLeave' }, {
               buffer = event.buf,
-              callback = vim.lsp.buf.clear_references,
+              callback = function()
+                vim.lsp.buf.clear_references()
+              end,
             })
           end
 
