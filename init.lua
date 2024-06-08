@@ -573,7 +573,7 @@ require('lazy').setup({
     opts = {
       enhanced_diff_hl = true,
       hooks = {
-        diff_buf_read = function(bufnr)
+        diff_buf_read = function(_bufnr)
           vim.opt_local.cursorline = false
         end,
       },
@@ -592,6 +592,8 @@ require('lazy').setup({
         --]]
         --
         function()
+          -- first we get current cursor location in the file we're in
+          local pos = vim.api.nvim_win_get_cursor(0)
           vim.fn.timer_start(
             100, -- delay ms ... increase this if you dont see desired result
             function()
@@ -600,7 +602,8 @@ require('lazy').setup({
               -- and centers on it
               -- vim.cmd [[norm '"]]
               -- vim.cmd [[norm zz]]
-              vim.api.nvim_feedkeys([['"zz]], 'n', false)
+              vim.api.nvim_win_set_cursor(0, pos) -- note that 0 -> current window which is now the diff window after 100 ms
+              vim.api.nvim_feedkeys('zz', 'n', false)
             end
           )
           return [[:DiffviewOpen<cr>:nohlsearch<cr><C-w><C-w><C-w><C-w>]]
