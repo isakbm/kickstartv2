@@ -127,7 +127,7 @@ vim.opt.number = true
 vim.opt.relativenumber = true
 vim.opt.termguicolors = true -- yes use tempr gui colors
 vim.opt.wrap = false -- don't wrap lines
-vim.opt.fillchars:append { diff = '/' } -- fillchars for diffview?
+vim.opt.fillchars:append { diff = '' } -- { diff = '/' } -- fillchars for diffview?
 vim.opt.mouse = 'a' -- Enable mouse mode, can be useful for resizing splits for example!
 vim.opt.showmode = false -- Don't show the mode, since it's already in status line
 vim.opt.breakindent = true -- Enable break indent
@@ -572,6 +572,11 @@ require('lazy').setup({
     },
     opts = {
       enhanced_diff_hl = true,
+      hooks = {
+        diff_buf_read = function(bufnr)
+          vim.opt_local.cursorline = false
+        end,
+      },
     },
     init = function()
       vim.keymap.set(
@@ -1048,6 +1053,7 @@ require('lazy').setup({
         hl.GitSignsAdd = {
           fg = colors.hint,
         }
+
         hl.GitSignsChange = {
           fg = colors.magenta,
         }
@@ -1057,7 +1063,7 @@ require('lazy').setup({
         hl.TreesitterContext.bg = nil
         -- hl.TreesitterContextSeparator = { fg = colors.magenta2 }
 
-        hl.DiffviewDiffDeleteDim = { fg = colors.diff.delete }
+        hl.DiffviewDiffDeleteDim = { fg = colors.git.delete } -- { fg = colors.diff.delete }
 
         hl.Comment.style.italic = false
 
