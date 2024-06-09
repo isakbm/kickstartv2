@@ -1077,10 +1077,14 @@ require('lazy').setup({
       on_highlights = function(hl, colors)
         hl.CursorLine.bg = colors.bg_statusline
 
-        hl.TodoBgFIX = {
+        hl.TodoBgfixme = {
           bg = colors.error,
           fg = colors.black,
         }
+
+        hl.TodoBgbug = hl.TodoBgfixme
+        hl.TodoBgfix = hl.TodoBgfixme
+
         hl.DiffAdd = {
           bg = colors.diff.change,
         }
@@ -1177,7 +1181,7 @@ require('lazy').setup({
         end
 
         local n = 0
-        for name, color in pairs(ucolors) do
+        for name, color in pairs(ccolors) do
           if type(color) == 'table' then
             -- print('skipping: ' .. name .. vim.inspect(color))
             goto continue
@@ -1212,7 +1216,31 @@ require('lazy').setup({
     'folke/todo-comments.nvim',
     event = 'VimEnter',
     dependencies = { 'nvim-lua/plenary.nvim' },
-    opts = { signs = false },
+    opts = function(opts)
+      local keywords = {
+        -- NOTE: lowercase keywords will also match full uppercase
+        fixme = { color = 'error' },
+        fix = { color = 'error' },
+        todo = { color = 'info' },
+        -- NOTE: only matches uppercase
+        NOTE = { color = 'hint' },
+      }
+
+      for word, _ in pairs(keywords) do
+        -- this ensure that lowercase will also match uppercase keyword
+        keywords[word].alt = { string.upper(word) }
+      end
+      return vim.tbl_extend('force', opts, {
+        signs = false,
+        highlight = {
+          after = '',
+          pattern = [[.*<(KEYWORDS)\s*(:|\s|$)]],
+          keyword = 'bg',
+        },
+        merge_keywords = false,
+        keywords = keywords,
+      })
+    end,
   },
 
   { -- Collection of various small independent plugins/modules
@@ -1369,13 +1397,13 @@ require('lazy').setup({
       --
       --   TODO: - Incremental selection: Included, see `:help nvim-treesitter-incremental-selection-mod`
       --   TODO: - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
+      --
     end,
   },
 
   -- The following two comments only work if you have downloaded the kickstart repo, not just copy pasted the
   -- init.lua. If you want these files, they are in the repository, so you can just download them and
   -- put them in the right spots if you want.
-
   -- NOTE: Next step on your Neovim journey: Add/Configure additional plugins for kickstart
   --
   --  Here are some example plugins that I've included in the kickstart repository.
