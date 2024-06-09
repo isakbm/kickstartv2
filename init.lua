@@ -1062,71 +1062,44 @@ require('lazy').setup({
     end,
   },
 
-  { -- You can easily change to a different colorscheme.
-    -- Change the name of the colorscheme plugin below, and then
-    -- change the command in the config to whatever the name of that colorscheme is
-    --
-    -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`
+  {
     'folke/tokyonight.nvim',
-    priority = 1000, -- make sure to load this before all the other start plugins
+    priority = 1000, -- makes sure to load this before other plugins
     opts = {
-      -- TODO: add function args ... see docs
       on_colors = function(colors)
         colors.black = '#000000'
       end,
-      on_highlights = function(hl, colors)
-        hl.CursorLine.bg = colors.bg_statusline
+      on_highlights = function(hl, cs)
+        hl.CursorLine.bg = cs.bg_statusline
 
-        hl.TodoBgfixme = {
-          bg = colors.error,
-          fg = colors.black,
-        }
+        hl.TodoBgfixme = { bg = cs.error, fg = cs.black }
 
         hl.TodoBgbug = hl.TodoBgfixme
         hl.TodoBgfix = hl.TodoBgfixme
 
-        hl.DiffAdd = {
-          bg = colors.diff.change,
-        }
-        hl.DiffChange = {
-          bg = colors.diff.change,
-        }
-        hl.DiffText = {
-          bg = colors.diff.add,
-          underline = true,
-        }
+        hl.DiffAdd = { bg = cs.diff.change }
+        hl.DiffChange = { bg = cs.diff.change }
+        hl.DiffText = { bg = cs.diff.add, underline = true }
 
-        hl.Folded = {
-          bg = 'none',
-          fg = colors.magenta2,
-          underline = true,
-        }
+        hl.Folded = { bg = 'none', fg = cs.magenta2, underline = true }
 
-        hl.GitSignsAdd = {
-          fg = colors.hint,
-        }
-
-        hl.GitSignsChange = {
-          fg = colors.magenta,
-        }
+        hl.GitSignsAdd = { fg = cs.hint }
+        hl.GitSignsChange = { fg = cs.magenta }
 
         hl.FoldColumn = hl.LineNr
 
         hl.TreesitterContext.bg = nil
-        -- hl.TreesitterContextSeparator = { fg = colors.magenta2 }
-
-        hl.DiffviewDiffDeleteDim = { fg = colors.git.delete } -- { fg = colors.diff.delete }
-
+        hl.DiffviewDiffDeleteDim = { fg = cs.git.delete }
         hl.Comment.style.italic = false
 
-        hl.MiniStatuslineBranch = { fg = colors.magenta, bg = colors.bg_highlight } --  bg = colors.magenta }
-        hl.MiniStatuslineWorkspace = { fg = colors.hint, bg = colors.bg_highlight } --  bg = colors.magenta }
-        hl.MiniStatuslineChanges = { fg = colors.blue, bg = colors.bg_highlight } --  bg = colors.blue }
-        hl.MiniStatuslineDiagnostics = { fg = colors.red, bg = colors.bg_highlight } --  bg = colors.red }
-        hl.MiniStatuslineFilename = { fg = colors.hint, bg = colors.bg_statusline } --  bg = colors.red }
-        hl.MiniStatuslineFilenameUnsaved = { fg = colors.red, bg = colors.bg_statusline } --  bg = colors.red }
+        hl.MiniStatuslineBranch = { fg = cs.magenta, bg = cs.bg_highlight }
+        hl.MiniStatuslineWorkspace = { fg = cs.hint, bg = cs.bg_highlight }
+        hl.MiniStatuslineChanges = { fg = cs.blue, bg = cs.bg_highlight }
+        hl.MiniStatuslineDiagnostics = { fg = cs.red, bg = cs.bg_highlight }
+        hl.MiniStatuslineFilename = { fg = cs.hint, bg = cs.bg_statusline }
+        hl.MiniStatuslineFilenameUnsaved = { fg = cs.red, bg = cs.bg_statusline }
 
-        -- NOTE: needed for transparent background
+        -- needed for transparent background
         hl.Normal.bg = nil
         hl.NormalNC.bg = nil
         hl.NormalFloat.bg = nil
@@ -1143,7 +1116,7 @@ require('lazy').setup({
         -- hack to get a list of all the colors without bloat
         -- ... to show the list type fg_____ or bg_____ in the search bar of :Telescope highlights
         local ccolors = {}
-        for k, v in pairs(colors) do
+        for k, v in pairs(cs) do
           if type(v) == 'table' then
             for kk, vv in pairs(v) do
               ccolors[k .. '.' .. kk] = vv
@@ -1175,8 +1148,8 @@ require('lazy').setup({
     end,
   },
 
-  -- Highlight todo, notes, etc in comments
   {
+    -- Highlight todo, notes, etc in comments
     'folke/todo-comments.nvim',
     event = 'VimEnter',
     dependencies = { 'nvim-lua/plenary.nvim' },
@@ -1207,7 +1180,8 @@ require('lazy').setup({
     end,
   },
 
-  { -- Collection of various small independent plugins/modules
+  {
+    -- Collection of various small independent plugins/modules
     'echasnovski/mini.nvim',
     config = function()
       -- Better Around/Inside textobjects
