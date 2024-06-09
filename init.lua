@@ -1126,34 +1126,19 @@ require('lazy').setup({
         hl.MiniStatuslineFilename = { fg = colors.hint, bg = colors.bg_statusline } --  bg = colors.red }
         hl.MiniStatuslineFilenameUnsaved = { fg = colors.red, bg = colors.bg_statusline } --  bg = colors.red }
 
-        do
-          -- here we set some backgrounds to transparent ...
-          -- it's just a fun little test we're doing ^ ^
-          local groups = {
-            'Normal',
-            'NormalNC',
-            --
-            'NormalFloat',
-            'FloatBorder',
-            'WhichKeyFloat',
-            --
-            'SignColumn',
-            --
-            'TelescopeNormal',
-            'TelescopeBorder',
-            'TelescopePromptBorder',
-            'TelescopePromptTitle',
-            --
-            'NotifyBackground',
-            'NotifyINFOBody',
-          }
-          for _, group in pairs(groups) do
-            local g = hl[group]
-            if g then
-              g.bg = nil
-            end
-          end
-        end
+        -- NOTE: needed for transparent background
+        hl.Normal.bg = nil
+        hl.NormalNC.bg = nil
+        hl.NormalFloat.bg = nil
+        hl.FloatBorder.bg = nil
+        hl.WhichKeyFloat.bg = nil
+        hl.SignColumn.bg = nil
+        hl.TelescopeNormal.bg = nil
+        hl.TelescopeBorder.bg = nil
+        hl.TelescopePromptBorder.bg = nil
+        hl.TelescopePromptTitle.bg = nil
+        hl.NotifyBackground.bg = nil
+        hl.NotifyINFOBody.bg = nil
 
         -- hack to get a list of all the colors without bloat
         -- ... to show the list type fg_____ or bg_____ in the search bar of :Telescope highlights
@@ -1168,46 +1153,25 @@ require('lazy').setup({
           end
         end
 
-        local ucolors = {}
-        for k, v in pairs(ccolors) do
-          for _, cc in pairs(ucolors) do
-            if v == cc then
-              -- print('collision: ' .. k .. ' <> ' .. kk)
-              goto continue
-            end
-          end
-          ucolors[k] = v
-          ::continue::
-        end
-
         local n = 0
         for name, color in pairs(ccolors) do
-          if type(color) == 'table' then
-            -- print('skipping: ' .. name .. vim.inspect(color))
-            goto continue
+          if type(color) ~= 'table' then
+            n = n + 1
+            hl['bg_' .. n .. '_________' .. name] = {
+              bg = color,
+              fg = '#000000',
+            }
+            hl['fg_' .. n .. '_________' .. name] = {
+              fg = color,
+              bg = '#000000',
+            }
           end
-          n = n + 1
-          hl['bg_' .. n .. '_________' .. name] = {
-            bg = color,
-            fg = '#000000',
-          }
-          hl['fg_' .. n .. '_________' .. name] = {
-            fg = color,
-            bg = '#000000',
-          }
-          ::continue::
         end
       end,
     },
 
     init = function()
-      -- Load the colorscheme here.
-      -- Like many other themes, this one has different styles, and you could load
-      -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
       vim.cmd.colorscheme 'tokyonight-night'
-
-      -- You can configure highlights by doing something like
-      -- vim.cmd.hi 'Comment gui=none'
     end,
   },
 
