@@ -147,7 +147,6 @@ vim.opt.breakindent = true -- Enable break indent
 vim.opt.undofile = true -- Save undo history
 vim.opt.ignorecase = true -- case insensitive search
 vim.opt.smartcase = true -- ... actually lets make it sensitive if an upper case is involved
--- vim.opt.smartindent = true -- ... smart indentation --- need to figure out what to do, want vscode like auto indenting when opening a function or { ... local foo = function() <cr> does not indend body of function in lua for instance
 vim.opt.signcolumn = 'yes' -- Keep signcolumn on by default
 vim.opt.splitright = true -- Configure how new splits should be opened
 vim.opt.splitbelow = true
@@ -171,12 +170,6 @@ vim.opt.tabstop = 2
 --
 -- NOTE: hide higlights after hitting <Esc>
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
-
--- NOTE: these maps are to try to save me some pain with index finger always reaching for : . -  .... not sure what to do about that these maps are probably not sufficient
-vim.keymap.set('n', '<leader>W', ':w<CR>', { desc = ':w -> write buffer' })
-vim.keymap.set('n', '<leader>Q', ':q<CR>', { desc = ':q -> quit buffer' })
-vim.keymap.set('n', '<leader>C', ':', { desc = ': -> command' })
-vim.keymap.set({ 'i', 'n' }, '§', '.', { desc = 'replacement for . key' })
 
 -- NOTE: swap lines like in vscode
 --
