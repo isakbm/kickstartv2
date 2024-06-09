@@ -250,19 +250,6 @@ end)
 -- or just use <C-\><C-n> to exit terminal mode
 vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
 
--- NOTE: Disable arrow keys in most modes
---
--- uncomment tese if you are still not used to using `hjkl` you'll learn way faster
---
--- vim.keymap.set({ 'v', 'i', 'n' }, '<left>', '<cmd>echo "Use h to move!!"<CR>')
--- vim.keymap.set({ 'v', 'i', 'n' }, '<right>', '<cmd>echo "Use l to move!!"<CR>')
--- vim.keymap.set({ 'v', 'i', 'n' }, '<up>', '<cmd>echo "Use k to move!!"<CR>')
--- vim.keymap.set({ 'v', 'i', 'n' }, '<down>', '<cmd>echo "Use j to move!!"<CR>')
--- vim.keymap.set({ 'v', 'i', 'n' }, '<C-left>', '<cmd>echo "Use h to move!!"<CR>')
--- vim.keymap.set({ 'v', 'i', 'n' }, '<C-right>', '<cmd>echo "Use l to move!!"<CR>')
--- vim.keymap.set({ 'v', 'i', 'n' }, '<C-up>', '<cmd>echo "Use k to move!!"<CR>')
--- vim.keymap.set({ 'v', 'i', 'n' }, '<C-down>', '<cmd>echo "Use j to move!!"<CR>')
-
 -- Nice to start off where you left off
 vim.api.nvim_create_autocmd('BufEnter', {
   desc = 'Start off where you left off',
