@@ -7,13 +7,27 @@
     :Mason
     ~/.local/state/nvim/lsp.log
 
-    Keybinding Conflicts
+    NOTE: Keybinding Conflicts
 
       :checkhealth which-key
       :verbose nmap <the key binding>
 
       which-key warnings can be safely ignored
       https://github.com/folke/which-key.nvim/issues/218#issuecomment-2117036351
+
+    NOTE: Color issues etc with tmux
+
+      Make sure your tmux profile is set to use the same
+      terminal as your terminal emulator, to see which
+      terminal you are using, exit tmux and do `echo $TERM`
+
+      You may need to kill your tmux servers for changes to
+      have an effect
+
+      To check issues with colors, simply do `:CheckReds`
+         if all is good you should see a nice continuous
+         gradient between black and red, if not you'll see
+         discotinuous steps and repeats of the same color
 
   ---------------------------------------------------------------
 
@@ -187,6 +201,34 @@ vim.diagnostic.config {
   },
 }
 
+vim.api.nvim_create_user_command('CheckReds', function()
+  local height = vim.api.nvim_win_get_height(0)
+  local num_shades = math.max(height - 4, 4)
+  local colors = {}
+  for idx = 0, num_shades do
+    local val = string.format('%02x', (idx * 255) / num_shades)
+    colors[#colors + 1] = '#' .. val .. '0000'
+  end
+  local buf = vim.api.nvim_create_buf(false, true)
+  local win = vim.api.nvim_open_win(buf, false, {
+    relative = 'win',
+    row = 1,
+    col = 3,
+    width = 7,
+    height = #colors,
+    border = 'single',
+    style = 'minimal',
+  })
+  vim.api.nvim_set_current_win(win)
+  vim.api.nvim_buf_set_lines(0, 0, 2, false, colors)
+  for idx, c in ipairs(colors) do
+    local rgb = string.sub(c, 2)
+    local hl_name = 'ColorCheck-' .. rgb
+    vim.api.nvim_set_hl(0, hl_name, { bg = c, fg = '#000000' })
+    vim.api.nvim_buf_add_highlight(0, 0, hl_name, idx - 1, 0, -1)
+  end
+end, { desc = 'Test your colors' })
+
 -- Diagnostic keymaps
 vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, { desc = 'Go to previous [D]iagnostic message' })
 vim.keymap.set('n', ']d', vim.diagnostic.goto_next, { desc = 'Go to next [D]iagnostic message' })
@@ -224,7 +266,12 @@ vim.api.nvim_create_autocmd('BufEnter', {
   desc = 'Start off where you left off',
   group = vim.api.nvim_create_augroup('kickstart-buf-enter', { clear = true }),
   -- NOTE: this is just the command '"  in lua [[ and ]] are similar to ``` in other languages
-  command = [['"]], -- see :h :mark
+  callback = function()
+    local ok, pos = pcall(vim.api.nvim_buf_get_mark, 0, [["]])
+    if ok and pos[1] > 0 then
+      vim.api.nvim_win_set_cursor(0, pos)
+    end
+  end,
 })
 
 --=========================== PLUGIN KEYMAPS =============================
