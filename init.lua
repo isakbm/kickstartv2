@@ -1,5 +1,4 @@
 --[[========================= WELCOME =============================
-
  WARN: Troubleshooting
 
     :checkhealth
@@ -167,8 +166,6 @@ vim.o.foldcolumn = 'auto'
 --
 -- NOTE: hide higlights after hitting <Esc>
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
--- NOTE: nice way to escape lots of plugins like diffview and flog
-vim.keymap.set('n', '<Esc><Esc>', ':tabc<CR>')
 
 -- NOTE: these maps are to try to save me some pain with index finger always reaching for : . -  .... not sure what to do about that these maps are probably not sufficient
 vim.keymap.set('n', '<leader>W', ':w<CR>', { desc = ':w -> write buffer' })
@@ -271,6 +268,29 @@ vim.api.nvim_create_autocmd('BufEnter', {
     if ok and pos[1] > 0 then
       vim.api.nvim_win_set_cursor(0, pos)
     end
+  end,
+})
+
+vim.api.nvim_create_autocmd('TabNewEntered', {
+  desc = 'Add some tab local keymaps',
+  -- group = vim.api.nvim_create_augroup('kickstart-tab-enter', { clear = true }),
+  -- NOTE: this is just the command '"  in lua [[ and ]] are similar to ``` in other languages
+  callback = function()
+    local tab = vim.api.nvim_get_current_tabpage()
+    vim.fn.timer_start(100, function()
+      local wins = vim.api.nvim_tabpage_list_wins(tab)
+      for _, win in pairs(wins) do
+        local buf = vim.api.nvim_win_get_buf(win)
+        vim.keymap.set('n', '<leader>T', ':tabc<cr>', {
+          desc = 'Close tabpage also <Esc><Esc> works',
+          buffer = buf,
+        })
+        vim.keymap.set('n', '<Esc><Esc>', ':tabc<cr>', {
+          desc = 'Close tabpage',
+          buffer = buf,
+        })
+      end
+    end)
   end,
 })
 
@@ -608,6 +628,7 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>gb', ':Gitsigns toggle_current_line_blame<CR>', { desc = '[G]it [B]lame toggle' })
 
       -- diff this
+      -- TODO: improve this
       vim.keymap.set('n', '<leader>dt', ':Gitsigns diffthis<cr>', { desc = 'See changes in the current buffer' })
     end,
   },
@@ -620,7 +641,7 @@ require('lazy').setup({
     opts = {
       enhanced_diff_hl = true,
       hooks = {
-        diff_buf_read = function(_bufnr)
+        diff_buf_read = function()
           vim.opt_local.cursorline = false
         end,
       },
