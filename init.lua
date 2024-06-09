@@ -1066,6 +1066,10 @@ require('lazy').setup({
     'folke/tokyonight.nvim',
     priority = 1000, -- makes sure to load this before other plugins
     opts = {
+      styles = {
+        comments = { italic = false },
+        keywords = { italic = false },
+      },
       on_colors = function(colors)
         colors.black = '#000000'
       end,
@@ -1090,7 +1094,6 @@ require('lazy').setup({
 
         hl.TreesitterContext.bg = nil
         hl.DiffviewDiffDeleteDim = { fg = cs.git.delete }
-        hl.Comment.style.italic = false
 
         hl.MiniStatuslineBranch = { fg = cs.magenta, bg = cs.bg_highlight }
         hl.MiniStatuslineWorkspace = { fg = cs.hint, bg = cs.bg_highlight }
