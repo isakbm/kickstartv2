@@ -1091,6 +1091,8 @@ require('lazy').setup({
 
         hl.MiniStatuslineBranch = { fg = cs.magenta, bg = cs.bg_highlight }
         hl.MiniStatuslineWorkspace = { fg = cs.hint, bg = cs.bg_highlight }
+
+        hl.MiniStatuslineWorkspaceUnsaved = { fg = cs.error, bg = cs.bg_highlight }
         hl.MiniStatuslineChanges = { fg = cs.blue, bg = cs.bg_highlight }
         hl.MiniStatuslineDiagnostics = { fg = cs.red, bg = cs.bg_highlight }
         hl.MiniStatuslineFilename = { fg = cs.hint, bg = cs.bg_statusline }
@@ -1228,6 +1230,17 @@ require('lazy').setup({
                 end
               end
 
+              -- do we have any unsaved buffers?
+              local bufs = vim.api.nvim_list_bufs()
+              local workspace_hl = 'MiniStatuslineWorkspace'
+              for _, buf in pairs(bufs) do
+                local unsaved = vim.api.nvim_get_option_value('modified', { buf = buf })
+                if unsaved then
+                  workspace_hl = 'MiniStatuslineWorkspaceUnsaved'
+                  break
+                end
+              end
+
               local fileinfo = MiniStatusline.section_fileinfo { trunc_width = 120 }
               local location = MiniStatusline.section_location { trunc_width = 75 }
               local search = MiniStatusline.section_searchcount { trunc_width = 75 }
@@ -1248,7 +1261,7 @@ require('lazy').setup({
               return MiniStatusline.combine_groups {
                 { hl = mode_hl, strings = { mode } },
                 { hl = 'MiniStatuslineBranch', strings = { git } },
-                { hl = 'MiniStatuslineWorkspace', strings = { vim.fs.basename(root_dir) } },
+                { hl = workspace_hl, strings = { vim.fs.basename(root_dir) } },
                 { hl = 'MiniStatuslineChanges', strings = { diff } },
                 { hl = 'MiniStatuslineDiagnostics', strings = { diagnostics, lsp } },
                 '%<', -- Mark general truncate point
