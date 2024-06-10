@@ -584,12 +584,10 @@ require('lazy').setup({
       },
     },
     init = function()
-      -- hunks
-      vim.keymap.set('n', '<leader>gn', ':Gitsigns next_hunk<cr>', { desc = '[Git] [N]ext diff hunk' })
+      vim.keymap.set('n', '[h', ':Gitsigns next_hunk<cr>', { desc = '[G]it [N]ext hunk' })
+      vim.keymap.set('n', ']h', ':Gitsigns prev_hunk<cr>', { desc = '[G]it [P]rev hunk' })
       vim.keymap.set('n', '<leader>gp', ':Gitsigns preview_hunk<cr>', { desc = '[G]it [P]review hunk' })
       vim.keymap.set('n', '<leader>gr', ':Gitsigns reset_hunk<cr>', { desc = '[G]it [R]eset hunk' })
-
-      -- blame
       vim.keymap.set('n', '<leader>gb', ':Gitsigns toggle_current_line_blame<CR>', { desc = '[G]it [B]lame toggle' })
 
       -- diff this
