@@ -98,28 +98,27 @@
 
   TODO:
 
-    >> Figure out how to get better suggestions for autocomplete of
-       function args.
+    >> find better way of typoing [ ] and { } on a norwegian keyboard?
 
     >> Get a nice way to jump to parent scopes locally. Currently
        we can do something like this with treesitter-context, but
        that jumps to the context that is 'off screen' try '[c'
 
-    >> [x and ]x are clearly very common vim keybindings
-       on a Norwegian keyboard these are a pain to type
-       Need to figure out some clever bindings in auto hotkey maybe.
-
     >> Currently you can move a line up or down with <C-i> and <C-j>.
        Consider also supporting this in visual line mode for several lines.
-
-    >> when doing gr to go to references, telescope is shwing
-       file path and the start of the line of code ...
-       would be nice to only show file path, because the start of code
-       obscures long file paths.
 
     >> when doing an action using `fugitive` like `:Git checkout -b foo`
        it would be ideal if any open `flog` buffer would update so
        that we can see the effect the command had on the graph!
+
+    >> find out how to quickly switch to previous buffer
+
+    >> find out how to close a buffer without using :q
+
+  FIXME:
+
+    >> diffview <esc><esc> to close is broken for when changing
+       to another file with tab
 
 =================================================================--]]
 
@@ -214,6 +213,7 @@ vim.api.nvim_create_user_command('CheckReds', function()
     border = 'single',
     style = 'minimal',
   })
+
   vim.api.nvim_set_current_win(win)
   vim.api.nvim_buf_set_lines(0, 0, 2, false, colors)
   for idx, c in ipairs(colors) do
@@ -248,27 +248,19 @@ vim.api.nvim_create_autocmd('BufEnter', {
   end,
 })
 
-vim.api.nvim_create_autocmd('TabNewEntered', {
-  desc = 'Add some tab local keymaps',
-  -- group = vim.api.nvim_create_augroup('kickstart-tab-enter', { clear = true }),
-  -- NOTE: this is just the command '"  in lua [[ and ]] are similar to ``` in other languages
-  callback = function()
-    local tab = vim.api.nvim_get_current_tabpage()
-    vim.fn.timer_start(100, function()
-      local wins = vim.api.nvim_tabpage_list_wins(tab)
-      for _, win in pairs(wins) do
-        local buf = vim.api.nvim_win_get_buf(win)
-        vim.keymap.set('n', '<leader>T', ':tabc<cr>', {
-          desc = 'Close tabpage also <Esc><Esc> works',
-          buffer = buf,
-        })
-        vim.keymap.set('n', '<Esc><Esc>', ':tabc<cr>', {
-          desc = 'Close tabpage',
-          buffer = buf,
-        })
-      end
-    end)
-  end,
+vim.keymap.set('n', '<Esc><Esc>', function()
+  local ntabs = #vim.api.nvim_list_tabpages()
+  if ntabs <= 1 then
+    return
+  end
+
+  -- NOTE: we avoid closing tab if current window is relative
+  local not_relative = vim.api.nvim_win_get_config(0).relative == ''
+  if not_relative then
+    vim.cmd [[:tabc]]
+  end
+end, {
+  desc = 'Close current tab',
 })
 
 --=========================== PLUGIN KEYMAPS =============================
@@ -805,12 +797,12 @@ require('lazy').setup({
             if vim.g.tsserver_loaded_workspace then
             -- do nothing
             else
-              local buffer = vim.api.nvim_get_current_buf()
-              require('fidget').notify(client.id .. 'starting diagnostics ...' .. ' name: ' .. client.name, '@comment.error', { annote = 'DIAG' })
-              require('fidget').notify(client.id .. 'starting diagnostics ...' .. ' buf: ' .. buffer, '@comment.error', { annote = 'DIAG' })
-              require('workspace-diagnostics').populate_workspace_diagnostics(client, buffer)
-              require('fidget').notify(client.id .. 'completed diagnostics ...', '@comment.error', { annote = 'DIAG' })
-              vim.g.tsserver_loaded_workspace = true
+              -- local buffer = vim.api.nvim_get_current_buf()
+              -- require('fidget').notify(client.id .. 'starting diagnostics ...' .. ' name: ' .. client.name, '@comment.error', { annote = 'DIAG' })
+              -- require('fidget').notify(client.id .. 'starting diagnostics ...' .. ' buf: ' .. buffer, '@comment.error', { annote = 'DIAG' })
+              -- require('workspace-diagnostics').populate_workspace_diagnostics(client, buffer)
+              -- require('fidget').notify(client.id .. 'completed diagnostics ...', '@comment.error', { annote = 'DIAG' })
+              -- vim.g.tsserver_loaded_workspace = true
             end
           end
 
@@ -1077,8 +1069,6 @@ require('lazy').setup({
         hl.CursorLine.bg = cs.bg_statusline
 
         hl.TodoBgfixme = { bg = cs.error, fg = cs.black }
-
-        hl.TodoBgbug = hl.TodoBgfixme
         hl.TodoBgfix = hl.TodoBgfixme
 
         hl.DiffAdd = { bg = cs.diff.change }
