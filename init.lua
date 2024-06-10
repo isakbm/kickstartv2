@@ -115,11 +115,6 @@
 
     >> find out how to close a buffer without using :q
 
-  FIXME:
-
-    >> diffview <esc><esc> to close is broken for when changing
-       to another file with tab
-
 =================================================================--]]
 
 -- NOTE: :help localleader
@@ -236,14 +231,15 @@ vim.keymap.set('n', '<leader>I', function()
 end)
 
 -- Nice to start off where you left off
-vim.api.nvim_create_autocmd('BufEnter', {
+vim.api.nvim_create_autocmd('BufWinEnter', {
   desc = 'Start off where you left off',
   group = vim.api.nvim_create_augroup('kickstart-buf-enter', { clear = true }),
   -- NOTE: this is just the command '"  in lua [[ and ]] are similar to ``` in other languages
   callback = function()
     local ok, pos = pcall(vim.api.nvim_buf_get_mark, 0, [["]])
     if ok and pos[1] > 0 then
-      vim.api.nvim_win_set_cursor(0, pos)
+      -- protected mode because sometimes this will fail, for example on NON FILE BUFFERS
+      pcall(vim.api.nvim_win_set_cursor, 0, pos)
     end
   end,
 })
@@ -613,6 +609,18 @@ require('lazy').setup({
         diff_buf_read = function()
           vim.opt_local.cursorline = false
         end,
+        view_opened = function()
+          print 'view opened ..'
+          vim.fn.timer_start(100, function()
+            local tp = vim.api.nvim_get_current_tabpage()
+            local wins = vim.api.nvim_tabpage_list_wins(tp)
+            local win = wins[3]
+            if win then
+              vim.api.nvim_set_current_win(win)
+              vim.api.nvim_win_set_cursor(0, { 1, 0 })
+            end
+          end)
+        end,
       },
     },
     init = function()
@@ -631,6 +639,7 @@ require('lazy').setup({
         function()
           -- first we get current cursor location in the file we're in
           local pos = vim.api.nvim_win_get_cursor(0)
+          vim.cmd [[:DiffviewOpen]]
           vim.fn.timer_start(
             100, -- delay ms ... increase this if you dont see desired result
             function()
@@ -643,12 +652,9 @@ require('lazy').setup({
               vim.api.nvim_feedkeys('zz', 'n', false)
             end
           )
-          return [[:DiffviewOpen<cr>:nohlsearch<cr><C-w><C-w><C-w><C-w>]]
         end,
-
         {
           desc = '[G]it [D]iff',
-          expr = true,
         }
       )
     end,
