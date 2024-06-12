@@ -225,6 +225,26 @@ vim.keymap.set('n', ']d', vim.diagnostic.goto_next, { desc = 'Go to next [D]iagn
 vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, { desc = 'Show diagnostic [E]rror messages' })
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
 
+do
+  local dt = 10
+  local n = 10
+
+  --- @param dir 'j' | 'k'
+  local function glide(dir)
+    return function()
+      local d = vim.api.nvim_get_mode()
+      for i = 0, n do
+        vim.fn.timer_start(i * dt, function()
+          vim.api.nvim_feedkeys(dir, d.mode, false)
+        end)
+      end
+    end
+  end
+
+  vim.keymap.set({ 'v', 'n' }, '<M-j>', glide 'j')
+  vim.keymap.set({ 'v', 'n' }, '<M-k>', glide 'k')
+end
+
 -- useful for figuring out what higlight groups are relevant for stuff under cursor
 vim.keymap.set('n', '<leader>I', function()
   vim.show_pos()
