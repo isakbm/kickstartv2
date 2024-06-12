@@ -115,6 +115,11 @@
 
     >> find out how to close a buffer without using :q
 
+    >> even if contents of file are identical to those when you started
+       vim still thinks your buffer has changes if you added and deleted
+       something. vim only knows that the fil has not chnaged if you
+       literally go back with undo ... can this be changed in a setting?
+
 =================================================================--]]
 
 -- NOTE: :help localleader
@@ -960,8 +965,7 @@ require('lazy').setup({
       formatters_by_ft = {
         lua = { 'stylua' },
         -- Conform can also run multiple formatters sequentially
-        -- python = { 'isort', 'black' },
-        python = { 'isort' },
+        python = { 'isort', 'black' },
         --
         -- You can use a sub-list to tell conform to run *until* a formatter
         -- is found.
