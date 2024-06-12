@@ -120,6 +120,14 @@
        something. vim only knows that the fil has not chnaged if you
        literally go back with undo ... can this be changed in a setting?
 
+    >> its nice that our statusline says what type of lsp mode we're in
+       and what branch we're on etc, however, when using plugins that
+       launch other tabs or buffers like `flog` for the git log or
+       `:Git` for git status, we see that this information is no longer
+       in the statusline, because the statusline is looking at metadata
+       regarding the current active buffer, which in the case of those
+       plugins is not a tracked code file ...
+
 =================================================================--]]
 
 -- NOTE: :help localleader
