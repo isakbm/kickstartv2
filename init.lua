@@ -98,6 +98,8 @@
 
   TODO:
 
+    >> Esc Esc should not close tabs that have buffers with project file content
+
     >> find better way of typoing [ ] and { } on a norwegian keyboard?
 
     >> Get a nice way to jump to parent scopes locally. Currently
@@ -127,6 +129,11 @@
        in the statusline, because the statusline is looking at metadata
        regarding the current active buffer, which in the case of those
        plugins is not a tracked code file ...
+
+    >> find a way to do grep search over subset of files
+    
+    >> I REALLY need a way to quickly see the changes in the buffer that
+       have not been saved to file
 
 =================================================================--]]
 
@@ -351,6 +358,20 @@ require('lazy').setup({
   {
     'chentoast/marks.nvim',
     opts = {},
+  },
+
+  {
+    'ggandor/leap.nvim',
+    opts = {},
+    config = function()
+      local leap = require 'leap'
+      leap.opts.labels = 'sfnjklhodweimbuyvrgtaqpcxzSFNJKLHODWEIMBUYVRGTAQPCXZ'
+      -- leap.opts.safe_labels = 'sfnutSFNLHMUGTZ'
+      vim.keymap.set({ 'n', 'x', 'o' }, 'F', '<Plug>(leap)', { desc = '[F]ind Leap' })
+      -- vim.keymap.set({ 'n', 'x', 'o' }, 's', '<Plug>(leap-forward)')
+      -- vim.keymap.set({ 'n', 'x', 'o' }, 'S', '<Plug>(leap-backward)')
+      -- vim.keymap.set({ 'n', 'x', 'o' }, 'gs', '<Plug>(leap-from-window)')
+    end,
   },
 
   -- NOTE: Plugins can also be added by using a table,
