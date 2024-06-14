@@ -185,6 +185,8 @@ vim.opt.tabstop = 2
 -- NOTE: hide higlights after hitting <Esc>
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
+vim.keymap.set('n', '<C-f>', '<NOP>')
+
 -- NOTE: swap lines like in vscode
 --
 --   we've bound <M-*> so the `Alt` or `Modifier` key, however, see :h :map-alt and you'll notice that
@@ -284,21 +286,6 @@ vim.api.nvim_create_autocmd('BufWinEnter', {
   end,
 })
 
-vim.keymap.set('n', '<Esc><Esc>', function()
-  local ntabs = #vim.api.nvim_list_tabpages()
-  if ntabs <= 1 then
-    return
-  end
-
-  -- NOTE: we avoid closing tab if current window is relative
-  local not_relative = vim.api.nvim_win_get_config(0).relative == ''
-  if not_relative then
-    vim.cmd [[:tabc]]
-  end
-end, {
-  desc = 'Close current tab',
-})
-
 --=========================== PLUGIN KEYMAPS =============================
 --
 -- we configure plugins here using Lazy, and we define keybindings
@@ -332,6 +319,25 @@ if not vim.loop.fs_stat(lazypath) then
   }
 end ---@diagnostic disable-next-line: undefined-field
 vim.opt.rtp:prepend(lazypath)
+
+-- takes buffer number and removes the ESC ESC local keybinding
+--- @param buf integer
+local function cancel_esc_esc_once_buf(buf)
+  pcall(vim.keymap.del, 'n', '<Esc><Esc>', { buffer = buf })
+end
+
+-- any parent tab page, useful for handy closeing of plugins that
+-- spawn their own tabpages
+--- @param buf integer
+local function esc_esc_once_buf(buf)
+  vim.keymap.set('n', '<Esc><Esc>', function()
+    vim.cmd ':tabc'
+    cancel_esc_esc_once_buf(buf)
+  end, { buffer = buf })
+  -- NOTE: we also need to register an autocommand that will clear the above keymap
+  --       if the buffer is leaving the window it was in
+  --       :
+end
 
 -- [[ Configure and install plugins ]]
 --
@@ -565,7 +571,22 @@ require('lazy').setup({
       'sindrets/diffview.nvim',
     },
     config = function()
-      vim.keymap.set('n', '<leader>gl', ':Flog -all -max-count=999999 -date=relative<cr>', { desc = '[G]it [L]og' })
+      vim.keymap.set('n', '<leader>gl', function()
+        -- whenever we enter a flog buffer we want to register
+        -- this autocommand ONCE, it in turn registers the esc esc
+        -- key binding on the buffer in it such that it's easy to
+        -- leave flog
+        vim.api.nvim_create_autocmd({ 'BufEnter' }, {
+          callback = function(ctx)
+            -- this helps us catch any bugs, if we see this in the fidget history
+            -- then we know that we did not deregister the autocommand correctly, the use of once should make this automatic
+            require('fidget').notify('flog - buf enter', '@comment.error', { annote = 'FLOG' })
+            esc_esc_once_buf(ctx.buf)
+          end,
+          once = true,
+        })
+        vim.cmd [[:Flog -all -max-count=999999 -date=relative]]
+      end, { desc = '[G]it [L]og' })
       -- vim.keymap.set('n', '<leader>gl', ':Flog -format=%ar%x20[%h]%x20%d%x20%an <cr>', { desc = '[G]it [L]og' })
       vim.keymap.set('n', '<leader>gs', ':Git<cr>', { desc = '[G]it [S]tatus' })
 
@@ -662,11 +683,23 @@ require('lazy').setup({
     opts = {
       enhanced_diff_hl = true,
       hooks = {
-        diff_buf_read = function()
+        view_leave = function()
+          local buf = vim.api.nvim_get_current_buf()
+          -- print('leaving view: buf =', buf)
+          cancel_esc_esc_once_buf(buf)
+        end,
+        view_enter = function()
+          local buf = vim.api.nvim_get_current_buf()
+          -- print('entering view: buf =', buf)
+          esc_esc_once_buf(buf)
+        end,
+        diff_buf_read = function(buf)
+          -- print('diffview read buf: ', buf)
           vim.opt_local.cursorline = false
+          esc_esc_once_buf(buf)
         end,
         view_opened = function()
-          print 'view opened ..'
+          -- print 'opening view'
           vim.fn.timer_start(100, function()
             local tp = vim.api.nvim_get_current_tabpage()
             local wins = vim.api.nvim_tabpage_list_wins(tp)
@@ -906,7 +939,7 @@ require('lazy').setup({
         -- clangd = {},
         -- gopls = {},
         pyright = {},
-        -- rust_analyzer = {},
+        rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
         --
         -- Some languages (like typescript) have entire language plugins that can be useful:
