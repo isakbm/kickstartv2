@@ -339,6 +339,23 @@ local function esc_esc_once_buf(buf)
   --       :
 end
 
+-- returns true if buffer is trivial
+--- @param buf integer -- 0 is current buffer
+--- @return boolean
+local function buf_is_trivial(buf)
+  local n = vim.api.nvim_buf_line_count(buf)
+  if n == 0 then
+    return true
+  end
+  if n == 1 then
+    local c = #vim.api.nvim_buf_get_lines(buf, 0, 1, true)[1]
+    if c == 0 then
+      return true
+    end
+  end
+  return false
+end
+
 -- [[ Configure and install plugins ]]
 --
 --  To check the current status of your plugins, run
@@ -704,6 +721,14 @@ require('lazy').setup({
             local tp = vim.api.nvim_get_current_tabpage()
             local wins = vim.api.nvim_tabpage_list_wins(tp)
             local win = wins[3]
+
+            local buf = vim.api.nvim_win_get_buf(wins[3])
+            if buf_is_trivial(buf) then
+              print 'no change'
+              vim.cmd [[:DiffviewClose]]
+              return
+            end
+
             if win then
               vim.api.nvim_set_current_win(win)
               vim.api.nvim_win_set_cursor(0, { 1, 0 })
@@ -737,8 +762,18 @@ require('lazy').setup({
               -- and centers on it
               -- vim.cmd [[norm '"]]
               -- vim.cmd [[norm zz]]
-              vim.api.nvim_win_set_cursor(0, pos) -- note that 0 -> current window which is now the diff window after 100 ms
-              vim.api.nvim_feedkeys('zz', 'n', false)
+
+              if buf_is_trivial(0) then
+                print 'no changes'
+                vim.cmd [[:DiffviewClose]]
+              end
+
+              local n = vim.api.nvim_buf_line_count(0)
+
+              if pos[1] <= n then
+                vim.api.nvim_win_set_cursor(0, pos) -- note that 0 -> current window which is now the diff window after 100 ms
+                vim.api.nvim_feedkeys('zz', 'n', false)
+              end
             end
           )
         end,
