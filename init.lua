@@ -76,7 +76,8 @@
     A: `"    when in normal mode thanks to marks
 
     Q: how do I see my current changes in a nice way
-    A: <leader>gd
+    A1: <leader>dt    <- diff this buffer (includes unsaved change) !!!
+    A2: <leader>gd    <- entire workspace (does not include unsaved changes) !!!
 
     Q: how do I see my carrot changes relative to some older commit
     A: <leader>gl  and then hover some older commit and press ','
@@ -100,16 +101,11 @@
 
     >> Shift F is now bound to leap ... but F is good for finding backwards ...
 
-    >> Esc Esc should not close tabs that have buffers with project file content
-
     >> find better way of typoing [ ] and { } on a norwegian keyboard?
 
     >> Get a nice way to jump to parent scopes locally. Currently
        we can do something like this with treesitter-context, but
        that jumps to the context that is 'off screen' try '[c'
-
-    >> Currently you can move a line up or down with <C-i> and <C-j>.
-       Consider also supporting this in visual line mode for several lines.
 
     >> when doing an action using `fugitive` like `:Git checkout -b foo`
        it would be ideal if any open `flog` buffer would update so
@@ -383,6 +379,7 @@ require('lazy').setup({
   {
     'chentoast/marks.nvim',
     opts = {},
+    enabled = false,
   },
 
   {
