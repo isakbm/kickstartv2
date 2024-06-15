@@ -376,23 +376,18 @@ require('lazy').setup({
     end,
   },
 
-  {
-    'chentoast/marks.nvim',
-    opts = {},
-    enabled = false,
-  },
+  -- {
+  --   'chentoast/marks.nvim',
+  --   opts = {},
+  -- },
 
   {
     'ggandor/leap.nvim',
-    opts = {},
     config = function()
       local leap = require 'leap'
       leap.opts.labels = 'sfnjklhodweimbuyvrgtaqpcxzSFNJKLHODWEIMBUYVRGTAQPCXZ'
-      -- leap.opts.safe_labels = 'sfnutSFNLHMUGTZ'
-      vim.keymap.set({ 'n', 'x', 'o' }, 'F', '<Plug>(leap)', { desc = '[F]ind Leap' })
-      -- vim.keymap.set({ 'n', 'x', 'o' }, 's', '<Plug>(leap-forward)')
-      -- vim.keymap.set({ 'n', 'x', 'o' }, 'S', '<Plug>(leap-backward)')
-      -- vim.keymap.set({ 'n', 'x', 'o' }, 'gs', '<Plug>(leap-from-window)')
+      leap.opts.safe_labels = ''
+      vim.keymap.set({ 'n', 'x', 'o' }, 'L', '<Plug>(leap)', { desc = '[L]eap' })
     end,
   },
 
@@ -1269,6 +1264,9 @@ require('lazy').setup({
         hl.MiniStatuslineDiagnostics = { fg = cs.red, bg = cs.bg_highlight }
         hl.MiniStatuslineFilename = { fg = cs.hint, bg = cs.bg_statusline }
         hl.MiniStatuslineFilenameUnsaved = { fg = cs.red, bg = cs.bg_statusline }
+
+        hl.LeapLabelPrimary = { fg = cs.magenta2 }
+        hl.LeapBackdrop = { fg = cs.diff.add }
 
         -- needed for transparent background
         hl.Normal.bg = nil
