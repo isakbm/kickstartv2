@@ -98,6 +98,8 @@
 
   TODO:
 
+    >> Shift F is now bound to leap ... but F is good for finding backwards ...
+
     >> Esc Esc should not close tabs that have buffers with project file content
 
     >> find better way of typoing [ ] and { } on a norwegian keyboard?
@@ -687,8 +689,54 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>gb', ':Gitsigns toggle_current_line_blame<CR>', { desc = '[G]it [B]lame toggle' })
 
       -- diff this
-      -- TODO: improve this
-      vim.keymap.set('n', '<leader>dt', ':Gitsigns diffthis<cr>', { desc = 'See changes in the current buffer' })
+      vim.keymap.set('n', '<leader>dt', function()
+        local function close_diffthis()
+          local tabp = vim.api.nvim_get_current_tabpage()
+          for _, win in pairs(vim.api.nvim_tabpage_list_wins(tabp)) do
+            local buf = vim.api.nvim_win_get_buf(win)
+            local buf_name = vim.api.nvim_buf_get_name(buf)
+            pcall(vim.keymap.del, 'n', '<Esc><Esc>', { buffer = 0 })
+            if string.match(buf_name, 'gitsigns:.*git.*') then
+              vim.api.nvim_win_close(win, false)
+            end
+          end
+        end
+        ---@type boolean
+        local diff = vim.api.nvim_get_option_value('diff', { win = 0 })
+        if diff then
+          close_diffthis()
+        else
+          vim.cmd [[:Gitsigns diffthis]]
+          vim.fn.timer_start(50, function()
+            local tabp = vim.api.nvim_get_current_tabpage()
+            for _, win in pairs(vim.api.nvim_tabpage_list_wins(tabp)) do
+              local buf = vim.api.nvim_win_get_buf(win)
+              vim.keymap.set('n', '<Esc><Esc>', close_diffthis, { buffer = buf })
+            end
+            -- NOTE this is a dumb hack to work around an issue that sometimes happens
+            --      ... sometimes the scroll bind comes out of aligment during loading
+            --      buffers. simply going to top of document, then to the bottom, and
+            --      then back to where we were does the trick
+            --
+            --      this is all most likely due to a bug in gitsigns diffview ...
+            --      it seems to only happen near end of buffer, and most likely
+            --      because gitsigns is trying to center text vertically with `zz`
+            --      but a race condition happens ... ... we should consider trying
+            --      to fix this in a fork of gitsigns, and potentially make a pull\
+            --      request if this hunch is true ^
+            do
+              local pos = vim.api.nvim_win_get_cursor(0)
+              vim.fn.timer_start(30, function()
+                vim.cmd [[:0]]
+              end)
+              vim.fn.timer_start(31, function()
+                vim.api.nvim_win_set_cursor(0, pos)
+                vim.api.nvim_feedkeys('zz', 'n', false)
+              end)
+            end
+          end)
+        end
+      end, { desc = '[d]iff [t]his file' })
     end,
   },
 
@@ -753,19 +801,20 @@ require('lazy').setup({
         function()
           -- first we get current cursor location in the file we're in
           local pos = vim.api.nvim_win_get_cursor(0)
+
           vim.cmd [[:DiffviewOpen]]
           vim.fn.timer_start(
             100, -- delay ms ... increase this if you dont see desired result
             function()
               -- this delayed callback is optional
               -- it effectively goes to where you were in the file
-              -- and centers on it
-              -- vim.cmd [[norm '"]]
-              -- vim.cmd [[norm zz]]
+              -- NOTE at this point in "time" our current window
+              --      is the the active window in the diffview, diffview hooks may impact which window this is
 
               if buf_is_trivial(0) then
                 print 'no changes'
-                vim.cmd [[:DiffviewClose]]
+                -- vim.cmd [[:DiffviewClose]]
+                return
               end
 
               local n = vim.api.nvim_buf_line_count(0)
@@ -1213,6 +1262,7 @@ require('lazy').setup({
 
         hl.TreesitterContext.bg = nil
         hl.DiffviewDiffDeleteDim = { fg = cs.git.delete }
+        hl.DiffDelete = { fg = cs.git.delete, bg = nil }
 
         hl.MiniStatuslineBranch = { fg = cs.magenta, bg = cs.bg_highlight }
         hl.MiniStatuslineWorkspace = { fg = cs.hint, bg = cs.bg_highlight }
