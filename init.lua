@@ -242,6 +242,64 @@ vim.diagnostic.config {
   },
 }
 
+local hlgs = {}
+
+--- works by searching for string of the form "#RRGGBB"
+--- keeps a list of created highlght groups and reuses
+--- them, ... only searches in the current visible part
+--- of the buffer, and only upates on changes
+local function hex_color_highlight()
+  local top = vim.fn.line 'w0'
+  local bot = vim.fn.line 'w$'
+
+  --- @type table<string, string>
+  ---
+  ---
+  -- local hlgs = vim.g.hex_highlight_groups
+  if not hlgs then
+    hlgs = {}
+  end
+
+  local text = vim.api.nvim_buf_get_lines(0, top, bot, true)
+
+  for idx, line in pairs(text) do
+    local offset = 1
+    for m in line:gmatch '["\']#%x%x%x%x%x%x["\']' do
+      local loc = line:find(m, offset, true)
+      offset = loc + 9
+      local row = idx + top
+      local col_start = loc
+      local col_end = offset
+
+      local hlg = false
+      local sm = m:sub(3, 8)
+      for _, c_hlg in pairs(hlgs) do
+        if c_hlg == sm then
+          hlg = true
+          break
+        end
+      end
+
+      if not hlg then
+        vim.api.nvim_set_hl(0, sm, { fg = '#' .. sm })
+        hlgs[#hlgs + 1] = sm
+      end
+
+      if col_start and col_end then
+        vim.api.nvim_buf_add_highlight(0, 0, sm, row - 1, col_start - 1, col_end - 1)
+      end
+    end
+  end
+end
+
+-- TODO: should add TextChanged
+-- "#AAAAAA" "#FFAABB"
+vim.api.nvim_create_autocmd({ 'WinEnter', 'WinScrolled' }, {
+  callback = function()
+    hex_color_highlight()
+  end,
+})
+
 vim.api.nvim_create_user_command('CheckReds', function()
   local height = vim.api.nvim_win_get_height(0)
   local num_shades = math.max(height - 4, 4)
@@ -1361,6 +1419,7 @@ require('lazy').setup({
         -- hl.String.fg = hl.Number.fg
         hl.Number.fg = hl.String.fg
         hl.Boolean.fg = hl.String.fg
+
         -- needed for transparent background
         -- hl.Normal = { bg = nil }
         -- hl.NormalNC = { bg = nil }
