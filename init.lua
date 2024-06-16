@@ -980,6 +980,9 @@ require('lazy').setup({
                   return
                 end
                 vim.lsp.buf.rename(new_name, { bufnr = file_buf })
+                vim.fn.timer_start(60, function()
+                  vim.cmd.stopi()
+                end)
               end, { buffer = buf })
             end
           end, '[R]e[n]ame')
