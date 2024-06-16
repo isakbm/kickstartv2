@@ -99,6 +99,14 @@
 
   TODO:
 
+    >> Something is wrong with the nerdfont icons, they are sometimes
+       cut short on their right hand side. See `:Mason` and `:Lazy` and
+       the icons used at the beginning of every list item there.
+
+    >> Add a little toolbox window that you can open at any time
+       Make it searchable.
+       Have tool slike `to uppercase` `to hex` etc etc :D
+
     >> Find a way to jump to a web URL without using mouse  
 
     >> Shift F is now bound to leap ... but F is good for finding backwards ...
@@ -933,7 +941,7 @@ require('lazy').setup({
           --  Most Language Servers support renaming across files, etc.
           map('<leader>rn', function()
             local res = vim.lsp.buf_request_sync(0, 'textDocument/hover', vim.lsp.util.make_position_params(), 200)[1]
-            if res and not res.error then
+            if res and not res.error and res.result and res.result.range then
               --- @class I.Loc
               --- @field character integer
               --- @field line integer
@@ -965,6 +973,10 @@ require('lazy').setup({
                 vim.api.nvim_win_close(win, true)
                 if new_name == old_name then
                   print 'no change'
+                  return
+                end
+                if #new_name == 0 then
+                  print 'cannot name to empty string'
                   return
                 end
                 vim.lsp.buf.rename(new_name, { bufnr = file_buf })
@@ -1343,6 +1355,9 @@ require('lazy').setup({
         hl.NormalFloat = { bg = nil }
         hl.WinSeparator = { fg = hl.String.fg }
 
+        -- hl.String.fg = hl.Number.fg
+        hl.Number.fg = hl.String.fg
+        hl.Boolean.fg = hl.String.fg
         -- needed for transparent background
         -- hl.Normal = { bg = nil }
         -- hl.NormalNC = { bg = nil }
