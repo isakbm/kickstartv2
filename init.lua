@@ -99,6 +99,8 @@
 
   TODO:
 
+    >> Find a way to jump to a web URL without using mouse  
+
     >> Shift F is now bound to leap ... but F is good for finding backwards ...
 
     >> find better way of typoing [ ] and { } on a norwegian keyboard?
@@ -182,7 +184,6 @@ vim.opt.tabstop = 2
 --
 -- NOTE: hide higlights after hitting <Esc>
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
-
 vim.keymap.set('n', '<C-f>', '<NOP>')
 
 -- NOTE: swap lines like in vscode
@@ -738,7 +739,7 @@ require('lazy').setup({
       'nvim-web-devicons',
     },
     opts = {
-      enhanced_diff_hl = true,
+      -- enhanced_diff_hl = true,
       hooks = {
         view_leave = function()
           local buf = vim.api.nvim_get_current_buf()
@@ -822,29 +823,6 @@ require('lazy').setup({
           desc = '[G]it [D]iff',
         }
       )
-    end,
-  },
-
-  {
-    -- NOTE: we currently only use this for typescript projects, see on_attach for tsserver further down
-    'artemave/workspace-diagnostics.nvim',
-    config = function()
-      require('workspace-diagnostics').setup {
-        workspace_files = function()
-          -- require('fidget').notify('hello world', '@comment.error', { annote = 'LOADING DIAGNOSTICS' })
-          -- TODO: find better way to guess project root .. see documentation of root_dir for tsserver etc
-          local root_dir = vim.fn.systemlist('git rev-parse --show-toplevel')[1]
-          -- TODO: filter out directories or files that we don't want?
-          -- print('git path: ' .. vim.inspect(root_dir))
-          -- local workspace_files = vim.fn.split(vim.fn.system('git ls-files ' .. root_dir), '\n')
-          local workspace_files = vim.fn.split(vim.fn.system('git ls-files ' .. root_dir .. [[ | grep -E "\.(ts|tsx|js|jsx|json|mjs|mts|cjs|cts)$"]]), '\n')
-          -- print 'workspace files ... '
-          -- print(vim.inspect(workspace_files))
-          -- local num = #workspace_files
-          -- print('we got ' .. num .. ' workspace files')
-          return workspace_files
-        end,
-      }
     end,
   },
 
@@ -951,7 +929,7 @@ require('lazy').setup({
           -- When you move your cursor, the highlights will be cleared (the second autocommand).
           local client = vim.lsp.get_client_by_id(event.data.client_id)
           if client and client.server_capabilities.documentHighlightProvider then
-            vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, {
+            vim.api.nvim_create_autocmd({ 'CursorHold' }, {
               buffer = event.buf,
               callback = vim.lsp.buf.document_highlight,
             })
@@ -962,19 +940,6 @@ require('lazy').setup({
                 vim.lsp.buf.clear_references()
               end,
             })
-          end
-
-          if client and client.name == 'tsserver' then
-            if vim.g.tsserver_loaded_workspace then
-            -- do nothing
-            else
-              -- local buffer = vim.api.nvim_get_current_buf()
-              -- require('fidget').notify(client.id .. 'starting diagnostics ...' .. ' name: ' .. client.name, '@comment.error', { annote = 'DIAG' })
-              -- require('fidget').notify(client.id .. 'starting diagnostics ...' .. ' buf: ' .. buffer, '@comment.error', { annote = 'DIAG' })
-              -- require('workspace-diagnostics').populate_workspace_diagnostics(client, buffer)
-              -- require('fidget').notify(client.id .. 'completed diagnostics ...', '@comment.error', { annote = 'DIAG' })
-              -- vim.g.tsserver_loaded_workspace = true
-            end
           end
 
           -- wraps normal diagnostics callback so we can get some extra information
@@ -1225,99 +1190,6 @@ require('lazy').setup({
   },
 
   {
-    'folke/tokyonight.nvim',
-    priority = 1000, -- makes sure to load this before other plugins
-    opts = {
-      styles = {
-        comments = { italic = false },
-        keywords = { italic = false },
-      },
-      on_colors = function(colors)
-        colors.black = '#000000'
-      end,
-      on_highlights = function(hl, cs)
-        hl.CursorLine.bg = cs.bg_statusline
-
-        hl.TodoBgfixme = { bg = cs.error, fg = cs.black }
-        hl.TodoBgfix = hl.TodoBgfixme
-
-        hl.DiffAdd = { bg = cs.diff.change }
-        hl.DiffChange = { bg = cs.diff.change }
-        hl.DiffText = { bg = cs.diff.add, underline = true }
-
-        hl.Folded = { bg = 'none', fg = cs.magenta2, underline = true }
-
-        hl.GitSignsAdd = { fg = cs.hint }
-        hl.GitSignsChange = { fg = cs.magenta }
-
-        hl.FoldColumn = hl.LineNr
-
-        hl.TreesitterContext.bg = nil
-        hl.DiffviewDiffDeleteDim = { fg = cs.git.delete }
-        hl.DiffDelete = { fg = cs.git.delete, bg = nil }
-
-        hl.MiniStatuslineBranch = { fg = cs.magenta, bg = cs.bg_highlight }
-        hl.MiniStatuslineWorkspace = { fg = cs.hint, bg = cs.bg_highlight }
-
-        hl.MiniStatuslineWorkspaceUnsaved = { fg = cs.error, bg = cs.bg_highlight }
-        hl.MiniStatuslineChanges = { fg = cs.blue, bg = cs.bg_highlight }
-        hl.MiniStatuslineDiagnostics = { fg = cs.red, bg = cs.bg_highlight }
-        hl.MiniStatuslineFilename = { fg = cs.hint, bg = cs.bg_statusline }
-        hl.MiniStatuslineFilenameUnsaved = { fg = cs.red, bg = cs.bg_statusline }
-
-        hl.LeapLabelPrimary = { fg = cs.magenta2 }
-        hl.LeapBackdrop = { fg = cs.diff.add }
-
-        -- needed for transparent background
-        hl.Normal.bg = nil
-        hl.NormalNC.bg = nil
-        hl.NormalFloat.bg = nil
-        hl.FloatBorder.bg = nil
-        hl.WhichKeyFloat.bg = nil
-        hl.SignColumn.bg = nil
-        hl.TelescopeNormal.bg = nil
-        hl.TelescopeBorder.bg = nil
-        hl.TelescopePromptBorder.bg = nil
-        hl.TelescopePromptTitle.bg = nil
-        hl.NotifyBackground.bg = nil
-        hl.NotifyINFOBody.bg = nil
-
-        -- hack to get a list of all the colors without bloat
-        -- ... to show the list type fg_____ or bg_____ in the search bar of :Telescope highlights
-        local ccolors = {}
-        for k, v in pairs(cs) do
-          if type(v) == 'table' then
-            for kk, vv in pairs(v) do
-              ccolors[k .. '.' .. kk] = vv
-            end
-          else
-            ccolors[k] = v
-          end
-        end
-
-        local n = 0
-        for name, color in pairs(ccolors) do
-          if type(color) ~= 'table' then
-            n = n + 1
-            hl['bg_' .. n .. '_________' .. name] = {
-              bg = color,
-              fg = '#000000',
-            }
-            hl['fg_' .. n .. '_________' .. name] = {
-              fg = color,
-              bg = '#000000',
-            }
-          end
-        end
-      end,
-    },
-
-    init = function()
-      vim.cmd.colorscheme 'tokyonight-night'
-    end,
-  },
-
-  {
     -- Highlight todo, notes, etc in comments
     'folke/todo-comments.nvim',
     event = 'VimEnter',
@@ -1353,6 +1225,68 @@ require('lazy').setup({
     -- Collection of various small independent plugins/modules
     'echasnovski/mini.nvim',
     config = function()
+      do
+        -- everything related to color theme goes here inside this block
+        require('mini.colors').setup {}
+
+        ---@type Colorscheme
+        local theme = MiniColors.get_colorscheme 'retrobox'
+        ---@type table<string, vim.api.keyset.highlight>
+        local hl = theme.groups
+
+        hl.LeapBackdrop = { fg = '#505050' }
+        hl.LeapLabelPrimary = { link = 'Keyword' }
+
+        -- hl.CursorLine.bg = cs.bg_statusline
+
+        hl.DiffAdd = { bg = '#003530' }
+        hl.DiffChange = { link = 'DiffAdd' }
+        hl.DiffText = { bg = '#004040' }
+        hl.DiffDelete = { fg = '#F00000' }
+        -- hl.DiffviewDiffDeleteDim = { fg = '#FF0000' }
+        --
+        -- hl.Folded = { bg = 'none', fg = cs.magenta2, underline = true }
+        --
+        -- hl.GitSignsAdd = { fg = hl.DiffAdd.bg }
+        -- hl.GitSignsDelete = { fg = hl.DiffDelete.fg }
+        -- hl.GitSignsChange = { fg = hl.DiffAdd.bg }
+        -- hl.GitSignsChange = { fg = cs.magenta }
+        --
+        -- hl.FoldColumn = hl.LineNr
+        --
+        -- hl.TreesitterContext.bg = nil
+        --
+        hl.MiniStatuslineBranch = { fg = hl.Keyword.fg, bg = hl.StatusLine.fg }
+        hl.MiniStatuslineWorkspace = { fg = hl.Function.fg, bg = hl.StatusLine.fg }
+        hl.MiniStatuslineWorkspaceUnsaved = { fg = hl.Keyword.fg, bg = hl.StatusLine.fg }
+        -- hl.MiniStatuslineChanges = { fg = hl.Keyword.fg, bg = hl.StatusLine.fg }
+        hl.MiniStatuslineDiagnostics = { fg = hl.String.fg, bg = hl.StatusLine.fg }
+        -- hl.MiniStatuslineFilename = { fg = cs.hint, bg = cs.bg_statusline }
+        -- hl.MiniStatuslineFilenameUnsaved = { fg = cs.red, bg = cs.bg_statusline }
+        --
+        hl.MiniStatuslineModeNormal = { fg = hl.StatusLine.fg, bg = hl.String.fg }
+        hl.MiniStatuslineModeVisual = { fg = hl.StatusLine.fg, bg = hl.Identifier.fg }
+        hl.MiniStatuslineModeInsert = { fg = hl.StatusLine.fg, bg = hl.Number.fg }
+
+        hl.NormalFloat = { bg = nil }
+
+        -- needed for transparent background
+        -- hl.Normal = { bg = nil }
+        -- hl.NormalNC = { bg = nil }
+        -- hl.VertSplit.bg = nil
+        -- hl.WhichKeyFloat = { bg = nil }
+        -- hl.SignColumn = { bg = nil }
+        -- hl.TelescopeNormal = { bg = nil }
+        -- hl.TelescopeBorder = { bg = nil }
+        -- hl.TelescopePromptBorder = { bg = nil }
+        -- hl.TelescopePromptTitle = { bg = nil }
+        -- hl.NotifyBackground = { bg = nil }
+        -- hl.NotifyINFOBody = { bg = nil }
+
+        ---@diagnostic disable-next-line: undefined-field
+        theme:apply()
+      end
+
       -- Better Around/Inside textobjects
       --
       -- Examples:
