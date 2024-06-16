@@ -941,7 +941,7 @@ require('lazy').setup({
               local file_buf = vim.api.nvim_get_current_buf()
               local s = res.result.range['start'] --- @type I.Loc
               local e = res.result.range['end'] --- @type I.Loc
-              local text = vim.api.nvim_buf_get_text(0, s.line, s.character, e.line, e.character, {})
+              local old_name = vim.api.nvim_buf_get_text(0, s.line, s.character, e.line, e.character, {})[1]
 
               local row = vim.fn.winline()
               local col = vim.fn.wincol()
@@ -958,13 +958,17 @@ require('lazy').setup({
               })
 
               vim.api.nvim_set_current_win(win)
-              vim.api.nvim_buf_set_lines(0, 0, 2, false, text)
+              vim.api.nvim_buf_set_lines(0, 0, 2, false, { old_name })
+              vim.keymap.set({ 'n' }, '<Esc><Esc>', ':q<cr>', { buffer = buf })
               vim.keymap.set({ 'n', 'i' }, '<cr>', function()
                 local new_name = vim.api.nvim_buf_get_text(0, 0, 0, 0, 256, {})[1]
                 vim.api.nvim_win_close(win, true)
-
+                if new_name == old_name then
+                  print 'no change'
+                  return
+                end
                 vim.lsp.buf.rename(new_name, { bufnr = file_buf })
-              end, { buffer = 0 })
+              end, { buffer = buf })
             end
           end, '[R]e[n]ame')
 
