@@ -178,6 +178,27 @@ vim.opt.shiftwidth = 2
 vim.opt.softtabstop = 2
 vim.opt.tabstop = 2
 
+---@param ho string
+---@param ve string
+---@param ll string
+---@param lr string
+---@param ur string
+---@param ul string
+function border_maker(ho, ve, ul, ur, lr, ll)
+  return {
+    ul,
+    ho,
+    ur,
+    ve,
+    lr,
+    ho,
+    ll,
+    ve,
+  }
+end
+
+WIN_BORDER = border_maker('─', '│', '╭', '╮', '╯', '╰')
+
 --=========================== KEYMAPS =============================
 --
 -- The follow keymaps are suppsed to be independet of plugins.
@@ -194,6 +215,8 @@ vim.keymap.set('n', '<C-f>', '<NOP>')
 --   in normal mode, you'll also trigger the below keymaps.
 vim.keymap.set('n', '<C-j>', ':m+1<cr>', { desc = 'swap line with line below' }) -- vscode <alt> + <up>
 vim.keymap.set('n', '<C-k>', ':m-2<cr>', { desc = 'swap line with line above' }) -- vscode <alt> + <down>
+
+vim.keymap.set('n', 'Q', '/')
 
 -- NOTE: Jump between tabs using 'Alt + number'
 for i = 1, 9 do
@@ -226,7 +249,7 @@ vim.api.nvim_create_user_command('CheckReds', function()
     col = 3,
     width = 7,
     height = #colors,
-    border = 'single',
+    border = WIN_BORDER,
     style = 'minimal',
   })
 
@@ -443,7 +466,7 @@ require('lazy').setup({
     event = 'VimEnter', -- Sets the loading event to 'VimEnter'
     enabled = vim.g.enable_whichkey, -- To allow easy toggling of this above
     config = function() -- This is the function that runs, AFTER loading
-      require('which-key').setup { window = { border = 'single' } }
+      require('which-key').setup { window = { border = WIN_BORDER } }
 
       -- Document existing key chains
       require('which-key').register {
@@ -908,7 +931,42 @@ require('lazy').setup({
 
           -- Rename the variable under your cursor
           --  Most Language Servers support renaming across files, etc.
-          map('<leader>rn', vim.lsp.buf.rename, '[R]e[n]ame')
+          map('<leader>rn', function()
+            local res = vim.lsp.buf_request_sync(0, 'textDocument/hover', vim.lsp.util.make_position_params(), 200)[1]
+            if res and not res.error then
+              --- @class I.Loc
+              --- @field character integer
+              --- @field line integer
+
+              local file_buf = vim.api.nvim_get_current_buf()
+              local s = res.result.range['start'] --- @type I.Loc
+              local e = res.result.range['end'] --- @type I.Loc
+              local text = vim.api.nvim_buf_get_text(0, s.line, s.character, e.line, e.character, {})
+
+              local row = vim.fn.winline()
+              local col = vim.fn.wincol()
+              local buf = vim.api.nvim_create_buf(false, true)
+              local win = vim.api.nvim_open_win(buf, false, {
+                relative = 'win',
+                title = ' new name ',
+                row = row,
+                col = col,
+                width = 25,
+                height = 1,
+                border = WIN_BORDER,
+                style = 'minimal',
+              })
+
+              vim.api.nvim_set_current_win(win)
+              vim.api.nvim_buf_set_lines(0, 0, 2, false, text)
+              vim.keymap.set({ 'n', 'i' }, '<cr>', function()
+                local new_name = vim.api.nvim_buf_get_text(0, 0, 0, 0, 256, {})[1]
+                vim.api.nvim_win_close(win, true)
+
+                vim.lsp.buf.rename(new_name, { bufnr = file_buf })
+              end, { buffer = 0 })
+            end
+          end, '[R]e[n]ame')
 
           -- Execute a code action, usually your cursor needs to be on top of an error
           -- or a suggestion from your LSP for this to activate.
@@ -953,7 +1011,7 @@ require('lazy').setup({
           -- Lets give the hover information stuff a bit more style
           vim.lsp.handlers['textDocument/hover'] = vim.lsp.with(vim.lsp.handlers.hover, {
             -- Use a sharp border with `FloatBorder` highlights
-            border = 'single',
+            border = WIN_BORDER,
             -- add the title in hover float window
             title = 'hover',
           })
@@ -1016,7 +1074,7 @@ require('lazy').setup({
       --  You can press `g?` for help in this menu
       require('mason').setup {
         ui = {
-          border = 'single',
+          border = WIN_BORDER,
         },
       }
 
@@ -1234,7 +1292,16 @@ require('lazy').setup({
         ---@type table<string, vim.api.keyset.highlight>
         local hl = theme.groups
 
-        hl.LeapBackdrop = { fg = '#505050' }
+        hl.Function = { fg = hl.Identifier.fg }
+        -- hl.Identifier = { fg = '#AAEE88' }
+        hl.Identifier = { fg = '#88CC66' }
+        hl.Comment = { fg = '#404040' }
+        hl.Operator = { fg = hl.Delimiter.fg }
+
+        -- hl.markdownBlockQuote = { fg = hl.Identifier.fg }
+        hl['@markup.raw'] = { fg = hl.Identifier.fg }
+
+        hl.LeapBackdrop = { fg = hl.Comment.fg }
         hl.LeapLabelPrimary = { link = 'Keyword' }
 
         -- hl.CursorLine.bg = cs.bg_statusline
@@ -1243,6 +1310,7 @@ require('lazy').setup({
         hl.DiffChange = { link = 'DiffAdd' }
         hl.DiffText = { bg = '#004040' }
         hl.DiffDelete = { fg = '#F00000' }
+
         -- hl.DiffviewDiffDeleteDim = { fg = '#FF0000' }
         --
         -- hl.Folded = { bg = 'none', fg = cs.magenta2, underline = true }
@@ -1269,6 +1337,7 @@ require('lazy').setup({
         hl.MiniStatuslineModeInsert = { fg = hl.StatusLine.fg, bg = hl.Number.fg }
 
         hl.NormalFloat = { bg = nil }
+        hl.WinSeparator = { fg = hl.String.fg }
 
         -- needed for transparent background
         -- hl.Normal = { bg = nil }
@@ -1472,7 +1541,7 @@ require('lazy').setup({
   -- { import = 'custom.plugins' },
 }, {
   ui = {
-    border = 'single',
+    border = WIN_BORDER,
     -- If you have a Nerd Font, set icons to an empty table which will use the
     -- default lazy.nvim defined Nerd Font icons otherwise define a unicode icons table
     icons = vim.g.have_nerd_font and {} or {
