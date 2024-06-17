@@ -99,6 +99,18 @@
 
   TODO:
 
+
+    >> popup window with a tip like
+
+        `cob` will `check out branch` under cursor when in git graph view
+
+    >> popup window reminindg you to stretch and drink water
+
+    >> popup window with fun animation when you are waiting for something perhaps you pushed code
+       or perhaps you are compiling
+
+    >> Make it possible to exit out of git status window with ESC ESC 
+
     >> Something is wrong with the nerdfont icons, they are sometimes
        cut short on their right hand side. See `:Mason` and `:Lazy` and
        the icons used at the beginning of every list item there.
@@ -687,6 +699,10 @@ require('lazy').setup({
           once = true,
         })
         vim.cmd [[:Flog -all -max-count=999999 -date=relative]]
+        vim.fn.timer_start(60, function()
+          vim.fn.search 'HEAD ->'
+          vim.api.nvim_feedkeys('zz', 'n', false)
+        end)
       end, { desc = '[G]it [L]og' })
       -- vim.keymap.set('n', '<leader>gl', ':Flog -format=%ar%x20[%h]%x20%d%x20%an <cr>', { desc = '[G]it [L]og' })
       vim.keymap.set('n', '<leader>gs', ':Git<cr>', { desc = '[G]it [S]tatus' })
