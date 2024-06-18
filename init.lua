@@ -705,7 +705,13 @@ require('lazy').setup({
         end)
       end, { desc = '[G]it [L]og' })
       -- vim.keymap.set('n', '<leader>gl', ':Flog -format=%ar%x20[%h]%x20%d%x20%an <cr>', { desc = '[G]it [L]og' })
-      vim.keymap.set('n', '<leader>gs', ':Git<cr>', { desc = '[G]it [S]tatus' })
+      vim.keymap.set('n', '<leader>gs', ':Git<cr>', { desc = '[G]it [S]tatus', silent = true })
+      vim.api.nvim_create_autocmd({ 'BufEnter' }, {
+        pattern = 'fugitive:/*',
+        callback = function(ctx)
+          vim.keymap.set('n', '<Esc><Esc>', ':q<cr>', { buffer = ctx.buf, silent = true })
+        end,
+      })
 
       -- Returns the selected commit by fugitive, the one selected by hitting enter
       -- ... we are able to do this by finding the loaded buffer for fugitive
@@ -1106,7 +1112,7 @@ require('lazy').setup({
             -- Use a sharp border with `FloatBorder` highlights
             border = WIN_BORDER,
             -- add the title in hover float window
-            title = 'hover',
+            title = ' hover ',
           })
         end,
       })
@@ -1403,6 +1409,17 @@ require('lazy').setup({
         hl.DiffChange = { link = 'DiffAdd' }
         hl.DiffText = { bg = '#004040' }
         hl.DiffDelete = { fg = '#F00000' }
+        hl.Structure = { link = 'Type' }
+
+        hl['@tag'] = { link = 'Function' }
+        hl['@tag.attribute'] = { fg = hl.Identifier.fg }
+        hl['@tag.delimiter'] = { link = 'Delimiter' }
+        hl['@tag.builtin'] = { link = 'Function' }
+        hl['@constructor'] = { link = 'Type' }
+        hl['@type.builtin'] = { link = 'Type' }
+        hl['@spell.tsx'] = { link = 'String' }
+        hl['@function.builtin'] = { link = 'Function' }
+        hl['@constant.builtin'] = { link = 'Constant' }
 
         -- hl.DiffviewDiffDeleteDim = { fg = '#FF0000' }
         --
