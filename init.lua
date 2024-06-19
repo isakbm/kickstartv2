@@ -625,6 +625,7 @@ require('lazy').setup({
             i = { ['<Esc><Esc>'] = require('telescope.actions').close },
             n = { ['<Esc><Esc>'] = require('telescope.actions').close },
           },
+          file_ignore_patterns = { '.git/' },
         },
         -- pickers = {}
         extensions = {
