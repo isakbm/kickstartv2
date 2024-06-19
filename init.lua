@@ -706,7 +706,13 @@ require('lazy').setup({
         vim.fn.timer_start(60, function()
           vim.fn.search 'HEAD ->'
           vim.api.nvim_feedkeys('zz', 'n', false)
-          vim.keymap.del({ 'n', 'i' }, '<CR>', { buffer = vim.api.nvim_get_current_buf() })
+          pcall(vim.keymap.del, { 'n', 'i' }, '<CR>', { buffer = vim.api.nvim_get_current_buf() })
+          vim.api.nvim_create_autocmd('User', {
+            pattern = 'FugitiveChanged',
+            callback = function()
+              pcall(vim.cmd.normal, '<Plug>(FlogUpdate)')
+            end,
+          })
         end)
       end, { desc = '[G]it [L]og' })
       -- vim.keymap.set('n', '<leader>gl', ':Flog -format=%ar%x20[%h]%x20%d%x20%an <cr>', { desc = '[G]it [L]og' })
