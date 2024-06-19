@@ -99,6 +99,9 @@
 
   TODO:
 
+    >> `export class Foo` in typescript, then `class` is not getting highlighted
+        correctly, it should be some keyword in language, but instead it's highlighted
+        as being part of the definition of the custom type ...
 
     >> popup window with a tip like
 
@@ -702,6 +705,7 @@ require('lazy').setup({
         vim.fn.timer_start(60, function()
           vim.fn.search 'HEAD ->'
           vim.api.nvim_feedkeys('zz', 'n', false)
+          vim.keymap.del({ 'n', 'i' }, '<CR>', { buffer = vim.api.nvim_get_current_buf() })
         end)
       end, { desc = '[G]it [L]og' })
       -- vim.keymap.set('n', '<leader>gl', ':Flog -format=%ar%x20[%h]%x20%d%x20%an <cr>', { desc = '[G]it [L]og' })
