@@ -28,6 +28,9 @@
          gradient between black and red, if not you'll see
          discotinuous steps and repeats of the same color
 
+    NOTE: Syntax highlighting, configure using mini.collors
+          and checkout `:InspectTree` 
+
   ---------------------------------------------------------------
 
  WARN: Getting Started
@@ -259,6 +262,8 @@ vim.diagnostic.config {
 
 local hlgs = {}
 
+local my_ns = vim.api.nvim_create_namespace 'isaks'
+
 --- works by searching for string of the form "#RRGGBB"
 --- keeps a list of created highlght groups and reuses
 --- them, ... only searches in the current visible part
@@ -276,6 +281,9 @@ local function hex_color_highlight()
   end
 
   local text = vim.api.nvim_buf_get_lines(0, top, bot, true)
+
+  vim.api.nvim_buf_clear_namespace(0, my_ns, 0, -1)
+  vim.api.nvim_win_set_hl_ns(0, my_ns)
 
   for idx, line in pairs(text) do
     local offset = 1
@@ -296,12 +304,12 @@ local function hex_color_highlight()
       end
 
       if not hlg then
-        vim.api.nvim_set_hl(0, sm, { fg = '#' .. sm })
+        vim.api.nvim_set_hl(my_ns, sm, { fg = '#' .. sm })
         hlgs[#hlgs + 1] = sm
       end
 
       if col_start and col_end then
-        vim.api.nvim_buf_add_highlight(0, 0, sm, row - 1, col_start - 1, col_end - 1)
+        vim.api.nvim_buf_add_highlight(0, my_ns, sm, row - 1, col_start - 1, col_end - 1)
       end
     end
   end
@@ -679,7 +687,6 @@ require('lazy').setup({
     end,
   },
 
-  -- TODO: CONSIDER neogit ....
   -- NOTE: Git plugins ...
   {
     'rbong/vim-flog',
@@ -1096,19 +1103,19 @@ require('lazy').setup({
           --
           -- When you move your cursor, the highlights will be cleared (the second autocommand).
           local client = vim.lsp.get_client_by_id(event.data.client_id)
-          if client and client.server_capabilities.documentHighlightProvider then
-            vim.api.nvim_create_autocmd({ 'CursorHold' }, {
-              buffer = event.buf,
-              callback = vim.lsp.buf.document_highlight,
-            })
-
-            vim.api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI', 'BufLeave' }, {
-              buffer = event.buf,
-              callback = function()
-                vim.lsp.buf.clear_references()
-              end,
-            })
-          end
+          -- if client and client.server_capabilities.documentHighlightProvider then
+          --   vim.api.nvim_create_autocmd({ 'CursorHold' }, {
+          --     buffer = event.buf,
+          --     callback = vim.lsp.buf.document_highlight,
+          --   })
+          --
+          --   vim.api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI', 'BufLeave' }, {
+          --     buffer = event.buf,
+          --     callback = function()
+          --       vim.lsp.buf.clear_references()
+          --     end,
+          --   })
+          -- end
 
           -- wraps normal diagnostics callback so we can get some extra information
           -- useful to tell whether or not we are still loading workspace
@@ -1148,7 +1155,18 @@ require('lazy').setup({
         -- clangd = {},
         -- gopls = {},
         pyright = {},
-        rust_analyzer = {},
+        rust_analyzer = {
+          settings = {
+            ['rust-analyzer'] = {
+              diagnostics = {
+                enable = true,
+                experimental = {
+                  enable = true,
+                },
+              },
+            },
+          },
+        },
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
         --
         -- Some languages (like typescript) have entire language plugins that can be useful:
@@ -1383,6 +1401,10 @@ require('lazy').setup({
           pattern = [[.*<(KEYWORDS)\s*(:|\s|$)]],
           keyword = 'bg',
         },
+        gui_style = {
+          fg = 'NONE', -- The gui style to use for the fg highlight group.
+          bg = 'NONE', -- The gui style to use for the bg highlight group.
+        },
         merge_keywords = false,
         keywords = keywords,
       })
@@ -1402,16 +1424,107 @@ require('lazy').setup({
         ---@type table<string, vim.api.keyset.highlight>
         local hl = theme.groups
 
-        hl.Function = { fg = hl.Identifier.fg }
-        -- hl.Identifier = { fg = '#AAEE88' }
-        hl.Identifier = { fg = '#88CC66' }
-        hl.Comment = { fg = '#404040' }
-        hl.Operator = { fg = hl.Delimiter.fg }
+        --- @class Color
+        --- @field fg string?
+        --- @field bg string?
 
-        -- hl.markdownBlockQuote = { fg = hl.Identifier.fg }
-        hl['@markup.raw'] = { fg = hl.Identifier.fg }
+        --- @type table<string, Color>
+        local colors = {
+          { fg = '#C39D5E', name = 'Type' },
+          { fg = '#845A40', name = 'Delimiter' },
 
-        hl.LeapBackdrop = { fg = hl.Comment.fg }
+          { fg = '#845A40', name = 'Keyword' },
+          { fg = '#C39D5E', name = 'String' },
+          { fg = '#b8a586', name = 'Identifier' },
+          { fg = '#83A598', name = 'Function' },
+          { fg = '#bf6079', name = 'Constant' },
+          { fg = '#404040', name = 'Comment' },
+
+          -- '#487EB5' '#B8BB26' '#D3869B''#E7545E'  '#b8a586'
+        }
+
+        for _, color in pairs(colors) do
+          -- print('setting:', vim.inspect(color))
+          hl[color.name] = { fg = color.fg }
+        end
+
+        -- Keyword links
+        hl.Repeat = { link = 'Keyword' }
+        hl.Conditional = { link = 'Keyword' }
+
+        -- Identifier links
+        hl['@markup.raw'] = { link = 'Identifier' }
+        hl['@tag.attribute'] = { link = 'Identifier' }
+        --
+        -- Function links
+        hl['@tag'] = { link = 'Function' }
+        hl['@function.builtin'] = { link = 'Function' }
+        hl['@tag.builtin'] = { link = 'Function' }
+        --
+        -- Type links
+        hl['@constructor'] = { link = 'Type' }
+        hl['@type.builtin'] = { link = 'Type' }
+        --
+        -- Delim links
+        hl['@tag.delimiter'] = { link = 'Delimiter' }
+        hl.Operator = { link = 'Delimiter' }
+        hl['@constructor.lua'] = { link = 'Dilimeter' }
+        --
+        -- Constant links
+        hl['@constant.builtin'] = { link = 'Constant' }
+        hl.SpecialChar = { link = 'Constant' }
+        --
+        -- String links
+        hl.Number = { link = 'String' }
+        hl.Boolean = { link = 'String' }
+
+        -- hl.Normal.bg =
+
+        -- Disabled
+
+        -- NOTE:
+        -- TODO:
+        -- fix:
+        -- fixme:
+
+        hl.TodoBgFIX = { fg = '#E7545E' }
+        hl.TodoBgFIXME = { link = 'TodoBgFIX' }
+        hl.TodoBgTODO = { link = 'Function' }
+        hl.TodoBgNOTE = { link = 'Function' }
+        --
+        --
+        --
+        --
+        --
+        --
+        --
+        --
+        --
+        --
+        --
+        --
+        --
+        --
+        --
+        --
+        --
+        --
+        --
+        --
+        --
+        --
+        --
+        --
+        --
+        --
+        --
+        --
+        --
+        --
+
+        hl.markdownBlockQuote = { fg = hl.Identifier.fg }
+
+        hl.LeapBackdrop = { link = 'Comment' }
         hl.LeapLabelPrimary = { link = 'Keyword' }
 
         -- hl.CursorLine.bg = cs.bg_statusline
@@ -1422,47 +1535,36 @@ require('lazy').setup({
         hl.DiffDelete = { fg = '#F00000' }
         hl.Structure = { link = 'Type' }
 
-        hl['@tag'] = { link = 'Function' }
-        hl['@tag.attribute'] = { fg = hl.Identifier.fg }
-        hl['@tag.delimiter'] = { link = 'Delimiter' }
-        hl['@tag.builtin'] = { link = 'Function' }
-        hl['@constructor'] = { link = 'Type' }
-        hl['@type.builtin'] = { link = 'Type' }
-        hl['@spell.tsx'] = { link = 'String' }
-        hl['@function.builtin'] = { link = 'Function' }
-        hl['@constant.builtin'] = { link = 'Constant' }
-
-        -- hl.DiffviewDiffDeleteDim = { fg = '#FF0000' }
+        hl.DiffviewDiffDeleteDim = { fg = '#FF0000' }
         --
         -- hl.Folded = { bg = 'none', fg = cs.magenta2, underline = true }
         --
-        -- hl.GitSignsAdd = { fg = hl.DiffAdd.bg }
-        -- hl.GitSignsDelete = { fg = hl.DiffDelete.fg }
-        -- hl.GitSignsChange = { fg = hl.DiffAdd.bg }
+        hl.CursorLineNr.fg = hl.String.fg
+
+        hl.GitSignsAdd = { link = 'Function' }
+        hl.GitSignsDelete = { link = 'Constant' }
+        hl.GitSignsChange = { link = 'String' }
         -- hl.GitSignsChange = { fg = cs.magenta }
         --
         -- hl.FoldColumn = hl.LineNr
         --
         -- hl.TreesitterContext.bg = nil
         --
-        hl.MiniStatuslineBranch = { fg = hl.Keyword.fg, bg = hl.StatusLine.fg }
-        hl.MiniStatuslineWorkspace = { fg = hl.Function.fg, bg = hl.StatusLine.fg }
-        hl.MiniStatuslineWorkspaceUnsaved = { fg = hl.Keyword.fg, bg = hl.StatusLine.fg }
-        -- hl.MiniStatuslineChanges = { fg = hl.Keyword.fg, bg = hl.StatusLine.fg }
-        hl.MiniStatuslineDiagnostics = { fg = hl.String.fg, bg = hl.StatusLine.fg }
+        hl.MiniStatuslineBranch = { fg = hl.Keyword.fg, bg = hl.StatusLineNC.fg }
+        hl.MiniStatuslineWorkspace = { fg = hl.Function.fg, bg = hl.StatusLineNC.fg }
+        hl.MiniStatuslineWorkspaceUnsaved = { fg = hl.Keyword.fg, bg = hl.StatusLineNC.fg }
+        hl.MiniStatuslineChanges = { fg = hl.Keyword.fg, bg = hl.StatusLineNC.fg }
+        hl.MiniStatuslineDiagnostics = { fg = hl.String.fg, bg = hl.StatusLineNC.fg }
         -- hl.MiniStatuslineFilename = { fg = cs.hint, bg = cs.bg_statusline }
         -- hl.MiniStatuslineFilenameUnsaved = { fg = cs.red, bg = cs.bg_statusline }
         --
-        hl.MiniStatuslineModeNormal = { fg = hl.StatusLine.fg, bg = hl.String.fg }
-        hl.MiniStatuslineModeVisual = { fg = hl.StatusLine.fg, bg = hl.Identifier.fg }
-        hl.MiniStatuslineModeInsert = { fg = hl.StatusLine.fg, bg = hl.Number.fg }
+        hl.MiniStatuslineFileinfo = { fg = hl.Identifier.fg, bg = hl.StatusLineNC.fg }
+        hl.MiniStatuslineModeNormal = { fg = hl.StatusLineNC.fg, bg = hl.String.fg }
+        hl.MiniStatuslineModeVisual = { fg = hl.StatusLineNC.fg, bg = hl.Constant.fg }
+        hl.MiniStatuslineModeInsert = { fg = hl.StatusLineNC.fg, bg = hl.Function.fg }
 
         hl.NormalFloat = { bg = nil }
         hl.WinSeparator = { fg = hl.String.fg }
-
-        -- hl.String.fg = hl.Number.fg
-        hl.Number.fg = hl.String.fg
-        hl.Boolean.fg = hl.String.fg
 
         -- needed for transparent background
         -- hl.Normal = { bg = nil }
@@ -1604,7 +1706,7 @@ require('lazy').setup({
     'nvim-treesitter/nvim-treesitter',
     build = ':TSUpdate',
     opts = {
-      ensure_installed = { 'bash', 'c', 'rust', 'typescript', 'html', 'lua', 'markdown', 'vim', 'vimdoc', 'javascript' },
+      ensure_installed = { 'bash', 'c', 'rust', 'typescript', 'tsx', 'html', 'lua', 'markdown', 'vim', 'vimdoc', 'javascript' },
       -- Autoinstall languages that are not installed
       auto_install = true,
       highlight = {
@@ -1632,9 +1734,45 @@ require('lazy').setup({
 
       -- testing treesitter nodes ...
       vim.keymap.set('n', '<leader>J', function()
+        local info = vim.inspect_pos()
+        local ts = info.treesitter
+        local st = info.semantic_tokens
+
+        ---@ class Foo
+        ---
+
+        -- print(vim.inspect(ts))
+
+        -- print(vim.inspect(st))
+        local links = {}
+
+        for _, sti in pairs(st) do
+          if sti and sti.opts and sti.opts.hl_group_link then
+            links[#links + 1] = sti.opts.hl_group_link
+          end
+        end
+
+        for _, tsi in pairs(ts) do
+          local link = tsi.hl_group_link
+          if link then
+            links[#links + 1] = link
+          end
+        end
+
         local node = vim.treesitter.get_node()
+        local nt = '?'
         if node then
-          print('node type is: ' .. node:type())
+          nt = node:type()
+        end
+
+        for _, link in ipairs(links) do
+          local hlg = vim.api.nvim_get_hl(0, { name = link })
+          if hlg.fg then
+            local color = string.format('%X', hlg.fg)
+            vim.fn.setreg('c', [["]] .. '#' .. color .. [["]])
+            print('found color:', color, 'from', link, 'for', nt)
+            break
+          end
         end
       end)
 
