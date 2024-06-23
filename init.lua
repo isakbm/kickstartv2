@@ -315,8 +315,6 @@ local function hex_color_highlight()
   end
 end
 
--- TODO: should add TextChanged
--- "#AAAAAA" "#FFAABB"
 vim.api.nvim_create_autocmd({ 'WinEnter', 'WinScrolled' }, {
   callback = function()
     hex_color_highlight()
@@ -1103,6 +1101,10 @@ require('lazy').setup({
           --
           -- When you move your cursor, the highlights will be cleared (the second autocommand).
           local client = vim.lsp.get_client_by_id(event.data.client_id)
+          if client and client.server_capabilities then
+            -- client.server_capabilities.semanticTokensProvider = nil
+          end
+
           -- if client and client.server_capabilities.documentHighlightProvider then
           --   vim.api.nvim_create_autocmd({ 'CursorHold' }, {
           --     buffer = event.buf,
@@ -1424,160 +1426,200 @@ require('lazy').setup({
         ---@type table<string, vim.api.keyset.highlight>
         local hl = theme.groups
 
-        --- @class Color
-        --- @field fg string?
-        --- @field bg string?
-
-        --- @type table<string, Color>
-        local colors = {
-          { fg = '#C39D5E', name = 'Type' },
-          { fg = '#845A40', name = 'Delimiter' },
-
-          { fg = '#845A40', name = 'Keyword' },
-          { fg = '#C39D5E', name = 'String' },
-          { fg = '#b8a586', name = 'Identifier' },
-          { fg = '#83A598', name = 'Function' },
-          { fg = '#bf6079', name = 'Constant' },
-          { fg = '#404040', name = 'Comment' },
-
-          -- '#487EB5' '#B8BB26' '#D3869B''#E7545E'  '#b8a586'
-        }
-
-        for _, color in pairs(colors) do
-          -- print('setting:', vim.inspect(color))
-          hl[color.name] = { fg = color.fg }
+        -- sets several highlight, if any already existed it gets overwritten entirely
+        ---@param names string | table<string>
+        ---@param data vim.api.keyset.highlight
+        local function set_hl(names, data)
+          if type(names) == 'string' then
+            set_hl({ names }, data)
+            return
+          end
+          for _, name in pairs(names) do
+            hl[name] = data
+          end
         end
 
-        -- Keyword links
-        hl.Repeat = { link = 'Keyword' }
-        hl.Conditional = { link = 'Keyword' }
+        -- tweaks an existing highlight, only adds or merges does not overwrite
+        ---@param names string | table<string>
+        ---@param data vim.api.keyset.highlight
+        local function tweak_hl(names, data)
+          if type(names) == 'string' then
+            tweak_hl({ names }, data)
+            return
+          end
+          for _, name in pairs(names) do
+            hl[name] = hl[name] or {}
+            hl[name] = vim.tbl_extend('force', hl[name], data)
+          end
+        end
 
-        -- Identifier links
-        hl['@markup.raw'] = { link = 'Identifier' }
-        hl['@tag.attribute'] = { link = 'Identifier' }
-        --
-        -- Function links
-        hl['@tag'] = { link = 'Function' }
-        hl['@function.builtin'] = { link = 'Function' }
-        hl['@tag.builtin'] = { link = 'Function' }
-        --
-        -- Type links
-        hl['@constructor'] = { link = 'Type' }
-        hl['@type.builtin'] = { link = 'Type' }
-        --
-        -- Delim links
-        hl['@tag.delimiter'] = { link = 'Delimiter' }
-        hl.Operator = { link = 'Delimiter' }
-        hl['@constructor.lua'] = { link = 'Dilimeter' }
-        --
-        -- Constant links
-        hl['@constant.builtin'] = { link = 'Constant' }
-        hl.SpecialChar = { link = 'Constant' }
-        --
-        -- String links
-        hl.Number = { link = 'String' }
-        hl.Boolean = { link = 'String' }
+        ---@type table<string, string>
+        local c = {
+          brown = '#845A40',
+          orange = '#ad6639',
+          sand = '#C39D5E',
+          white = '#b8a586',
+          teal = '#83A598',
+          blue3 = '#6d86b2',
+          pink = '#bf6079',
+          pink2 = '#E7545E',
+          pear = '#8EC07C', -- '#638657', '#637f59' '#4e7440'
+          pear2 = '#637f59',
 
-        -- hl.Normal.bg =
+          pear3 = '#a8bda0',
+          pear4 = '#95ad8c',
+          gray = '#404040',
+        }
 
-        -- Disabled
+        -- '#ad5353' '#ad7653' '#ad9b53' '#92ad53' '#62ad53' '#53ad6d' '#53ad97' '#53a4ad' '#5373ad' '#7d53ad' '#a353ad'
+        --
+        -- '#005bff' -> '#004fdd' '#004dd7' '#346bce' '#1e6eff' '#2674ff' '#74a5ff' -- dune blue eyes
+        --
+        -- '#00e8ff' -> '#37c5d3' '#008f9d' '#00646e' '#2e909a' '#3aa6b0'
+        --
+        -- '#00ffbb' ->
+        --
+        -- '#ff6400' -> '#a8714d' '#d5651c' '#3d2c21' '#3a1700' '#653e25' '#714a31'    -- dune orange
+        --
+        -- '#ff9f00' ->
+        --
+        -- '#ff1b00' -> '#e26d63'
+        --
+        -- '#C39D5E' '#ad5353' '#845A40' '#ad6639' '#ad7653' '#d79921' '#ad9b53' '#92ad53' '#62ad53' '#53ad6d' '#458588' '#53ad97' '#53a4ad' '#5373ad' '#7d53ad' '#a353ad'
+        --
+        --                               '#914c20'
+        -- let g:terminal_ansi_colors = ['#1c1c1c', '#cc241d', '#98971a', '#d79921', '#458588', '#b16286', '#689d6a',
+        --- '#b53a35' '#ad3e46' '#ad3e7a'
 
-        -- NOTE:
-        -- TODO:
-        -- fix:
-        -- fixme:
+        -- '#487EB5' '#B8BB26' '#D3869B''#E7545E'  '#b8a586'
 
-        hl.TodoBgFIX = { fg = '#E7545E' }
-        hl.TodoBgFIXME = { link = 'TodoBgFIX' }
-        hl.TodoBgTODO = { link = 'Function' }
-        hl.TodoBgNOTE = { link = 'Function' }
-        --
-        --
-        --
-        --
-        --
-        --
-        --
-        --
-        --
-        --
-        --
-        --
-        --
-        --
-        --
-        --
-        --
-        --
-        --
-        --
-        --
-        --
-        --
-        --
-        --
-        --
-        --
-        --
-        --
-        --
+        tweak_hl('Search', { fg = c.teal })
+        tweak_hl('IncSearch', { fg = c.sand })
+        tweak_hl('DiagnosticUnderlineError', { undercurl = true })
 
-        hl.markdownBlockQuote = { fg = hl.Identifier.fg }
+        set_hl('NormalFloat', { bg = nil })
 
-        hl.LeapBackdrop = { link = 'Comment' }
-        hl.LeapLabelPrimary = { link = 'Keyword' }
+        set_hl('Normal', { fg = c.white, bg = '#181818' })
+        set_hl('SignColumn', hl.Normal)
 
-        -- hl.CursorLine.bg = cs.bg_statusline
+        set_hl({
+          'Directory',
+          'Statement',
+          'Function',
+          'Macro',
+          '@tag',
+          '@function.builtin',
+          '@tag.builtin',
+          '@lsp.type.formatSpecifier',
+        }, { fg = c.teal })
 
-        hl.DiffAdd = { bg = '#003530' }
-        hl.DiffChange = { link = 'DiffAdd' }
-        hl.DiffText = { bg = '#004040' }
-        hl.DiffDelete = { fg = '#F00000' }
-        hl.Structure = { link = 'Type' }
+        set_hl({
+          'Delimiter',
+          'Keyword',
+          'Repeat',
+          'Conditional',
+          'Operator',
+          'WinSeparator',
+          '@tag.delimiter',
+          '@constructor.lua',
+          'LeapLabelPrimary',
+        }, { fg = c.brown })
 
-        hl.DiffviewDiffDeleteDim = { fg = '#FF0000' }
-        --
-        -- hl.Folded = { bg = 'none', fg = cs.magenta2, underline = true }
-        --
-        hl.CursorLineNr.fg = hl.String.fg
+        set_hl({
+          'Type',
+          'Number',
+          'Boolean',
+          'String',
+          'Structure',
+          'GitSignsChange',
+          'CursorLineNr',
+          '@constructor',
+          '@type.builtin',
+        }, { fg = c.sand })
 
-        hl.GitSignsAdd = { link = 'Function' }
-        hl.GitSignsDelete = { link = 'Constant' }
-        hl.GitSignsChange = { link = 'String' }
-        -- hl.GitSignsChange = { fg = cs.magenta }
-        --
-        -- hl.FoldColumn = hl.LineNr
-        --
-        -- hl.TreesitterContext.bg = nil
-        --
-        hl.MiniStatuslineBranch = { fg = hl.Keyword.fg, bg = hl.StatusLineNC.fg }
-        hl.MiniStatuslineWorkspace = { fg = hl.Function.fg, bg = hl.StatusLineNC.fg }
-        hl.MiniStatuslineWorkspaceUnsaved = { fg = hl.Keyword.fg, bg = hl.StatusLineNC.fg }
-        hl.MiniStatuslineChanges = { fg = hl.Keyword.fg, bg = hl.StatusLineNC.fg }
-        hl.MiniStatuslineDiagnostics = { fg = hl.String.fg, bg = hl.StatusLineNC.fg }
-        -- hl.MiniStatuslineFilename = { fg = cs.hint, bg = cs.bg_statusline }
-        -- hl.MiniStatuslineFilenameUnsaved = { fg = cs.red, bg = cs.bg_statusline }
-        --
-        hl.MiniStatuslineFileinfo = { fg = hl.Identifier.fg, bg = hl.StatusLineNC.fg }
-        hl.MiniStatuslineModeNormal = { fg = hl.StatusLineNC.fg, bg = hl.String.fg }
-        hl.MiniStatuslineModeVisual = { fg = hl.StatusLineNC.fg, bg = hl.Constant.fg }
-        hl.MiniStatuslineModeInsert = { fg = hl.StatusLineNC.fg, bg = hl.Function.fg }
+        set_hl({
+          'Identifier',
+          '@markup.raw',
+          '@tag.attribute',
+          'markdownBlockQuote',
+        }, { fg = c.white })
 
-        hl.NormalFloat = { bg = nil }
-        hl.WinSeparator = { fg = hl.String.fg }
+        set_hl({
+          'Include',
+          'Label',
+          'Title',
+          'TodoBgTODO',
+          'TodoBgNOTE',
+          'GitSignsAdd',
+          '@lsp.type.namespace',
+          '@module',
+        }, { fg = c.pear })
 
-        -- needed for transparent background
-        -- hl.Normal = { bg = nil }
-        -- hl.NormalNC = { bg = nil }
-        -- hl.VertSplit.bg = nil
-        -- hl.WhichKeyFloat = { bg = nil }
-        -- hl.SignColumn = { bg = nil }
-        -- hl.TelescopeNormal = { bg = nil }
-        -- hl.TelescopeBorder = { bg = nil }
-        -- hl.TelescopePromptBorder = { bg = nil }
-        -- hl.TelescopePromptTitle = { bg = nil }
-        -- hl.NotifyBackground = { bg = nil }
-        -- hl.NotifyINFOBody = { bg = nil }
+        set_hl({
+          'Constant',
+          'SpecialChar',
+          'GitSignsDelete',
+          '@constant.builtin',
+          '@lsp.type.lifetime',
+          '@lsp.typemod.keyword.async',
+        }, { fg = c.pink })
+
+        set_hl({
+          'Comment',
+          'LeapBackdrop',
+        }, { fg = c.gray })
+
+        set_hl({
+          'TodoBgFIX',
+          'TodoBgFIXME',
+        }, { fg = c.pink2 })
+
+        set_hl('Special', { fg = c.orange })
+
+        set_hl('flogBranch0', { fg = '#458588' })
+        set_hl('flogBranch1', { fg = '#458588' })
+        set_hl('flogBranch2', { fg = '#689d6a' })
+        set_hl('flogBranch3', { fg = '#b16286' })
+        set_hl('flogBranch4', { fg = '#d79921' })
+        set_hl('flogBranch5', { fg = '#98971a' })
+        set_hl('flogBranch6', { fg = '#E7545E' })
+        set_hl('flogBranch7', { fg = '#ad6639' })
+        set_hl('flogBranch8', { fg = '#b53a35' })
+        set_hl('flogBranch9', { fg = '#d5651c' })
+
+        set_hl({
+          'DiffAdd',
+          'DiffChange',
+        }, { bg = '#003530' })
+
+        set_hl('DiffText', { bg = '#004040' })
+        set_hl('DiffDelete', { fg = '#F00000' })
+        set_hl('DiffviewDiffDeleteDim', { fg = '#F00000' })
+
+        set_hl({
+          'MiniStatuslineBranch',
+          'MiniStatuslineWorkspace',
+          'MiniStatuslineWorkspaceUnsaved',
+          'MiniStatuslineChanges',
+          'MiniStatuslineDiagnostics',
+          'MiniStatuslineFileinfo',
+        }, { bg = hl.StatusLineNC.fg })
+
+        tweak_hl('MiniStatuslineBranch', { fg = c.pear })
+        tweak_hl('MiniStatuslineWorkspaceUnsaved', { fg = c.pink2 })
+        tweak_hl('MiniStatuslineChanges', { fg = c.sand })
+        tweak_hl('MiniStatuslineDiagnostics', { fg = c.teal })
+        tweak_hl('MiniStatuslineFileinfo', { fg = c.teal })
+
+        set_hl({
+          'MiniStatuslineModeNormal',
+          'MiniStatuslineModeVisual',
+          'MiniStatuslineModeInsert',
+        }, { fg = hl.StatusLineNC.fg })
+
+        tweak_hl('MiniStatuslineModeNormal', { bg = c.sand })
+        tweak_hl('MiniStatuslineModeVisual', { bg = c.pink })
+        tweak_hl('MiniStatuslineModeInsert', { bg = c.teal })
 
         ---@diagnostic disable-next-line: undefined-field
         theme:apply()
@@ -1738,12 +1780,6 @@ require('lazy').setup({
         local ts = info.treesitter
         local st = info.semantic_tokens
 
-        ---@ class Foo
-        ---
-
-        -- print(vim.inspect(ts))
-
-        -- print(vim.inspect(st))
         local links = {}
 
         for _, sti in pairs(st) do
