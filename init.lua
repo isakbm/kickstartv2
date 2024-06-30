@@ -102,6 +102,8 @@
 
   TODO:
 
+    >> unify the way completion info and hover info style docstrings
+
     >> `export class Foo` in typescript, then `class` is not getting highlighted
         correctly, it should be some keyword in language, but instead it's highlighted
         as being part of the definition of the custom type ...
@@ -117,17 +119,11 @@
 
     >> Make it possible to exit out of git status window with ESC ESC 
 
-    >> Something is wrong with the nerdfont icons, they are sometimes
-       cut short on their right hand side. See `:Mason` and `:Lazy` and
-       the icons used at the beginning of every list item there.
-
     >> Add a little toolbox window that you can open at any time
        Make it searchable.
        Have tool slike `to uppercase` `to hex` etc etc :D
 
     >> Find a way to jump to a web URL without using mouse  
-
-    >> Shift F is now bound to leap ... but F is good for finding backwards ...
 
     >> find better way of typoing [ ] and { } on a norwegian keyboard?
 
@@ -233,6 +229,39 @@ WIN_BORDER = border_maker('─', '│', '╭', '╮', '╯', '╰')
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 vim.keymap.set('n', '<C-f>', '<NOP>')
 
+do
+  -- NOTE: this is here to test bugfix of which key !
+  -- TODO: remove this shortly
+  vim.keymap.set('n', '<leader>A', function()
+    vim.keymap.set('n', '<leader>aa', function()
+      print 'aa'
+    end, { buffer = vim.api.nvim_get_current_buf() })
+
+    vim.keymap.set('n', '<leader>ab', function()
+      print 'ab'
+    end, { buffer = vim.api.nvim_get_current_buf() })
+
+    vim.keymap.set('n', '<leader>bb', function()
+      print 'bb'
+    end, {})
+
+    vim.keymap.set('n', '<leader>ba', function()
+      print 'ba'
+    end, {})
+
+    vim.keymap.set('n', '<leader>x', function()
+      print 'x'
+    end, {})
+  end)
+
+  vim.keymap.set('n', '<leader>S', function()
+    -- vim.keymap.del('n', 'Q')
+    vim.keymap.del('n', '<leader>aa', { buffer = vim.api.nvim_get_current_buf() })
+    vim.keymap.del('n', '<leader>ab', { buffer = vim.api.nvim_get_current_buf() })
+    vim.keymap.del('n', '<leader>bb', {})
+  end)
+end
+
 -- NOTE: swap lines like in vscode
 --
 --   we've bound <M-*> so the `Alt` or `Modifier` key, however, see :h :map-alt and you'll notice that
@@ -241,8 +270,6 @@ vim.keymap.set('n', '<C-f>', '<NOP>')
 --   in normal mode, you'll also trigger the below keymaps.
 vim.keymap.set('n', '<C-j>', ':m+1<cr>', { desc = 'swap line with line below' }) -- vscode <alt> + <up>
 vim.keymap.set('n', '<C-k>', ':m-2<cr>', { desc = 'swap line with line above' }) -- vscode <alt> + <down>
-
-vim.keymap.set('n', 'Q', '/')
 
 -- NOTE: Jump between tabs using 'Alt + number'
 for i = 1, 9 do
@@ -549,7 +576,7 @@ require('lazy').setup({
   --  config = function() ... end
 
   { -- Useful plugin to show you pending keybinds.
-    'folke/which-key.nvim',
+    'isakbm/which-key.nvim',
     event = 'VimEnter', -- Sets the loading event to 'VimEnter'
     enabled = vim.g.enable_whichkey, -- To allow easy toggling of this above
     config = function() -- This is the function that runs, AFTER loading
@@ -955,6 +982,8 @@ require('lazy').setup({
 
   { -- LSP Configuration & Plugins
     'neovim/nvim-lspconfig',
+
+    -- package_installed = "◍ ",
     dependencies = {
       -- Automatically install LSPs and related tools to stdpath for neovim
       'williamboman/mason.nvim',
@@ -1085,7 +1114,37 @@ require('lazy').setup({
 
           -- Execute a code action, usually your cursor needs to be on top of an error
           -- or a suggestion from your LSP for this to activate.
-          map('<leader>ca', vim.lsp.buf.code_action, '[C]ode [A]ction')
+          local code_action_desc = '[C]ode [A]ction'
+          map('<leader>ca', vim.lsp.buf.code_action, code_action_desc)
+          -- NOTE: the bellow auto command works around certain other plugins overwriting it
+          vim.api.nvim_create_autocmd('WinEnter', {
+            callback = function(e)
+              if e.buf ~= event.buf then
+                return
+              end
+
+              local kmaps = vim.api.nvim_buf_get_keymap(event.buf, 'n')
+
+              ---@type boolean
+              local diff = vim.api.nvim_get_option_value('diff', { win = 0 })
+              if diff then
+                return
+              end
+
+              local missing = true
+              for _, k in pairs(kmaps) do
+                if k.lhs == ' ca' and k.desc == code_action_desc then
+                  missing = false
+                  break
+                end
+              end
+
+              if missing then
+                map('<leader>ca', vim.lsp.buf.code_action, '[C]ode [A]ction')
+              end
+            end,
+            buffer = event.buf,
+          })
 
           -- Opens a popup that displays documentation about the word under your cursor
           --  See `:help K` for why this keymap
@@ -1205,6 +1264,11 @@ require('lazy').setup({
       require('mason').setup {
         ui = {
           border = WIN_BORDER,
+          icons = {
+            package_installed = '✓',
+            package_pending = '➜',
+            package_uninstalled = '✗',
+          },
         },
       }
 
@@ -1465,11 +1529,18 @@ require('lazy').setup({
           pink2 = '#E7545E',
           pear = '#8EC07C', -- '#638657', '#637f59' '#4e7440'
           pear2 = '#637f59',
+          pear33 = '#2a3625', -- '#171c14' '#1d2419'
+          pear44 = '#2a3028',
 
           pear3 = '#a8bda0',
           pear4 = '#95ad8c',
           gray = '#404040',
         }
+
+        -- ctx.correlationId,
+
+        -- white_disabled = '#847762',
+        -- set_hl('DiagnosticUnnecessary', { fg = c.white_disabled })
 
         -- '#ad5353' '#ad7653' '#ad9b53' '#92ad53' '#62ad53' '#53ad6d' '#53ad97' '#53a4ad' '#5373ad' '#7d53ad' '#a353ad'
         --
@@ -1497,7 +1568,7 @@ require('lazy').setup({
         tweak_hl('IncSearch', { fg = c.sand })
         tweak_hl('DiagnosticUnderlineError', { undercurl = true })
 
-        set_hl('NormalFloat', { bg = nil })
+        set_hl('NormalFloat', { fg = c.white, bg = nil })
 
         set_hl('Normal', { fg = c.white, bg = '#181818' })
         set_hl('SignColumn', hl.Normal)
@@ -1520,6 +1591,7 @@ require('lazy').setup({
           'Conditional',
           'Operator',
           'WinSeparator',
+          'TelescopeBorder',
           '@tag.delimiter',
           '@constructor.lua',
           'LeapLabelPrimary',
@@ -1548,9 +1620,11 @@ require('lazy').setup({
           'Include',
           'Label',
           'Title',
+          'TelescopeTitle',
           'TodoBgTODO',
           'TodoBgNOTE',
           'GitSignsAdd',
+          'flogRefHead',
           '@lsp.type.namespace',
           '@module',
         }, { fg = c.pear })
@@ -1620,6 +1694,8 @@ require('lazy').setup({
         tweak_hl('MiniStatuslineModeNormal', { bg = c.sand })
         tweak_hl('MiniStatuslineModeVisual', { bg = c.pink })
         tweak_hl('MiniStatuslineModeInsert', { bg = c.teal })
+
+        set_hl('Visual', { bg = c.pear33 })
 
         ---@diagnostic disable-next-line: undefined-field
         theme:apply()
