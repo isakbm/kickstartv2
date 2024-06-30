@@ -102,6 +102,20 @@
 
   TODO:
 
+    >> make a real time color theme adjuster
+       - should have a nice ui that you can open in a split view to the side
+       - the UI should have a big rectangle with color pixels that you can select by navigating with h j k l
+       - you select which color you are modifying, there are only a small handful of colors as defined and registered
+         near mini.colors setup
+
+    >> using `<leader>gs` to get the :Git (git status using fugitive)
+       behaves in a very annoying way. If you try to stage things
+       within it you're going to get interrogated. Right now you can avoid
+       this by staging things in Diffview. So the task is to find a way
+       to avoid this annoyance, would be nice if staging things from :Git
+       did not open up an entire interrogation session about which hunks you want
+       etc ... currently this behavior seems hard to reproduce o.O
+
     >> unify the way completion info and hover info style docstrings
 
     >> `export class Foo` in typescript, then `class` is not getting highlighted
@@ -160,6 +174,7 @@
 =================================================================--]]
 
 -- NOTE: :help localleader
+-- testytest
 vim.g.mapleader = ' ' -- Set <space> as the leader key
 vim.g.maplocalleader = ' ' --- Set <space> as the local leader key
 vim.g.have_nerd_font = true -- Set to true if you have a Nerd Font installed
@@ -219,6 +234,21 @@ function border_maker(ho, ve, ul, ur, lr, ll)
   }
 end
 
+local hide_cursor = function()
+  vim.cmd 'highlight Cursor blend=100'
+  vim.opt.guicursor:append 'a:Cursor/lCursor'
+end
+
+local show_cursor = function()
+  print 'showing cursor again ...'
+  vim.cmd 'highlight clear Cursor'
+  vim.opt.guicursor = vim.opt.guicursor - 'a:Cursor/lCursor'
+
+  print('... guicursor?:', vim.inspect(vim.opt.guicursor))
+end
+
+-- NOTE: you can modify your font using font-forge, i liked 0xProto
+--       but did not like it's box corners so adjusted them
 WIN_BORDER = border_maker('─', '│', '╭', '╮', '╯', '╰')
 
 --=========================== KEYMAPS =============================
@@ -287,6 +317,7 @@ vim.diagnostic.config {
   },
 }
 
+--- @type table<string, string>
 local hlgs = {}
 
 local my_ns = vim.api.nvim_create_namespace 'isaks'
@@ -298,14 +329,6 @@ local my_ns = vim.api.nvim_create_namespace 'isaks'
 local function hex_color_highlight()
   local top = vim.fn.line 'w0'
   local bot = vim.fn.line 'w$'
-
-  --- @type table<string, string>
-  ---
-  ---
-  -- local hlgs = vim.g.hex_highlight_groups
-  if not hlgs then
-    hlgs = {}
-  end
 
   local text = vim.api.nvim_buf_get_lines(0, top, bot, true)
 
@@ -1485,38 +1508,6 @@ require('lazy').setup({
         -- everything related to color theme goes here inside this block
         require('mini.colors').setup {}
 
-        ---@type Colorscheme
-        local theme = MiniColors.get_colorscheme 'retrobox'
-        ---@type table<string, vim.api.keyset.highlight>
-        local hl = theme.groups
-
-        -- sets several highlight, if any already existed it gets overwritten entirely
-        ---@param names string | table<string>
-        ---@param data vim.api.keyset.highlight
-        local function set_hl(names, data)
-          if type(names) == 'string' then
-            set_hl({ names }, data)
-            return
-          end
-          for _, name in pairs(names) do
-            hl[name] = data
-          end
-        end
-
-        -- tweaks an existing highlight, only adds or merges does not overwrite
-        ---@param names string | table<string>
-        ---@param data vim.api.keyset.highlight
-        local function tweak_hl(names, data)
-          if type(names) == 'string' then
-            tweak_hl({ names }, data)
-            return
-          end
-          for _, name in pairs(names) do
-            hl[name] = hl[name] or {}
-            hl[name] = vim.tbl_extend('force', hl[name], data)
-          end
-        end
-
         ---@type table<string, string>
         local c = {
           brown = '#845A40',
@@ -1537,168 +1528,363 @@ require('lazy').setup({
           gray = '#404040',
         }
 
-        -- ctx.correlationId,
+        ---@type Colorscheme
+        local theme = MiniColors.get_colorscheme 'retrobox'
+        ---@type table<string, vim.api.keyset.highlight>
+        ---
+        ---
+        ---@class I.UpdateOpts
+        ---@field clear boolean?
 
-        -- white_disabled = '#847762',
-        -- set_hl('DiagnosticUnnecessary', { fg = c.white_disabled })
+        --- update highlights based on input color palette
+        ---@param c table<string, string>
+        ---@param opts? I.UpdateOpts
+        local update_highlights = function(c, opts)
+          if not theme then
+            print 'warning no theme'
+            return
+          end
 
-        -- '#ad5353' '#ad7653' '#ad9b53' '#92ad53' '#62ad53' '#53ad6d' '#53ad97' '#53a4ad' '#5373ad' '#7d53ad' '#a353ad'
-        --
-        -- '#005bff' -> '#004fdd' '#004dd7' '#346bce' '#1e6eff' '#2674ff' '#74a5ff' -- dune blue eyes
-        --
-        -- '#00e8ff' -> '#37c5d3' '#008f9d' '#00646e' '#2e909a' '#3aa6b0'
-        --
-        -- '#00ffbb' ->
-        --
-        -- '#ff6400' -> '#a8714d' '#d5651c' '#3d2c21' '#3a1700' '#653e25' '#714a31'    -- dune orange
-        --
-        -- '#ff9f00' ->
-        --
-        -- '#ff1b00' -> '#e26d63'
-        --
-        -- '#C39D5E' '#ad5353' '#845A40' '#ad6639' '#ad7653' '#d79921' '#ad9b53' '#92ad53' '#62ad53' '#53ad6d' '#458588' '#53ad97' '#53a4ad' '#5373ad' '#7d53ad' '#a353ad'
-        --
-        --                               '#914c20'
-        -- let g:terminal_ansi_colors = ['#1c1c1c', '#cc241d', '#98971a', '#d79921', '#458588', '#b16286', '#689d6a',
-        --- '#b53a35' '#ad3e46' '#ad3e7a'
+          local hl = theme.groups
 
-        -- '#487EB5' '#B8BB26' '#D3869B''#E7545E'  '#b8a586'
+          -- sets several highlight, if any already existed it gets overwritten entirely
+          ---@param names string | table<string>
+          ---@param data vim.api.keyset.highlight
+          local function set_hl(names, data)
+            if type(names) == 'string' then
+              set_hl({ names }, data)
+              return
+            end
+            for _, name in pairs(names) do
+              hl[name] = data
+            end
+          end
 
-        tweak_hl('Search', { fg = c.teal })
-        tweak_hl('IncSearch', { fg = c.sand })
-        tweak_hl('DiagnosticUnderlineError', { undercurl = true })
+          -- tweaks an existing highlight, only adds or merges does not overwrite
+          ---@param names string | table<string>
+          ---@param data vim.api.keyset.highlight
+          local function tweak_hl(names, data)
+            if type(names) == 'string' then
+              tweak_hl({ names }, data)
+              return
+            end
+            for _, name in pairs(names) do
+              hl[name] = hl[name] or {}
+              hl[name] = vim.tbl_extend('force', hl[name], data)
+            end
+          end
 
-        set_hl('NormalFloat', { fg = c.white, bg = nil })
+          -- ctx.correlationId,
 
-        set_hl('Normal', { fg = c.white, bg = '#181818' })
-        set_hl('SignColumn', hl.Normal)
+          -- white_disabled = '#847762',
+          -- set_hl('DiagnosticUnnecessary', { fg = c.white_disabled })
 
-        set_hl({
-          'Directory',
-          'Statement',
-          'Function',
-          'Macro',
-          '@tag',
-          '@function.builtin',
-          '@tag.builtin',
-          '@lsp.type.formatSpecifier',
-        }, { fg = c.teal })
+          -- '#ad5353' '#ad7653' '#ad9b53' '#92ad53' '#62ad53' '#53ad6d' '#53ad97' '#53a4ad' '#5373ad' '#7d53ad' '#a353ad'
+          --
+          -- '#005bff' -> '#004fdd' '#004dd7' '#346bce' '#1e6eff' '#2674ff' '#74a5ff' -- dune blue eyes
+          --
+          -- '#00e8ff' -> '#37c5d3' '#008f9d' '#00646e' '#2e909a' '#3aa6b0'
+          --
+          -- '#00ffbb' ->
+          --
+          -- '#ff6400' -> '#a8714d' '#d5651c' '#3d2c21' '#3a1700' '#653e25' '#714a31'    -- dune orange
+          --
+          -- '#ff9f00' ->
+          --
+          -- '#ff1b00' -> '#e26d63'
+          --
+          -- '#C39D5E' '#ad5353' '#845A40' '#ad6639' '#ad7653' '#d79921' '#ad9b53' '#92ad53' '#62ad53' '#53ad6d' '#458588' '#53ad97' '#53a4ad' '#5373ad' '#7d53ad' '#a353ad'
+          --
+          --                               '#914c20'
+          -- let g:terminal_ansi_colors = ['#1c1c1c', '#cc241d', '#98971a', '#d79921', '#458588', '#b16286', '#689d6a',
+          --- '#b53a35' '#ad3e46' '#ad3e7a'
 
-        set_hl({
-          'Delimiter',
-          'Keyword',
-          'Repeat',
-          'Conditional',
-          'Operator',
-          'WinSeparator',
-          'TelescopeBorder',
-          '@tag.delimiter',
-          '@constructor.lua',
-          'LeapLabelPrimary',
-        }, { fg = c.brown })
+          -- '#487EB5' '#B8BB26' '#D3869B''#E7545E'  '#b8a586'
 
-        set_hl({
-          'Type',
-          'Number',
-          'Boolean',
-          'String',
-          'Structure',
-          'GitSignsChange',
-          'CursorLineNr',
-          '@constructor',
-          '@type.builtin',
-        }, { fg = c.sand })
+          tweak_hl('Search', { fg = c.teal })
+          tweak_hl('IncSearch', { fg = c.sand })
+          tweak_hl('DiagnosticUnderlineError', { undercurl = true })
 
-        set_hl({
-          'Identifier',
-          '@markup.raw',
-          '@tag.attribute',
-          'markdownBlockQuote',
-        }, { fg = c.white })
+          set_hl('NormalFloat', { fg = c.white, bg = nil })
 
-        set_hl({
-          'Include',
-          'Label',
-          'Title',
-          'TelescopeTitle',
-          'TodoBgTODO',
-          'TodoBgNOTE',
-          'GitSignsAdd',
-          'flogRefHead',
-          '@lsp.type.namespace',
-          '@module',
-        }, { fg = c.pear })
+          set_hl('Normal', { fg = c.white, bg = '#181818' })
+          set_hl('SignColumn', hl.Normal)
 
-        set_hl({
-          'Constant',
-          'SpecialChar',
-          'GitSignsDelete',
-          '@constant.builtin',
-          '@lsp.type.lifetime',
-          '@lsp.typemod.keyword.async',
-        }, { fg = c.pink })
+          set_hl({
+            'Directory',
+            'Statement',
+            'Function',
+            'Macro',
+            '@tag',
+            '@function.builtin',
+            '@tag.builtin',
+            '@lsp.type.formatSpecifier',
+          }, { fg = c.teal })
 
-        set_hl({
-          'Comment',
-          'LeapBackdrop',
-        }, { fg = c.gray })
+          set_hl({
+            'Delimiter',
+            'Keyword',
+            'Repeat',
+            'ColorEditTitle',
+            'Conditional',
+            'Operator',
+            'WinSeparator',
+            'TelescopeBorder',
+            '@tag.delimiter',
+            '@constructor.lua',
+            'LeapLabelPrimary',
+          }, { fg = c.brown })
 
-        set_hl({
-          'TodoBgFIX',
-          'TodoBgFIXME',
-        }, { fg = c.pink2 })
+          set_hl({
+            'Type',
+            'Number',
+            'Boolean',
+            'String',
+            'Structure',
+            'GitSignsChange',
+            'CursorLineNr',
+            '@constructor',
+            '@type.builtin',
+          }, { fg = c.sand })
 
-        set_hl('Special', { fg = c.orange })
+          set_hl({
+            'Identifier',
+            '@markup.raw',
+            '@tag.attribute',
+            'markdownBlockQuote',
+          }, { fg = c.white })
 
-        set_hl('flogBranch0', { fg = '#458588' })
-        set_hl('flogBranch1', { fg = '#458588' })
-        set_hl('flogBranch2', { fg = '#689d6a' })
-        set_hl('flogBranch3', { fg = '#b16286' })
-        set_hl('flogBranch4', { fg = '#d79921' })
-        set_hl('flogBranch5', { fg = '#98971a' })
-        set_hl('flogBranch6', { fg = '#E7545E' })
-        set_hl('flogBranch7', { fg = '#ad6639' })
-        set_hl('flogBranch8', { fg = '#b53a35' })
-        set_hl('flogBranch9', { fg = '#d5651c' })
+          set_hl({
+            'Include',
+            'Label',
+            'Title',
+            'ColorEditTitleActive',
+            'TelescopeTitle',
+            'TodoBgTODO',
+            'TodoBgNOTE',
+            'GitSignsAdd',
+            'flogRefHead',
+            '@lsp.type.namespace',
+            '@module',
+          }, { fg = c.pear })
 
-        set_hl({
-          'DiffAdd',
-          'DiffChange',
-        }, { bg = '#003530' })
+          set_hl({
+            'Constant',
+            'SpecialChar',
+            'GitSignsDelete',
+            '@constant.builtin',
+            '@lsp.type.lifetime',
+            '@lsp.typemod.keyword.async',
+          }, { fg = c.pink })
 
-        set_hl('DiffText', { bg = '#004040' })
-        set_hl('DiffDelete', { fg = '#F00000' })
-        set_hl('DiffviewDiffDeleteDim', { fg = '#F00000' })
+          set_hl({
+            'Comment',
+            'LeapBackdrop',
+          }, { fg = c.gray })
 
-        set_hl({
-          'MiniStatuslineBranch',
-          'MiniStatuslineWorkspace',
-          'MiniStatuslineWorkspaceUnsaved',
-          'MiniStatuslineChanges',
-          'MiniStatuslineDiagnostics',
-          'MiniStatuslineFileinfo',
-        }, { bg = hl.StatusLineNC.fg })
+          set_hl({
+            'TodoBgFIX',
+            'TodoBgFIXME',
+          }, { fg = c.pink2 })
 
-        tweak_hl('MiniStatuslineBranch', { fg = c.pear })
-        tweak_hl('MiniStatuslineWorkspaceUnsaved', { fg = c.pink2 })
-        tweak_hl('MiniStatuslineChanges', { fg = c.sand })
-        tweak_hl('MiniStatuslineDiagnostics', { fg = c.teal })
-        tweak_hl('MiniStatuslineFileinfo', { fg = c.teal })
+          set_hl('Special', { fg = c.orange })
 
-        set_hl({
-          'MiniStatuslineModeNormal',
-          'MiniStatuslineModeVisual',
-          'MiniStatuslineModeInsert',
-        }, { fg = hl.StatusLineNC.fg })
+          set_hl('flogBranch0', { fg = '#458588' })
+          set_hl('flogBranch1', { fg = '#458588' })
+          set_hl('flogBranch2', { fg = '#689d6a' })
+          set_hl('flogBranch3', { fg = '#b16286' })
+          set_hl('flogBranch4', { fg = '#d79921' })
+          set_hl('flogBranch5', { fg = '#98971a' })
+          set_hl('flogBranch6', { fg = '#E7545E' })
+          set_hl('flogBranch7', { fg = '#ad6639' })
+          set_hl('flogBranch8', { fg = '#b53a35' })
+          set_hl('flogBranch9', { fg = '#d5651c' })
 
-        tweak_hl('MiniStatuslineModeNormal', { bg = c.sand })
-        tweak_hl('MiniStatuslineModeVisual', { bg = c.pink })
-        tweak_hl('MiniStatuslineModeInsert', { bg = c.teal })
+          set_hl({
+            'DiffAdd',
+            'DiffChange',
+          }, { bg = '#003530' })
 
-        set_hl('Visual', { bg = c.pear33 })
+          set_hl('DiffText', { bg = '#004040' })
+          set_hl('DiffDelete', { fg = '#F00000' })
+          set_hl('DiffviewDiffDeleteDim', { fg = '#F00000' })
 
-        ---@diagnostic disable-next-line: undefined-field
-        theme:apply()
+          set_hl({
+            'MiniStatuslineBranch',
+            'MiniStatuslineWorkspace',
+            'MiniStatuslineWorkspaceUnsaved',
+            'MiniStatuslineChanges',
+            'MiniStatuslineDiagnostics',
+            'MiniStatuslineFileinfo',
+          }, { bg = hl.StatusLineNC.fg })
+
+          tweak_hl('MiniStatuslineBranch', { fg = c.pear })
+          tweak_hl('MiniStatuslineWorkspaceUnsaved', { fg = c.pink2 })
+          tweak_hl('MiniStatuslineChanges', { fg = c.sand })
+          tweak_hl('MiniStatuslineDiagnostics', { fg = c.teal })
+          tweak_hl('MiniStatuslineFileinfo', { fg = c.teal })
+
+          set_hl({
+            'MiniStatuslineModeNormal',
+            'MiniStatuslineModeVisual',
+            'MiniStatuslineModeInsert',
+          }, { fg = hl.StatusLineNC.fg })
+
+          tweak_hl('MiniStatuslineModeNormal', { bg = c.sand })
+          tweak_hl('MiniStatuslineModeVisual', { bg = c.pink })
+          tweak_hl('MiniStatuslineModeInsert', { bg = c.teal })
+
+          set_hl('Visual', { bg = c.pear33 })
+
+          ---@diagnostic disable-next-line: undefined-field
+          theme:apply(opts)
+        end
+
+        vim.keymap.set('n', '<leader>C', function()
+          -- active color being edited
+          local name = 'teal'
+
+          local old_value = c[name]:sub(2)
+          local _r = old_value:sub(1, 2)
+          local _g = old_value:sub(3, 4)
+          local _b = old_value:sub(5, 6)
+
+          -- stores intensity values for each color channel
+          local color = { r = _r, g = _g, b = _b }
+
+          -- stores window ids for each color channel (r, g, b)
+          local chan_win = { 0, 0, 0 }
+
+          ---@param channel "r" | "g" | "b"
+          local new_float_rgb = function(channel)
+            local height = vim.api.nvim_win_get_height(0)
+            local width = vim.api.nvim_win_get_width(0)
+
+            local chan_idx = ({ r = 1, g = 2, b = 3 })[channel]
+            local chan_width = 2
+
+            -- local num_shades = math.max(height - 4, 4)
+            local num_shades = 255
+
+            ---@type string[]
+            local values = {}
+            for idx = 0, num_shades do
+              local v = string.format('%02x', (idx * 255) / num_shades)
+              values[#values + 1] = v
+            end
+
+            local colors = {}
+            for _, v in pairs(values) do
+              colors[#colors + 1] = ({
+                r = '#' .. v .. '0000',
+                g = '#' .. '00' .. v .. '00',
+                b = '#' .. '0000' .. v,
+              })[channel]
+            end
+
+            local h = math.max(math.floor(height / 2), 5)
+
+            ---@class Array
+            local foo = {}
+
+            local buf = vim.api.nvim_create_buf(false, true)
+            local win_title = ' ' .. channel .. ' '
+            local win = vim.api.nvim_open_win(buf, false, {
+              relative = 'win',
+              row = math.floor(h / 2),
+              col = chan_idx * (chan_width + 2) + width / 2,
+              width = chan_width,
+              height = 1,
+              border = WIN_BORDER,
+              style = 'minimal',
+              title = { { win_title, 'ColorEditTitle' } },
+              title_pos = 'center',
+            })
+
+            chan_win[chan_idx] = win
+
+            -- vim.api.nvim_set_current_win(win)
+            vim.api.nvim_buf_set_lines(buf, 0, 2, false, values)
+
+            -- color the values
+            for idx, c in ipairs(colors) do
+              local rgb = string.sub(c, 2)
+              local hl_name = 'ColorTheme-R-' .. rgb
+              local sh = idx > (num_shades / 2) and '00' or '99'
+              local fg = '#' .. sh .. sh .. sh
+              vim.api.nvim_set_hl(0, hl_name, { bg = c, fg = fg })
+              vim.api.nvim_buf_add_highlight(buf, 0, hl_name, idx - 1, 0, -1)
+            end
+
+            -- set the cursor at old color position
+            local v = tonumber(color[channel], 16)
+            vim.api.nvim_win_set_cursor(win, { v + 1, 0 })
+
+            -- keymaps for switching between the chanels with Alt + idx
+            for i = 1, 3 do
+              vim.keymap.set('n', '<M-' .. i .. '>', function()
+                vim.api.nvim_set_current_win(chan_win[i])
+              end, { desc = 'Goto channel ' .. i, buffer = buf })
+            end
+
+            -- keymap for closing the highlight editor
+            vim.keymap.set('n', '<Esc><Esc>', function()
+              for i = 1, 3 do
+                vim.api.nvim_win_close(chan_win[i], true)
+              end
+            end, { desc = 'Close highlight group editor', buffer = buf })
+
+            -- update the highlight group when the color value is changed
+            vim.api.nvim_create_autocmd('CursorMoved', {
+              callback = function()
+                local pos = vim.api.nvim_win_get_cursor(win)
+                local row = pos[1]
+                local line = vim.api.nvim_buf_get_lines(buf, row - 1, row, false)[1]
+
+                color[channel] = line
+                c[name] = '#' .. color.r .. color.g .. color.b
+
+                update_highlights(c, { clear = false })
+
+                hide_cursor()
+              end,
+              buffer = buf,
+            })
+
+            -- change title highlight when entering channel window to indicate
+            -- that this is actively being edited
+            do
+              vim.api.nvim_create_autocmd('BufEnter', {
+                callback = function()
+                  vim.api.nvim_win_set_config(win, { title = { { win_title, 'ColorEditTitleActive' } } })
+                end,
+                buffer = buf,
+              })
+              vim.api.nvim_create_autocmd('BufLeave', {
+                callback = function()
+                  vim.api.nvim_win_set_config(win, { title = { { win_title, 'ColorEditTitle' } } })
+                end,
+                buffer = buf,
+              })
+            end
+
+            do
+              -- hid cursor when in the color channel editor windows
+              vim.api.nvim_create_autocmd('BufEnter', { callback = hide_cursor, buffer = buf })
+              vim.api.nvim_create_autocmd('BufLeave', { callback = show_cursor, buffer = buf })
+            end
+          end
+
+          -- create the three side by side channel windows
+          new_float_rgb 'r'
+          new_float_rgb 'g'
+          new_float_rgb 'b'
+
+          -- set active window to the red channel
+          vim.api.nvim_set_current_win(chan_win[1])
+        end)
+
+        update_highlights(c)
       end
 
       -- Better Around/Inside textobjects
