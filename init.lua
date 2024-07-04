@@ -102,6 +102,29 @@
 
   TODO:
 
+    >> our patch of which-key seems to have a bug
+
+       1. open nvim
+       2. run :checkhealth
+       3. hitting <leader> no longer brings up preview and keybindings fail?
+
+    >> strange highlighting on dockerfiles
+
+       1. open a dockerfile
+       2. find a list of commands like a bunch of rows with COPY < ...> 
+       3. move your cursor up and down to above and below rows ...
+
+    >> flog kinda sucks ... and gv.vim also kinda sucks, looks like we're close
+       with our poc of just using git log --graphj with some options
+        ... we tried just using some plugin to parse the ansi escape codes
+         .... that performed REALLY POORLY
+         .. I think we can make something fast and good with just using
+            some regex or pattern matching to 
+            map the ansi colors to our highlights... we could even just
+            use our own system instead of parsing the ansi codes, like we could
+            have a system like {{cyan:stuff}} which would mean that stuff should be colored
+            cyan ... genius
+
     >> make a real time color theme adjuster
        - should have a nice ui that you can open in a split view to the side
        - the UI should have a big rectangle with color pixels that you can select by navigating with h j k l
@@ -514,6 +537,41 @@ local function buf_is_trivial(buf)
   end
   return false
 end
+
+-- experiment with own replacement of flog ... because flog has been annoying
+-- and git log --graph is king?
+vim.keymap.set('n', '<leader>GL', function()
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_win_set_buf(0, buf)
+
+  local git_cmd =
+    [[git log --graph --pretty=format:'%C(auto)%h %C(blue)(%ar)%C(reset) %d%n  %C(brightBlack)%s%C(reset)%n  -> %C(brightBlack)%an%C(reset)%n' --abbrev-commit --color=always]]
+
+  local handle = io.popen(git_cmd)
+  if not handle then
+    print 'no handle?'
+    return
+  end
+
+  ---@type string
+  local log = handle:read '*a'
+
+  handle:close()
+
+  local lines = {}
+
+  local ctr = 0
+  for line in log:gmatch '[^\r\n]+' do
+    lines[#lines + 1] = line
+    ctr = ctr + 1
+  end
+
+  -- print('lines:', vim.inspect(lines))
+
+  local n = 20 -- #lines
+
+  vim.api.nvim_buf_set_lines(buf, 0, n, false, lines)
+end, { desc = 'new git graph' })
 
 -- [[ Configure and install plugins ]]
 --
@@ -1344,6 +1402,7 @@ require('lazy').setup({
         lua = { 'stylua' },
         -- Conform can also run multiple formatters sequentially
         python = { 'isort', 'black' },
+        json = { 'jq' },
         --
         -- You can use a sub-list to tell conform to run *until* a formatter
         -- is found.
@@ -1505,28 +1564,12 @@ require('lazy').setup({
     'echasnovski/mini.nvim',
     config = function()
       do
+        -- TODO: unfiy with this / take inspiration -> https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
+
         -- everything related to color theme goes here inside this block
         require('mini.colors').setup {}
 
-        ---@type table<string, string>
-        local c = {
-          brown = '#845A40',
-          orange = '#ad6639',
-          sand = '#C39D5E',
-          white = '#b8a586',
-          teal = '#83A598',
-          blue3 = '#6d86b2',
-          pink = '#bf6079',
-          pink2 = '#E7545E',
-          pear = '#8EC07C', -- '#638657', '#637f59' '#4e7440'
-          pear2 = '#637f59',
-          pear33 = '#2a3625', -- '#171c14' '#1d2419'
-          pear44 = '#2a3028',
-
-          pear3 = '#a8bda0',
-          pear4 = '#95ad8c',
-          gray = '#404040',
-        }
+        local c = require 'colors'
 
         ---@type Colorscheme
         local theme = MiniColors.get_colorscheme 'retrobox'
@@ -1607,7 +1650,7 @@ require('lazy').setup({
 
           set_hl('NormalFloat', { fg = c.white, bg = nil })
 
-          set_hl('Normal', { fg = c.white, bg = '#181818' })
+          set_hl('Normal', { fg = c.white, bg = c.blackboard })
           set_hl('SignColumn', hl.Normal)
 
           set_hl({
@@ -1630,6 +1673,7 @@ require('lazy').setup({
             'Operator',
             'WinSeparator',
             'TelescopeBorder',
+            '@keyword.type',
             '@tag.delimiter',
             '@constructor.lua',
             'LeapLabelPrimary',
@@ -1642,7 +1686,6 @@ require('lazy').setup({
             'String',
             'Structure',
             'GitSignsChange',
-            'CursorLineNr',
             '@constructor',
             '@type.builtin',
           }, { fg = c.sand })
@@ -1662,6 +1705,7 @@ require('lazy').setup({
             'TelescopeTitle',
             'TodoBgTODO',
             'TodoBgNOTE',
+            'CursorLineNr',
             'GitSignsAdd',
             'flogRefHead',
             '@lsp.type.namespace',
@@ -1675,11 +1719,13 @@ require('lazy').setup({
             '@constant.builtin',
             '@lsp.type.lifetime',
             '@lsp.typemod.keyword.async',
+            '@lsp.typemod.operator.controlFlow',
           }, { fg = c.pink })
 
           set_hl({
             'Comment',
             'LeapBackdrop',
+            'LineNr',
           }, { fg = c.gray })
 
           set_hl({
@@ -1741,147 +1787,175 @@ require('lazy').setup({
         end
 
         vim.keymap.set('n', '<leader>C', function()
-          -- active color being edited
-          local name = 'teal'
+          ---@type string[]
+          local color_names = {}
 
-          local old_value = c[name]:sub(2)
-          local _r = old_value:sub(1, 2)
-          local _g = old_value:sub(3, 4)
-          local _b = old_value:sub(5, 6)
-
-          -- stores intensity values for each color channel
-          local color = { r = _r, g = _g, b = _b }
-
-          -- stores window ids for each color channel (r, g, b)
-          local chan_win = { 0, 0, 0 }
-
-          ---@param channel "r" | "g" | "b"
-          local new_float_rgb = function(channel)
-            local height = vim.api.nvim_win_get_height(0)
-            local width = vim.api.nvim_win_get_width(0)
-
-            local chan_idx = ({ r = 1, g = 2, b = 3 })[channel]
-            local chan_width = 2
-
-            -- local num_shades = math.max(height - 4, 4)
-            local num_shades = 255
-
-            ---@type string[]
-            local values = {}
-            for idx = 0, num_shades do
-              local v = string.format('%02x', (idx * 255) / num_shades)
-              values[#values + 1] = v
-            end
-
-            local colors = {}
-            for _, v in pairs(values) do
-              colors[#colors + 1] = ({
-                r = '#' .. v .. '0000',
-                g = '#' .. '00' .. v .. '00',
-                b = '#' .. '0000' .. v,
-              })[channel]
-            end
-
-            local h = math.max(math.floor(height / 2), 5)
-
-            ---@class Array
-            local foo = {}
-
-            local buf = vim.api.nvim_create_buf(false, true)
-            local win_title = ' ' .. channel .. ' '
-            local win = vim.api.nvim_open_win(buf, false, {
-              relative = 'win',
-              row = math.floor(h / 2),
-              col = chan_idx * (chan_width + 2) + width / 2,
-              width = chan_width,
-              height = 1,
-              border = WIN_BORDER,
-              style = 'minimal',
-              title = { { win_title, 'ColorEditTitle' } },
-              title_pos = 'center',
-            })
-
-            chan_win[chan_idx] = win
-
-            -- vim.api.nvim_set_current_win(win)
-            vim.api.nvim_buf_set_lines(buf, 0, 2, false, values)
-
-            -- color the values
-            for idx, c in ipairs(colors) do
-              local rgb = string.sub(c, 2)
-              local hl_name = 'ColorTheme-R-' .. rgb
-              local sh = idx > (num_shades / 2) and '00' or '99'
-              local fg = '#' .. sh .. sh .. sh
-              vim.api.nvim_set_hl(0, hl_name, { bg = c, fg = fg })
-              vim.api.nvim_buf_add_highlight(buf, 0, hl_name, idx - 1, 0, -1)
-            end
-
-            -- set the cursor at old color position
-            local v = tonumber(color[channel], 16)
-            vim.api.nvim_win_set_cursor(win, { v + 1, 0 })
-
-            -- keymaps for switching between the chanels with Alt + idx
-            for i = 1, 3 do
-              vim.keymap.set('n', '<M-' .. i .. '>', function()
-                vim.api.nvim_set_current_win(chan_win[i])
-              end, { desc = 'Goto channel ' .. i, buffer = buf })
-            end
-
-            -- keymap for closing the highlight editor
-            vim.keymap.set('n', '<Esc><Esc>', function()
-              for i = 1, 3 do
-                vim.api.nvim_win_close(chan_win[i], true)
-              end
-            end, { desc = 'Close highlight group editor', buffer = buf })
-
-            -- update the highlight group when the color value is changed
-            vim.api.nvim_create_autocmd('CursorMoved', {
-              callback = function()
-                local pos = vim.api.nvim_win_get_cursor(win)
-                local row = pos[1]
-                local line = vim.api.nvim_buf_get_lines(buf, row - 1, row, false)[1]
-
-                color[channel] = line
-                c[name] = '#' .. color.r .. color.g .. color.b
-
-                update_highlights(c, { clear = false })
-
-                hide_cursor()
-              end,
-              buffer = buf,
-            })
-
-            -- change title highlight when entering channel window to indicate
-            -- that this is actively being edited
-            do
-              vim.api.nvim_create_autocmd('BufEnter', {
-                callback = function()
-                  vim.api.nvim_win_set_config(win, { title = { { win_title, 'ColorEditTitleActive' } } })
-                end,
-                buffer = buf,
-              })
-              vim.api.nvim_create_autocmd('BufLeave', {
-                callback = function()
-                  vim.api.nvim_win_set_config(win, { title = { { win_title, 'ColorEditTitle' } } })
-                end,
-                buffer = buf,
-              })
-            end
-
-            do
-              -- hid cursor when in the color channel editor windows
-              vim.api.nvim_create_autocmd('BufEnter', { callback = hide_cursor, buffer = buf })
-              vim.api.nvim_create_autocmd('BufLeave', { callback = show_cursor, buffer = buf })
-            end
+          for name, _ in pairs(c) do
+            color_names[#color_names + 1] = name
           end
 
-          -- create the three side by side channel windows
-          new_float_rgb 'r'
-          new_float_rgb 'g'
-          new_float_rgb 'b'
+          vim.ui.select(color_names, {
+            prompt = 'color:',
+            format_item = function(item)
+              return item
+            end,
+          }, function(name)
+            local old_value = c[name]:sub(2)
+            local _r = old_value:sub(1, 2)
+            local _g = old_value:sub(3, 4)
+            local _b = old_value:sub(5, 6)
 
-          -- set active window to the red channel
-          vim.api.nvim_set_current_win(chan_win[1])
+            -- stores intensity values for each color channel
+            local color = { r = _r, g = _g, b = _b }
+
+            -- stores window ids for each color channel (r, g, b)
+            local chan_win = { 0, 0, 0 }
+
+            ---@param channel "r" | "g" | "b"
+            local new_float_rgb = function(channel)
+              local height = vim.api.nvim_win_get_height(0)
+              local width = vim.api.nvim_win_get_width(0)
+
+              local chan_idx = ({ r = 1, g = 2, b = 3 })[channel]
+              local chan_width = 2
+
+              -- local num_shades = math.max(height - 4, 4)
+              local num_shades = 255
+
+              ---@type string[]
+              local values = {}
+              for idx = 0, num_shades do
+                local v = string.format('%02x', (idx * 255) / num_shades)
+                values[#values + 1] = v
+              end
+
+              local colors = {}
+              for _, v in pairs(values) do
+                colors[#colors + 1] = ({
+                  r = '#' .. v .. '0000',
+                  g = '#' .. '00' .. v .. '00',
+                  b = '#' .. '0000' .. v,
+                })[channel]
+              end
+
+              local h = math.max(math.floor(height / 2), 5)
+
+              ---@class Array
+              local foo = {}
+
+              local buf = vim.api.nvim_create_buf(false, true)
+              local win_title = ' ' .. channel .. ' '
+              local win = vim.api.nvim_open_win(buf, false, {
+                relative = 'win',
+                row = math.floor(h / 2),
+                col = chan_idx * (chan_width + 2) + width / 2,
+                width = chan_width,
+                height = 1,
+                border = WIN_BORDER,
+                style = 'minimal',
+                title = { { win_title, 'ColorEditTitle' } },
+                title_pos = 'center',
+              })
+
+              chan_win[chan_idx] = win
+
+              -- vim.api.nvim_set_current_win(win)
+              vim.api.nvim_buf_set_lines(buf, 0, 2, false, values)
+
+              -- color the values
+              for idx, c in ipairs(colors) do
+                local rgb = string.sub(c, 2)
+                local hl_name = 'ColorTheme-R-' .. rgb
+                local sh = idx > (num_shades / 2) and '00' or '99'
+                local fg = '#' .. sh .. sh .. sh
+                vim.api.nvim_set_hl(0, hl_name, { bg = c, fg = fg })
+                vim.api.nvim_buf_add_highlight(buf, 0, hl_name, idx - 1, 0, -1)
+              end
+
+              -- set the cursor at old color position
+              local v = tonumber(color[channel], 16)
+              vim.api.nvim_win_set_cursor(win, { v + 1, 0 })
+
+              -- keymaps for switching between the chanels with Alt + idx
+              for i = 1, 3 do
+                vim.keymap.set('n', '<M-' .. i .. '>', function()
+                  vim.api.nvim_set_current_win(chan_win[i])
+                end, { desc = 'Goto channel ' .. i, buffer = buf })
+              end
+
+              -- keymap for closing the highlight editor
+              vim.keymap.set('n', '<Esc><Esc>', function()
+                for i = 1, 3 do
+                  vim.api.nvim_win_close(chan_win[i], true)
+                end
+
+                -- persist the colors
+                do
+                  local home = os.getenv 'HOME'
+                  local file = home .. '/.config/nvim/lua/colors.lua'
+                  local f = io.open(file, 'w')
+                  if not f then
+                    return
+                  end
+                  f:write '---@type table<string, string>\n'
+                  f:write 'local c = {\n'
+                  for name, color in pairs(c) do
+                    f:write('  ' .. name .. ' = ' .. '"' .. color .. '",\n')
+                  end
+                  f:write '}\nreturn c'
+                  f:close()
+                end
+              end, { desc = 'Close highlight group editor', buffer = buf })
+
+              -- update the highlight group when the color value is changed
+              vim.api.nvim_create_autocmd('CursorMoved', {
+                callback = function()
+                  local pos = vim.api.nvim_win_get_cursor(win)
+                  local row = pos[1]
+                  local line = vim.api.nvim_buf_get_lines(buf, row - 1, row, false)[1]
+
+                  color[channel] = line
+                  c[name] = '#' .. color.r .. color.g .. color.b
+
+                  update_highlights(c, { clear = false })
+
+                  hide_cursor()
+                end,
+                buffer = buf,
+              })
+
+              -- change title highlight when entering channel window to indicate
+              -- that this is actively being edited
+              do
+                vim.api.nvim_create_autocmd('BufEnter', {
+                  callback = function()
+                    vim.api.nvim_win_set_config(win, { title = { { win_title, 'ColorEditTitleActive' } } })
+                  end,
+                  buffer = buf,
+                })
+                vim.api.nvim_create_autocmd('BufLeave', {
+                  callback = function()
+                    vim.api.nvim_win_set_config(win, { title = { { win_title, 'ColorEditTitle' } } })
+                  end,
+                  buffer = buf,
+                })
+              end
+
+              do
+                -- hid cursor when in the color channel editor windows
+                vim.api.nvim_create_autocmd('BufEnter', { callback = hide_cursor, buffer = buf })
+                vim.api.nvim_create_autocmd('BufLeave', { callback = show_cursor, buffer = buf })
+              end
+            end
+
+            -- create the three side by side channel windows
+            new_float_rgb 'r'
+            new_float_rgb 'g'
+            new_float_rgb 'b'
+
+            -- set active window to the red channel
+            vim.api.nvim_set_current_win(chan_win[1])
+          end)
         end)
 
         update_highlights(c)
@@ -2010,7 +2084,7 @@ require('lazy').setup({
     'nvim-treesitter/nvim-treesitter',
     build = ':TSUpdate',
     opts = {
-      ensure_installed = { 'bash', 'c', 'rust', 'typescript', 'tsx', 'html', 'lua', 'markdown', 'vim', 'vimdoc', 'javascript' },
+      ensure_installed = { 'bash', 'c', 'dockerfile', 'rust', 'typescript', 'tsx', 'html', 'lua', 'markdown', 'vim', 'vimdoc', 'javascript' },
       -- Autoinstall languages that are not installed
       auto_install = true,
       highlight = {
