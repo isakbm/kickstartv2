@@ -102,6 +102,10 @@
 
   TODO:
 
+    >> disable or remap the cO in diffview, scary that it would pick
+       resolutions for all conflicts and at the same time is nearly
+       identical to resolving a single conflcit with co
+
     >> our patch of which-key seems to have a bug
 
        1. open nvim
@@ -819,7 +823,53 @@ require('lazy').setup({
         vim.fn.timer_start(60, function()
           vim.fn.search 'HEAD ->'
           vim.api.nvim_feedkeys('zz', 'n', false)
-          pcall(vim.keymap.del, { 'n', 'i' }, '<CR>', { buffer = vim.api.nvim_get_current_buf() })
+
+          local buf = vim.api.nvim_get_current_buf()
+
+          pcall(vim.keymap.del, { 'n', 'i' }, '<CR>', { buffer = buf })
+
+          ---@param line string
+          ---@return string
+          local get_commit = function(line)
+            return line:match '%[(%x+)%]'
+          end
+
+          -- show diff for commit under cursor
+          vim.keymap.set('n', '<CR>', function()
+            local lnr = vim.api.nvim_win_get_cursor(0)[1]
+            local line = vim.api.nvim_buf_get_lines(0, lnr - 1, lnr, false)[1]
+            local commit = get_commit(line)
+            vim.cmd(':DiffviewOpen ' .. commit .. '^!')
+          end, { buffer = buf, desc = 'Show diff for commit' })
+
+          -- show diff for selected range of commits
+          vim.keymap.set('v', '<CR>', function()
+            -- NOTE: that for some reason we need to hit esc and wait a bit in order
+            --       for the visual selection range to update
+            vim.api.nvim_input '<Esc>'
+            vim.fn.timer_start(50, function()
+              -- get start end commit hashes
+              local ab = {}
+              for _, mark in pairs { "'<", "'>" } do
+                local lnr = vim.fn.getpos(mark)[2]
+                local line = vim.api.nvim_buf_get_lines(0, lnr - 1, lnr, false)[1]
+                ab[#ab + 1] = get_commit(line)
+              end
+
+              if not ab[1] or not ab[2] then
+                print 'invalid range'
+                return
+              end
+
+              if ab[1] == ab[2] then
+                print 'start and end ar the same'
+                return
+              end
+
+              vim.cmd(':DiffviewOpen ' .. ab[2] .. '^..' .. ab[1])
+            end)
+          end, { buffer = buf, desc = 'Show diff for range' })
+
           vim.api.nvim_create_autocmd('User', {
             pattern = 'FugitiveChanged',
             callback = function()
@@ -837,28 +887,6 @@ require('lazy').setup({
         end,
       })
 
-      -- Returns the selected commit by fugitive, the one selected by hitting enter
-      -- ... we are able to do this by finding the loaded buffer for fugitive
-      -- that flog uses, and extract its commit hash
-      --- @return string
-      local function flogSelectedCommit()
-        local buffers = vim.api.nvim_list_bufs()
-        for _, buffer in ipairs(buffers) do
-          local name = vim.api.nvim_buf_get_name(buffer)
-          local loaded = vim.api.nvim_buf_is_loaded(buffer)
-          if loaded and name then
-            local isFugitive = string.match(name, 'fugitive:.*git//%x*')
-            if isFugitive then
-              local h = string.match(name, '%x*$')
-              if h then
-                return string.sub(h, 1, 7)
-              end
-            end
-          end
-        end
-        return ''
-      end
-
       -- get the commit under the cursor
       --- @return boolean, string asdfasdf
       local function flogCommitUnderCursor()
@@ -872,25 +900,6 @@ require('lazy').setup({
           return ':DiffviewOpen ' .. commit .. '<cr>'
         end
       end, { expr = true, desc = 'display changes of HEAD relative to commit under cursor' })
-
-      -- NOTE: opens up diffview for change introduced by commit under cursor
-      vim.keymap.set('n', ';', function()
-        local ok, commit = flogCommitUnderCursor()
-        if ok then
-          return ':DiffviewOpen ' .. commit .. '^!<cr>'
-        end
-      end, { expr = true, desc = 'display changes introduced by commit under cursor' })
-
-      vim.keymap.set('n', '-', function()
-        local ok, cc = flogCommitUnderCursor()
-        if ok then
-          local h = flogSelectedCommit()
-          if h == '' then
-            return
-          end
-          return ':DiffviewOpen ' .. cc .. '..' .. h .. '<cr>'
-        end
-      end, { expr = true })
     end,
   },
 
@@ -910,8 +919,8 @@ require('lazy').setup({
       },
     },
     init = function()
-      vim.keymap.set('n', '[h', ':Gitsigns next_hunk<cr>', { desc = '[G]it [N]ext hunk' })
-      vim.keymap.set('n', ']h', ':Gitsigns prev_hunk<cr>', { desc = '[G]it [P]rev hunk' })
+      vim.keymap.set('n', ']h', ':Gitsigns next_hunk<cr>', { desc = '[G]it [N]ext hunk' })
+      vim.keymap.set('n', '[h', ':Gitsigns prev_hunk<cr>', { desc = '[G]it [P]rev hunk' })
       vim.keymap.set('n', '<leader>gp', ':Gitsigns preview_hunk<cr>', { desc = '[G]it [P]review hunk' })
       vim.keymap.set('n', '<leader>gr', ':Gitsigns reset_hunk<cr>', { desc = '[G]it [R]eset hunk' })
       vim.keymap.set('n', '<leader>gb', ':Gitsigns toggle_current_line_blame<CR>', { desc = '[G]it [B]lame toggle' })
