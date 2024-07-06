@@ -261,19 +261,6 @@ function border_maker(ho, ve, ul, ur, lr, ll)
   }
 end
 
-local hide_cursor = function()
-  vim.cmd 'highlight Cursor blend=100'
-  vim.opt.guicursor:append 'a:Cursor/lCursor'
-end
-
-local show_cursor = function()
-  print 'showing cursor again ...'
-  vim.cmd 'highlight clear Cursor'
-  vim.opt.guicursor = vim.opt.guicursor - 'a:Cursor/lCursor'
-
-  print('... guicursor?:', vim.inspect(vim.opt.guicursor))
-end
-
 -- NOTE: you can modify your font using font-forge, i liked 0xProto
 --       but did not like it's box corners so adjusted them
 WIN_BORDER = border_maker('─', '│', '╭', '╮', '╯', '╰')
@@ -1580,6 +1567,10 @@ require('lazy').setup({
 
         local c = require 'colors'
 
+        local C = require 'coleur'
+
+        local palette = C.Palette:new(c)
+
         ---@type Colorscheme
         local theme = MiniColors.get_colorscheme 'retrobox'
         ---@type table<string, vim.api.keyset.highlight>
@@ -1696,6 +1687,7 @@ require('lazy').setup({
             'Structure',
             'GitSignsChange',
             '@constructor',
+            'DiffviewFilePanelPath',
             '@type.builtin',
           }, { fg = c.sand })
 
@@ -1809,93 +1801,36 @@ require('lazy').setup({
               return item
             end,
           }, function(name)
-            local old_value = c[name]:sub(2)
-            local _r = old_value:sub(1, 2)
-            local _g = old_value:sub(3, 4)
-            local _b = old_value:sub(5, 6)
+            local color = C.Color:from_hex(c[name])
 
-            -- stores intensity values for each color channel
-            local color = { r = _r, g = _g, b = _b }
+            local on_update = function()
+              c[name] = color:to_hex()
+              update_highlights(c, { clear = false })
+            end
 
-            -- stores window ids for each color channel (r, g, b)
-            local chan_win = { 0, 0, 0 }
+            local height = vim.api.nvim_win_get_height(0)
+            local width = vim.api.nvim_win_get_width(0)
 
-            ---@param channel "r" | "g" | "b"
-            local new_float_rgb = function(channel)
-              local height = vim.api.nvim_win_get_height(0)
-              local width = vim.api.nvim_win_get_width(0)
+            -- create the three side by side rgb channel windows
+            local row = math.floor((math.max(math.floor(height / 2), 5)) / 2)
 
-              local chan_idx = ({ r = 1, g = 2, b = 3 })[channel]
-              local chan_width = 2
+            local rgb_wins = palette:new_rgb_win_arr(color, on_update, row, width)
+            local hsl_wins = palette:new_hsl_win_arr(color, on_update, row + 5, width)
 
-              -- local num_shades = math.max(height - 4, 4)
-              local num_shades = 255
+            local windows = vim.list_extend(vim.deepcopy(rgb_wins), hsl_wins)
 
-              ---@type string[]
-              local values = {}
-              for idx = 0, num_shades do
-                local v = string.format('%02x', (idx * 255) / num_shades)
-                values[#values + 1] = v
-              end
-
-              local colors = {}
-              for _, v in pairs(values) do
-                colors[#colors + 1] = ({
-                  r = '#' .. v .. '0000',
-                  g = '#' .. '00' .. v .. '00',
-                  b = '#' .. '0000' .. v,
-                })[channel]
-              end
-
-              local h = math.max(math.floor(height / 2), 5)
-
-              ---@class Array
-              local foo = {}
-
-              local buf = vim.api.nvim_create_buf(false, true)
-              local win_title = ' ' .. channel .. ' '
-              local win = vim.api.nvim_open_win(buf, false, {
-                relative = 'win',
-                row = math.floor(h / 2),
-                col = chan_idx * (chan_width + 2) + width / 2,
-                width = chan_width,
-                height = 1,
-                border = WIN_BORDER,
-                style = 'minimal',
-                title = { { win_title, 'ColorEditTitle' } },
-                title_pos = 'center',
-              })
-
-              chan_win[chan_idx] = win
-
-              -- vim.api.nvim_set_current_win(win)
-              vim.api.nvim_buf_set_lines(buf, 0, 2, false, values)
-
-              -- color the values
-              for idx, c in ipairs(colors) do
-                local rgb = string.sub(c, 2)
-                local hl_name = 'ColorTheme-R-' .. rgb
-                local sh = idx > (num_shades / 2) and '00' or '99'
-                local fg = '#' .. sh .. sh .. sh
-                vim.api.nvim_set_hl(0, hl_name, { bg = c, fg = fg })
-                vim.api.nvim_buf_add_highlight(buf, 0, hl_name, idx - 1, 0, -1)
-              end
-
-              -- set the cursor at old color position
-              local v = tonumber(color[channel], 16)
-              vim.api.nvim_win_set_cursor(win, { v + 1, 0 })
-
-              -- keymaps for switching between the chanels with Alt + idx
-              for i = 1, 3 do
-                vim.keymap.set('n', '<M-' .. i .. '>', function()
-                  vim.api.nvim_set_current_win(chan_win[i])
-                end, { desc = 'Goto channel ' .. i, buffer = buf })
-              end
-
-              -- keymap for closing the highlight editor
+            -- closing
+            for _, win in pairs(windows) do
+              local buf = vim.api.nvim_win_get_buf(win)
               vim.keymap.set('n', '<Esc><Esc>', function()
-                for i = 1, 3 do
-                  vim.api.nvim_win_close(chan_win[i], true)
+                -- delete autocommand
+                vim.api.nvim_exec_autocmds('User', {
+                  pattern = 'ColorPaletteUpdate',
+                  data = 'delete',
+                })
+
+                for _, w in pairs(windows) do
+                  vim.api.nvim_win_close(w, true)
                 end
 
                 -- persist the colors
@@ -1908,62 +1843,67 @@ require('lazy').setup({
                   end
                   f:write '---@type table<string, string>\n'
                   f:write 'local c = {\n'
+
+                  -- sort colors by hue
+                  local ordered = {}
                   for name, color in pairs(c) do
+                    ordered[#ordered + 1] = { name = name, color = color }
+                  end
+
+                  table.sort(ordered, function(a, b)
+                    local ca = C.Color:from_hex(a.color)
+                    local cb = C.Color:from_hex(b.color)
+                    return ca:get 'h' > cb:get 'h'
+                  end)
+
+                  for _, kv in ipairs(ordered) do
+                    local name, color = kv.name, kv.color
                     f:write('  ' .. name .. ' = ' .. '"' .. color .. '",\n')
                   end
+
                   f:write '}\nreturn c'
                   f:close()
                 end
               end, { desc = 'Close highlight group editor', buffer = buf })
-
-              -- update the highlight group when the color value is changed
-              vim.api.nvim_create_autocmd('CursorMoved', {
-                callback = function()
-                  local pos = vim.api.nvim_win_get_cursor(win)
-                  local row = pos[1]
-                  local line = vim.api.nvim_buf_get_lines(buf, row - 1, row, false)[1]
-
-                  color[channel] = line
-                  c[name] = '#' .. color.r .. color.g .. color.b
-
-                  update_highlights(c, { clear = false })
-
-                  hide_cursor()
-                end,
-                buffer = buf,
-              })
-
-              -- change title highlight when entering channel window to indicate
-              -- that this is actively being edited
-              do
-                vim.api.nvim_create_autocmd('BufEnter', {
-                  callback = function()
-                    vim.api.nvim_win_set_config(win, { title = { { win_title, 'ColorEditTitleActive' } } })
-                  end,
-                  buffer = buf,
-                })
-                vim.api.nvim_create_autocmd('BufLeave', {
-                  callback = function()
-                    vim.api.nvim_win_set_config(win, { title = { { win_title, 'ColorEditTitle' } } })
-                  end,
-                  buffer = buf,
-                })
-              end
-
-              do
-                -- hid cursor when in the color channel editor windows
-                vim.api.nvim_create_autocmd('BufEnter', { callback = hide_cursor, buffer = buf })
-                vim.api.nvim_create_autocmd('BufLeave', { callback = show_cursor, buffer = buf })
-              end
             end
 
-            -- create the three side by side channel windows
-            new_float_rgb 'r'
-            new_float_rgb 'g'
-            new_float_rgb 'b'
+            -- switching between the channels with ALT #
+            do
+              --- @param wins number[]
+              local keymap_channel_switcher_for = function(wins)
+                for _, win in ipairs(wins) do
+                  local buf = vim.api.nvim_win_get_buf(win)
+                  for j, owin in ipairs(wins) do
+                    vim.keymap.set('n', '<M-' .. j .. '>', function()
+                      vim.api.nvim_set_current_win(owin)
+                    end, { desc = 'Goto channel ' .. j, buffer = buf })
+                  end
+                end
+              end
+
+              keymap_channel_switcher_for(rgb_wins)
+              keymap_channel_switcher_for(hsl_wins)
+            end
+
+            -- switching between RGB or HSL
+            do
+              ---@param a number[]
+              ---@param b number[]
+              local keymap_jump_win_arrays = function(a, b)
+                for _, win in pairs(a) do
+                  local buf = vim.api.nvim_win_get_buf(win)
+                  vim.keymap.set('n', '<Tab>', function()
+                    vim.api.nvim_set_current_win(b[1])
+                  end, { buffer = buf, desc = 'Jump between RGB <-> HSL' })
+                end
+              end
+
+              keymap_jump_win_arrays(rgb_wins, hsl_wins)
+              keymap_jump_win_arrays(hsl_wins, rgb_wins)
+            end
 
             -- set active window to the red channel
-            vim.api.nvim_set_current_win(chan_win[1])
+            vim.api.nvim_set_current_win(rgb_wins[1])
           end)
         end)
 
