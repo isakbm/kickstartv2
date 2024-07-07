@@ -244,45 +244,10 @@ vim.opt.tabstop = 2
 
 WIN_BORDER = { '╭', '─', '╮', '│', '╯', '─', '╰', '│' }
 --=========================== KEYMAPS =============================
---
--- The follow keymaps are suppsed to be independet of plugins.
---
+
 -- NOTE: hide higlights after hitting <Esc>
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 vim.keymap.set('n', '<C-f>', '<NOP>')
-
-do
-  -- NOTE: this is here to test bugfix of which key !
-  -- TODO: remove this shortly
-  vim.keymap.set('n', '<leader>A', function()
-    vim.keymap.set('n', '<leader>aa', function()
-      print 'aa'
-    end, { buffer = vim.api.nvim_get_current_buf() })
-
-    vim.keymap.set('n', '<leader>ab', function()
-      print 'ab'
-    end, { buffer = vim.api.nvim_get_current_buf() })
-
-    vim.keymap.set('n', '<leader>bb', function()
-      print 'bb'
-    end, {})
-
-    vim.keymap.set('n', '<leader>ba', function()
-      print 'ba'
-    end, {})
-
-    vim.keymap.set('n', '<leader>x', function()
-      print 'x'
-    end, {})
-  end)
-
-  vim.keymap.set('n', '<leader>S', function()
-    -- vim.keymap.del('n', 'Q')
-    vim.keymap.del('n', '<leader>aa', { buffer = vim.api.nvim_get_current_buf() })
-    vim.keymap.del('n', '<leader>ab', { buffer = vim.api.nvim_get_current_buf() })
-    vim.keymap.del('n', '<leader>bb', {})
-  end)
-end
 
 -- NOTE: swap lines like in vscode
 --
