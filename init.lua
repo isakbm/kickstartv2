@@ -586,6 +586,19 @@ require('lazy').setup({
     end,
   },
 
+  {
+    'michaelb/sniprun',
+    build = 'bash ./install.sh',
+    opts = {
+      selected_interpreters = { 'Lua_nvim' },
+      display = { 'Classic' },
+    },
+    init = function()
+      vim.keymap.set('n', '<leader>r', ':SnipRun<CR>', { desc = 'run curr line with sniprun' })
+      vim.keymap.set('v', '<leader>r', ":'<,'>SnipRun<CR>", { desc = 'run curr selection with sniprun' })
+    end,
+  },
+
   -- {
   --   'chentoast/marks.nvim',
   --   opts = {},
