@@ -242,29 +242,7 @@ vim.opt.shiftwidth = 2
 vim.opt.softtabstop = 2
 vim.opt.tabstop = 2
 
----@param ho string
----@param ve string
----@param ll string
----@param lr string
----@param ur string
----@param ul string
-function border_maker(ho, ve, ul, ur, lr, ll)
-  return {
-    ul,
-    ho,
-    ur,
-    ve,
-    lr,
-    ho,
-    ll,
-    ve,
-  }
-end
-
--- NOTE: you can modify your font using font-forge, i liked 0xProto
---       but did not like it's box corners so adjusted them
-WIN_BORDER = border_maker('─', '│', '╭', '╮', '╯', '╰')
-
+WIN_BORDER = { '╭', '─', '╮', '│', '╯', '─', '╰', '│' }
 --=========================== KEYMAPS =============================
 --
 -- The follow keymaps are suppsed to be independet of plugins.
