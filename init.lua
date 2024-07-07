@@ -119,7 +119,7 @@
        3. move your cursor up and down to above and below rows ...
 
     >> flog kinda sucks ... and gv.vim also kinda sucks, looks like we're close
-       with our poc of just using git log --graphj with some options
+       with our poc of just using git log --graph with some options
         ... we tried just using some plugin to parse the ansi escape codes
          .... that performed REALLY POORLY
          .. I think we can make something fast and good with just using
@@ -261,6 +261,116 @@ vim.keymap.set('n', '<C-k>', ':m-2<cr>', { desc = 'swap line with line above' })
 -- NOTE: Jump between tabs using 'Alt + number'
 for i = 1, 9 do
   vim.keymap.set('n', '<M-' .. i .. '>', i .. 'gt', { desc = '[T]ab ' .. i })
+end
+
+---creates an ansi iterator that is only
+---meant to be used with `got log --graph` output
+---@param content string
+---@return function -> AnsiBlock?
+local function ansi_iter(content)
+  -- FIXME: there is a bug in the following kinds of lines
+  --
+  -- * [33m35b0b1e7[m [34m(2 days ago)[m [m[33m ([m[1;31morigin/_fix-furn-rep[m[33m, [m[1;32m_fix-furn-rep[m[33m)[m[m
+  --
+  -- NOTE: that in the above line we have nested ANI escape on the branch list `HEAD ->`
+  --       and so on is wrapped inside an [m ( .... ) [m
+  --
+  --       this outer wrap seems to have no impact on our styling for git log ...
+  --       could do a cheap workaround, alternatvely try handling nested codes
+  --       by storing a code list ...
+
+  local pattern = '\27%[[%d;]*m'
+  ---@type integer?
+  local loc = 1
+  ---@type integer?
+  local a_s = nil
+  ---@type integer?
+  local a_e = nil
+  ---@type integer?
+  local b_s = nil
+  ---@type integer?
+  local b_e = nil
+  ---@type "searching" | "processing" | "finished"
+  local state = 'searching'
+  ---@type string?
+  local code = nil
+
+  ---@class AnsiBlock
+  ---@field a_s integer
+  ---@field a_e integer
+  ---@field b_s integer
+  ---@field b_e integer
+  ---@field inner string
+
+  ---@return (AnsiBlock | string)?
+  local function consumer()
+    if state == 'searching' then
+      a_s, a_e = content:find(pattern, loc)
+
+      if a_s and a_e then
+        local ansic = content:sub(a_s, a_e)
+        if ansic:find ';' then -- NOTE: we do this because we're lazy
+          code = ansic:gmatch '[^%d]([%d]*)m'()
+        else
+          code = ansic:gmatch '%[([%d]*)m'()
+        end
+      else
+        code = nil
+      end
+
+      assert(loc)
+      local e = nil
+      if a_s then
+        e = a_s - 1
+      end
+      local regular = content:sub(loc, e)
+      if code == '' then
+        state = 'searching'
+        loc = a_e + 1
+        -- NOTE: this is kind of a hack
+        return {
+          a_s = a_s,
+          a_e = a_e,
+          b_s = 0,
+          b_e = 0,
+          inner = '',
+          code = 31,
+        }
+      elseif a_s then
+        assert(a_e)
+        state = 'processing'
+        loc = a_e + 1
+      else
+        state = 'finished'
+        loc = nil
+      end
+      if regular ~= '' then
+        return regular
+      else
+        return consumer()
+      end
+    elseif state == 'processing' then
+      b_s, b_e = content:find(pattern, loc)
+      assert(b_s)
+      assert(b_e)
+      state = 'searching'
+      loc = b_e + 1
+      return {
+        a_s = a_s,
+        a_e = a_e,
+        b_s = b_s,
+        b_e = b_e,
+        inner = content:sub(a_e + 1, b_s - 1),
+        code = code,
+      }
+    elseif state == 'finished' then
+      return nil
+    end
+  end
+
+  return consumer
+
+  -- print(a_s, a_e, ' -> ', b_s, b_e, ' : ', content)
 end
 
 -- NOTE: this brings you into block visual select mode ... on windows it's Ctrl + Q, and on Linux Ctrl + V ... cool to have something OS independent :)
@@ -472,6 +582,15 @@ local function buf_is_trivial(buf)
   return false
 end
 
+vim.keymap.set('n', '<leader>U', function()
+  local code = vim.fn.input 'u:'
+  local char = vim.fn.nr2char(code)
+  local _, col = unpack(vim.api.nvim_win_get_cursor(0))
+  local line = vim.api.nvim_get_current_line()
+  local new_line = line:sub(1, col) .. char .. line:sub(col + 1)
+  vim.api.nvim_set_current_line(new_line)
+end, { desc = 'insert unicode' })
+
 -- experiment with own replacement of flog ... because flog has been annoying
 -- and git log --graph is king?
 vim.keymap.set('n', '<leader>GL', function()
@@ -479,7 +598,10 @@ vim.keymap.set('n', '<leader>GL', function()
   vim.api.nvim_win_set_buf(0, buf)
 
   local git_cmd =
-    [[git log --graph --pretty=format:'%C(auto)%h %C(blue)(%ar)%C(reset) %d%n  %C(brightBlack)%s%C(reset)%n  -> %C(brightBlack)%an%C(reset)%n' --abbrev-commit --color=always]]
+    [[git log --all --graph --pretty=format:'%C(auto)%h %C(blue)(%ar)%C(reset) %C(auto)%d%C(reset)%n  %C(brightBlack)%s%C(reset)%n  -> %C(brightBlack)%an%C(reset)%n' --abbrev-commit --color=always]]
+
+  -- local git_cmd =
+  --   [[git log --all --graph --pretty=format:'%C(auto)%h %C(blue)(%ar)%C(reset) %C(auto)%d%C(reset)  %C(brightBlack)%s%C(reset)  -> %C(brightBlack)%an%C(reset)' --abbrev-commit --color=always]]
 
   local handle = io.popen(git_cmd)
   if not handle then
@@ -492,17 +614,125 @@ vim.keymap.set('n', '<leader>GL', function()
 
   handle:close()
 
-  local lines = {}
+  local name2code = {
+    Black = '30',
+    Red = '31',
+    Green = '32',
+    Yellow = '33',
+    Blue = '34',
+    Magenta = '35',
+    Cyan = '36',
+    White = '37',
+    Default = '39',
+    Bright_Black = '90',
+    Bright_Red = '91',
+    Bright_Green = '92',
+    Bright_Yellow = '93',
+    Bright_Blue = '94',
+    Bright_Magenta = '95',
+    Bright_Cyan = '96',
+    Bright_White = '97',
+  }
 
-  local ctr = 0
-  for line in log:gmatch '[^\r\n]+' do
-    lines[#lines + 1] = line
-    ctr = ctr + 1
+  local code2name = {}
+  for name, code in pairs(name2code) do
+    code2name[code] = name
   end
 
-  local n = 20 -- #lines
+  local lines = {}
 
-  vim.api.nvim_buf_set_lines(buf, 0, n, false, lines)
+  ---@class Highlight
+  ---@field row integer
+  ---@field col_s integer
+  ---@field col_e integer
+  ---@field code string
+  ---@type Highlight[][]
+  local hlsr = {}
+
+  local max = 3000
+  local row = 1
+  local cursor_line = 0
+  for line in log:gmatch '[^\r\n]+' do
+    if row > max then
+      break
+    end
+    local proc_line = ''
+    local compensate = 0
+    local pref_comp = 0
+
+    hlsr[row] = {}
+    local hls = hlsr[row]
+
+    local on_pref = true
+
+    ---@param pl string
+    ---@param s string
+    local function subs(pl, s)
+      if on_pref then
+        local smatch = s:match '([%s_|%*/\\]*)'
+        if #smatch == #s then
+          local s_new = s:gsub('*', '⭘'):gsub('|', '│') -- :gsub('\\', '⓹'):gsub('/', '⓺')
+          pref_comp = #s_new - #s
+
+          return pl .. s_new
+        else
+          on_pref = false
+        end
+      end
+
+      return pl .. s
+    end
+
+    for ab in ansi_iter(line) do
+      if type(ab) == 'string' then
+        proc_line = subs(proc_line, ab)
+        compensate = compensate - pref_comp
+        pref_comp = 0
+      else
+        proc_line = subs(proc_line, ab.inner)
+        compensate = compensate + (ab.a_e - ab.a_s) + 1
+        hls[#hls + 1] = {
+          row = row,
+          col_s = ab.a_e + 1 - compensate,
+          col_e = ab.b_s - 1 - compensate,
+          code = ab.code,
+        }
+        compensate = compensate + (ab.b_e - ab.b_s) + 1
+        compensate = compensate - pref_comp
+        pref_comp = 0
+      end
+    end
+
+    -- if we haven't found HEAD -> yet then search for it
+    if cursor_line == 0 and proc_line:find 'HEAD %->' then
+      cursor_line = row
+    end
+
+    row = row + 1
+    lines[#lines + 1] = proc_line:gsub('%s+$', '')
+  end
+
+  vim.api.nvim_buf_set_lines(buf, 0, 0, false, lines)
+
+  for _, hls in ipairs(hlsr) do
+    for _, hl in pairs(hls) do
+      local hlg = code2name[hl.code]
+      if not hlg then
+      -- print('unable to find', hl.code)
+      else
+        vim.api.nvim_buf_add_highlight(buf, 0, hlg, hl.row - 1, hl.col_s - 1, hl.col_e)
+      end
+    end
+  end
+
+  print('setting cursor line:', cursor_line)
+  if cursor_line == 0 then
+    cursor_line = 1
+  end
+  vim.api.nvim_win_set_cursor(0, { cursor_line, 0 })
+
+  -- FIXME:
+  vim.api.nvim_buf_set_option(buf, 'modifiable', false)
 end, { desc = 'new git graph' })
 
 require('lazy').setup({
@@ -1589,6 +1819,29 @@ require('lazy').setup({
 
           set_hl('Normal', { fg = c.white, bg = c.blackboard })
           set_hl('SignColumn', hl.Normal)
+
+          -- WIP: ansi stuff :FIXME
+          do
+            set_hl({ 'Yellow' }, { fg = c.sand })
+            set_hl({ 'Blue' }, { fg = c.teal })
+            set_hl({ 'Red' }, { fg = c.pink2 })
+            set_hl({ 'Black' }, { fg = c.white })
+            set_hl({ 'Bright_Black' }, { fg = c.brown })
+            set_hl({ 'Green' }, { fg = c.pear })
+            set_hl({ 'Default', 'White' }, { fg = c.white })
+            set_hl({ 'Magenta' }, { fg = '#ad3e7a' })
+            set_hl({ 'Cyan' }, { fg = c.teal })
+
+            set_hl({
+              'Bright_Red',
+              'Bright_Green',
+              'Bright_Yellow',
+              'Bright_Blue',
+              'Bright_Magenta',
+              'Bright_Cyan',
+              'Bright_White',
+            }, { fg = '#FF0000' })
+          end
 
           set_hl({
             'Directory',
