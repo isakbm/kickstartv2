@@ -557,26 +557,12 @@ vim.keymap.set('n', '<leader>GL', function()
     ctr = ctr + 1
   end
 
-  -- print('lines:', vim.inspect(lines))
-
   local n = 20 -- #lines
 
   vim.api.nvim_buf_set_lines(buf, 0, n, false, lines)
 end, { desc = 'new git graph' })
 
--- [[ Configure and install plugins ]]
---
---  To check the current status of your plugins, run
---    :Lazy
---
---  You can press `?` in this menu for help. Use `:q` to close the window
---
---  To update plugins, you can run
---    :Lazy update
---
--- NOTE: Here is where you install your plugins.
 require('lazy').setup({
-  -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
   'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
 
   {
@@ -598,11 +584,6 @@ require('lazy').setup({
       vim.keymap.set('v', '<leader>r', ":'<,'>SnipRun<CR>", { desc = 'run curr selection with sniprun' })
     end,
   },
-
-  -- {
-  --   'chentoast/marks.nvim',
-  --   opts = {},
-  -- },
 
   {
     'ggandor/leap.nvim',
