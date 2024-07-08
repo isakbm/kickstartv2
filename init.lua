@@ -102,6 +102,45 @@
 
   TODO:
 
+    >> There is literally a bug in flog so we'll be thinking about
+       making a port of gitamine to nvim somehow, to see the bug
+       look at commit 7422ae7f in laiout-core, note how this commit
+       looks like its done directly on dev/master, but in reality
+       it is not, in reality it is done in a feature branch and merged
+       in, showcasing a nice semi-linear history, see below ascii portion
+       from regular git log graph
+
+            │ │ ⭘ 0aa3d0d4 (3 months ago)
+            │ │/    remove control flow
+            │/│     -> Ivan Karpov
+            │ │
+            ⭘ │   db9993c8 (3 weeks ago) (tag: v1.1.28, origin/master)
+            │\ \    Merge branch 'show_more_errors' into 'dev'
+            │ │/    -> Arkadiusz Zylkowski
+            │/│
+            │ │
+      :NOTE │ ⭘ 7422ae7f (3 weeks ago) 
+            │/    Show more errors to the user.
+            │     -> Arkadiusz Zylkowski
+            │
+            ⭘   47229305 (3 weeks ago) (tag: v1.1.27)
+            │\    Merge branch 'fix_zone_assignment_for_small_floorplans' into 'dev'
+            │ │   -> Arkadiusz Zylkowski
+            │ │
+
+
+       meanwhile in flog it looks like this
+
+
+            │ │ • 3 months ago [0aa3d0d4] {Ivan Karpov} remove control flow
+            ├─┊─╯
+            • │ 3 weeks ago [db9993c8] {Arkadiusz Zylkowski} (tag: v1.1.28, origin/master) Merge branch 'show_more_errors' into 'dev'
+            ├─┤
+      :NOTE │ 3 weeks ago [7422ae7f] {Arkadiusz Zylkowski} Show more errors to the user.
+            ├─╯
+            • 3 weeks ago [47229305] {Arkadiusz Zylkowski} (tag: v1.1.27) Merge branch 'fix_zone_assignment_for_small_floorplans' into 'dev'
+            ├─╮
+
     >> disable or remap the cO in diffview, scary that it would pick
        resolutions for all conflicts and at the same time is nearly
        identical to resolving a single conflcit with co
