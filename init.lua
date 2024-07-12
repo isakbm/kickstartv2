@@ -630,6 +630,201 @@ vim.keymap.set('n', '<leader>U', function()
   vim.api.nvim_set_current_line(new_line)
 end, { desc = 'insert unicode' })
 
+vim.keymap.set('n', '<leader>GG', function()
+  -- build a git commit graph
+  -- local git_cmd = [[git log --pretty='format:%H %P']]
+  -- FIXME: remember to use full hash
+  local git_cmd = [[git log --all --pretty='format:%h %p']]
+  local handle = io.popen(git_cmd)
+  if not handle then
+    print 'no handle?'
+    return
+  end
+
+  ---@type string
+  local log = handle:read '*a'
+
+  handle:close()
+
+  ---@class I.Commit
+  ---@field hash string
+  ---@field explored boolean
+  ---@field i integer
+  ---@field j integer
+  ---@field parents string[]
+  ---@field children string[]
+  ---@field merge_children string[]
+  ---@field branch_children string[]
+  ---
+  ---@type table<string, I.Commit>
+  local commits = {}
+
+  ---@type string[]
+  local hashes = {}
+
+  for line in log:gmatch '[^\r\n]+' do
+    local iter = line:gmatch '[^%s]+'
+    local hash = iter()
+    hashes[#hashes + 1] = hash
+    local parents = {}
+    for p in iter do
+      parents[#parents + 1] = p
+    end
+
+    -- do
+    --   local hashpa = hash .. ': '
+    --   for _, p in ipairs(parents) do
+    --     hashpa = hashpa .. p .. ' '
+    --   end
+    --
+    --   print(hashpa)
+    -- end
+
+    commits[hash] = {
+      explored = false,
+      hash = hash,
+      i = -1,
+      j = -1,
+      parents = parents,
+      children = {},
+      merge_children = {},
+      branch_children = {},
+    }
+  end
+
+  -- populate children
+  -- for _, c in pairs(commits) do
+  -- NOTE: you want to be very careful here with the order
+  --       keep in mind that `pairs` does not keep an order
+  --       while `ipairs` does keep an order
+  for _, h in ipairs(hashes) do
+    local c = commits[h]
+    -- children
+    for _, h in ipairs(c.parents) do
+      local p = commits[h]
+      p.children[#p.children + 1] = c.hash
+    end
+
+    -- branch children
+    local h = c.parents[1]
+    if h then
+      local p = commits[h]
+      p.branch_children[#p.branch_children + 1] = c.hash
+    end
+
+    -- merge children
+    for i = 2, #c.parents do
+      local h = c.parents[i]
+      local p = commits[h]
+      p.merge_children[#p.merge_children + 1] = c.hash
+    end
+  end
+
+  ---@type I.Commit[]
+  local sorted_commits = {}
+
+  ---@type integer
+  local i = 1
+
+  ---@param commit I.Commit
+  local function visit(commit)
+    if not commit.explored then
+      commit.explored = true
+      for _, h in ipairs(commit.children) do
+        visit(commits[h])
+      end
+      commit.i = i
+      i = i + 1
+      sorted_commits[#sorted_commits + 1] = commit
+    end
+  end
+
+  for _, h in ipairs(hashes) do
+    visit(commits[h])
+  end
+
+  -- print 'sorted commits:'
+  -- for _, c in ipairs(sorted_commits) do
+  --   print(c.hash)
+  -- end
+  -- print '-----------------'
+
+  ---@param sorted_commits I.Commit[]
+  local function curve_j(sorted_commits)
+    ---@type I.Commit[]
+    local active = {}
+
+    ---@param hash string
+    ---@return integer?
+    local function find(hash)
+      for i, c in ipairs(active) do
+        if c.hash == hash then
+          return i
+        end
+      end
+    end
+
+    for _, c in ipairs(sorted_commits) do
+      if #c.branch_children > 0 then
+        local d = c.branch_children[1]
+        local loc = find(d)
+        assert(loc, 'inconsistency')
+        active[loc] = c
+        local new_active = {}
+        for _, d in ipairs(active) do
+          if not vim.tbl_contains(c.branch_children, d.hash) then
+            new_active[#new_active + 1] = d
+          end
+        end
+
+        active = new_active
+      else
+        active[#active + 1] = c
+      end
+      local j = find(c.hash)
+      assert(j, 'inconsistency')
+      c.j = j
+    end
+  end
+
+  -- print('data:', vim.inspect(sorted_commits))
+  curve_j(sorted_commits)
+
+  -- for i, c in ipairs(sorted_commits) do
+  --   print(i, vim.inspect(c))
+  -- end
+  -- symbols: ┐ ┘ ├ ┼ ┤
+  --
+  ---@type string[]
+  local rows = {}
+  for i, c in ipairs(sorted_commits) do
+    local pref = ('  '):rep(c.j - 1)
+    local post = (' '):rep(20 - #pref)
+    rows[#rows + 1] = pref .. '* ' .. post .. c.hash .. ' ' .. c.i .. ' ' .. c.j
+  end
+
+  -- FIXME: there is a bug where we inconsistently get different `j`positions
+  --        seemingly randomly ...
+  print '-----------------'
+  for _, row in ipairs(rows) do
+    print(row)
+  end
+  print '-----------------'
+
+  -- control
+  local control_cmd = [[git log -n 10 --pretty='format:%h']]
+
+  local handle = io.popen(control_cmd)
+  if not handle then
+    print 'no handle?'
+    return
+  end
+
+  ---@type string
+  local control_log = handle:read '*a'
+  -- print 'CONTROL:'
+  -- print(control_log)
+end)
 -- experiment with own replacement of flog ... because flog has been annoying
 -- and git log --graph is king?
 vim.keymap.set('n', '<leader>GL', function()
