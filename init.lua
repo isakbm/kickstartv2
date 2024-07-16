@@ -634,7 +634,7 @@ vim.keymap.set('n', '<leader>GG', function()
   -- build a git commit graph
   -- local git_cmd = [[git log --pretty='format:%H %P']]
   -- FIXME: remember to use full hash
-  local git_cmd = [[git log --all --pretty='format:%h %p']]
+  local git_cmd = [[git log --all --pretty='format:%s %h %p']]
   local handle = io.popen(git_cmd)
   if not handle then
     print 'no handle?'
@@ -648,6 +648,8 @@ vim.keymap.set('n', '<leader>GG', function()
 
   ---@class I.Commit
   ---@field hash string
+  ---@field is_void boolean
+  ---@field msg string
   ---@field explored boolean
   ---@field i integer
   ---@field j integer
@@ -664,6 +666,7 @@ vim.keymap.set('n', '<leader>GG', function()
 
   for line in log:gmatch '[^\r\n]+' do
     local iter = line:gmatch '[^%s]+'
+    local msg = iter()
     local hash = iter()
     hashes[#hashes + 1] = hash
     local parents = {}
@@ -682,10 +685,12 @@ vim.keymap.set('n', '<leader>GG', function()
 
     commits[hash] = {
       explored = false,
+      msg = msg,
       hash = hash,
       i = -1,
       j = -1,
       parents = parents,
+      is_void = false,
       children = {},
       merge_children = {},
       branch_children = {},
@@ -743,52 +748,126 @@ vim.keymap.set('n', '<leader>GG', function()
     visit(commits[h])
   end
 
-  -- print 'sorted commits:'
-  -- for _, c in ipairs(sorted_commits) do
-  --   print(c.hash)
-  -- end
-  -- print '-----------------'
+  -- experimental rows
+  --- @type string[]
+  local exp_rows = {}
 
   ---@param sorted_commits I.Commit[]
   local function curve_j(sorted_commits)
+    -- NOTE: that the reserved list can purposfully list
+    --       a commit more than once
     ---@type I.Commit[]
-    local active = {}
+    local reserved = {}
 
+    ---@param cs I.Commit[]
     ---@param hash string
     ---@return integer?
-    local function find(hash)
-      for i, c in ipairs(active) do
-        if c.hash == hash then
+    local function find(cs, hash)
+      for i, c in ipairs(cs) do
+        if c.hash == hash and not c.is_void then
           return i
         end
       end
     end
 
+    ---@return integer
+    local function next_vacant_j()
+      for i, rc in ipairs(reserved) do
+        if rc.is_void then
+          return i
+        end
+      end
+      return #reserved + 1
+    end
+
     for _, c in ipairs(sorted_commits) do
-      if #c.branch_children > 0 then
-        local d = c.branch_children[1]
-        local loc = find(d)
-        assert(loc, 'inconsistency')
-        active[loc] = c
-        local new_active = {}
-        for _, d in ipairs(active) do
-          if not vim.tbl_contains(c.branch_children, d.hash) then
-            new_active[#new_active + 1] = d
+      local commit_row = ''
+      local debg = ''
+      local found_self = false
+      for _, rc in ipairs(reserved) do
+        local x = rc.msg
+        if rc.is_void then
+          x = '0'
+        end
+        debg = debg .. x
+        local symb = ' '
+        if rc.is_void then
+          symb = ' '
+        elseif rc.hash ~= c.hash then
+          symb = '|'
+        elseif not found_self then
+          symb = c.msg
+          found_self = true
+        end
+        commit_row = commit_row .. symb
+      end
+      if not found_self then
+        local j = next_vacant_j()
+        commit_row = commit_row:sub(1, j - 1) .. c.msg .. commit_row:sub(j + 1)
+      end
+
+      print(debg)
+
+      -- if we have been reserved
+      local j = find(reserved, c.hash)
+      if j then
+        -- use the first reserved location
+        c.j = j
+
+        -- if we have parents
+        if #c.parents > 0 then
+          -- replace the reserved location with first parent
+          reserved[c.j] = commits[c.parents[1]]
+
+          -- void all other reservations of THIS commit
+          for _, rc in ipairs(reserved) do
+            if rc.hash == c.hash then
+              rc.is_void = true
+            end
+          end
+
+          -- reserve the rest of the parents
+          for i = 2, #c.parents do
+            local h = c.parents[i]
+            local j = next_vacant_j()
+            reserved[j] = commits[h]
           end
         end
-
-        active = new_active
       else
-        active[#active + 1] = c
+        -- we have not been reserved and have no children, therefore pick first
+        -- available j and reserve our parents
+        c.j = next_vacant_j()
+        -- reserve parents
+        for _, h in ipairs(c.parents) do
+          local j = next_vacant_j()
+          reserved[j] = commits[h]
+        end
       end
-      local j = find(c.hash)
-      assert(j, 'inconsistency')
-      c.j = j
+
+      local pipe_row = ''
+
+      for _, rc in ipairs(reserved) do
+        local symb = '|'
+        if rc.is_void then
+          symb = ' '
+        end
+        pipe_row = pipe_row .. symb
+      end
+
+      exp_rows[#exp_rows + 1] = commit_row
+      exp_rows[#exp_rows + 1] = pipe_row
     end
   end
 
   -- print('data:', vim.inspect(sorted_commits))
   curve_j(sorted_commits)
+
+  print '----------------'
+  for _, r in ipairs(exp_rows) do
+    print(r)
+  end
+
+  print '----------------'
 
   -- for i, c in ipairs(sorted_commits) do
   --   print(i, vim.inspect(c))
@@ -798,9 +877,51 @@ vim.keymap.set('n', '<leader>GG', function()
   ---@type string[]
   local rows = {}
   for i, c in ipairs(sorted_commits) do
-    local pref = ('  '):rep(c.j - 1)
+    local pref = (' '):rep(c.j - 1)
     local post = (' '):rep(20 - #pref)
-    rows[#rows + 1] = pref .. '* ' .. post .. c.hash .. ' ' .. c.i .. ' ' .. c.j
+
+    local prow = rows[i - 1]
+    -- local row = pref .. '*' .. post .. c.hash .. ' ' .. c.i .. ' ' .. c.j
+    local i_str = tostring(c.i)
+    local j_str = tostring(c.j)
+    i_str = (' '):rep(2 - #i_str) .. i_str
+    j_str = (' '):rep(2 - #j_str) .. j_str
+    local parents = ''
+    for _, h in ipairs(c.parents) do
+      local p = commits[h]
+      parents = parents .. p.msg .. ','
+    end
+    parents = parents:sub(0, #parents - 1)
+    local row = pref .. c.msg .. post .. c.hash .. ' ' .. i_str .. ' ' .. j_str .. ' : ' .. parents
+
+    -- I think the strategy is to connect commits to their children upwards
+    -- ... but maybe we should at some point contemplate on the possibility
+    -- to go downwards to parents ...
+
+    -- we start with the branch children
+    -- for _, h in ipairs(c.branch_children) do
+    --   local bc = commits[h]
+    --
+    --   if bc.j == c.j and c.i > bc.i + 1 then
+    --     -- this type of branch child is a continuation of c
+    --     -- and is not on the immediate prev row
+    --     prow[bc.j] = '|'
+    --   else
+    --     -- this type of branch child is a new branch
+    --     if bc.j > c.j then
+    --       for j = c.j + 1, bc.j do
+    --         row[j] = '-'
+    --       end
+    --     else
+    --       for j = bc.j, c.j - 1 do
+    --         row[j] = '-'
+    --       end
+    --     end
+    --   end
+    -- end
+
+    rows[i - 1] = prow
+    rows[i] = row
   end
 
   -- FIXME: there is a bug where we inconsistently get different `j`positions
