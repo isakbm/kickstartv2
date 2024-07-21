@@ -752,6 +752,14 @@ vim.keymap.set('n', '<leader>GG', function()
   --- @type string[]
   local exp_rows = {}
 
+  --- @type string[]
+  local alphabet_rows = {}
+
+  ---@type string[][]
+  local matrix = {}
+
+  local debug_intervals = {}
+
   ---@param sorted_commits I.Commit[]
   local function curve_j(sorted_commits)
     -- NOTE: that the reserved list can purposfully list
@@ -780,33 +788,72 @@ vim.keymap.set('n', '<leader>GG', function()
       return #reserved + 1
     end
 
-    for _, c in ipairs(sorted_commits) do
-      local commit_row = ''
-      local debg = ''
-      local found_self = false
+    ---@param reserved I.Commit[]
+    ---@return string
+    local function get_alpha(reserved)
+      ---@type string
+      local alpha = ''
       for _, rc in ipairs(reserved) do
-        local x = rc.msg
         if rc.is_void then
-          x = '0'
+          alpha = alpha .. ' '
+        else
+          alpha = alpha .. rc.msg
         end
-        debg = debg .. x
-        local symb = ' '
-        if rc.is_void then
-          symb = ' '
-        elseif rc.hash ~= c.hash then
-          symb = '|'
-        elseif not found_self then
-          symb = c.msg
-          found_self = true
-        end
-        commit_row = commit_row .. symb
       end
-      if not found_self then
-        local j = next_vacant_j()
-        commit_row = commit_row:sub(1, j - 1) .. c.msg .. commit_row:sub(j + 1)
+      return alpha
+    end
+
+    ---@param reserved I.Commit[]
+    ---@return string[]
+    local function get_matrix_row(reserved)
+      ---@type string[]
+      local row = {}
+      for _, rc in ipairs(reserved) do
+        if rc.is_void then
+          row[#row + 1] = ' '
+        else
+          row[#row + 1] = rc.msg
+        end
+      end
+      return row
+    end
+
+    for _, c in ipairs(sorted_commits) do
+      --
+      do
+        local row = get_matrix_row(reserved)
+
+        local j = find(reserved, c.hash)
+
+        if j then
+          row[j] = c.msg
+          for i = j + 1, #row do
+            local v = row[i]
+            if v == c.msg then
+              row[i] = ' '
+            end
+          end
+        else
+          row[#row + 1] = c.msg
+        end
+        matrix[#matrix + 1] = row
       end
 
-      print(debg)
+      --
+      do
+        local alpha = get_alpha(reserved)
+
+        local j = find(reserved, c.hash)
+        if j then
+          alpha = alpha:sub(1, j - 1) .. c.msg .. alpha:sub(j + 1):gsub(c.msg, ' ')
+
+          alphabet_rows[#alphabet_rows + 1] = '* ' .. alpha
+        else
+          alphabet_rows[#alphabet_rows + 1] = '* ' .. alpha .. c.msg
+        end
+      end
+
+      local commit_row = ''
 
       -- if we have been reserved
       local j = find(reserved, c.hash)
@@ -833,6 +880,9 @@ vim.keymap.set('n', '<leader>GG', function()
             reserved[j] = commits[h]
           end
         end
+
+        -- any reservation of this commit is now void
+        c.is_void = true
       else
         -- we have not been reserved and have no children, therefore pick first
         -- available j and reserve our parents
@@ -847,24 +897,192 @@ vim.keymap.set('n', '<leader>GG', function()
       local pipe_row = ''
 
       for _, rc in ipairs(reserved) do
-        local symb = '|'
+        local symb = '| '
         if rc.is_void then
-          symb = ' '
+          symb = '  '
         end
         pipe_row = pipe_row .. symb
       end
 
       exp_rows[#exp_rows + 1] = commit_row
       exp_rows[#exp_rows + 1] = pipe_row
+
+      do
+        local row = get_matrix_row(reserved)
+        matrix[#matrix + 1] = row
+      end
+
+      do
+        local alpha = get_alpha(reserved)
+        alphabet_rows[#alphabet_rows + 1] = '  ' .. alpha
+      end
     end
   end
 
   -- print('data:', vim.inspect(sorted_commits))
   curve_j(sorted_commits)
 
+  -- print '----------------'
+  -- for _, r in ipairs(exp_rows) do
+  --   print(r)
+  -- end
+  --
+
+  -- print '----- alpha --------'
+  -- for _, r in ipairs(alphabet_rows) do
+  --   print(r)
+  -- end
+  -- print '----------------'
+
+  -- print '---- stage 1 -------'
+  -- -- creates an "alphabet matrix"
+  -- for _, row in ipairs(matrix) do
+  --   -- print(vim.inspect(row))
+  --   local row_str = ''
+  --   for _, v in ipairs(row) do
+  --     row_str = row_str .. v
+  --   end
+  --   print(row_str)
+  -- end
+  -- print '----------------'
+
+  print '---- stage 2 -------'
+  -- inserts vertical and horizontal pipes
+  for i = 2, #matrix - 1 do
+    local row = matrix[i]
+
+    ---@param row string[]
+    local function count_live(row)
+      local n = 0
+      for _, r in ipairs(row) do
+        if r ~= ' ' then
+          n = n + 1
+        end
+      end
+      return n
+    end
+
+    local new_columns = count_live(matrix[i]) - count_live(matrix[i - 1])
+
+    -- vertical connections
+    for j = 1, #row do
+      local above = matrix[i - 1][j]
+      local this = matrix[i][j]
+      local below = matrix[i + 1][j]
+
+      if this ~= ' ' then
+        if below == this and (new_columns == 0 or above == this or above == '|') then
+          local has_repeats = false
+          local first_repeat = nil
+          for k = 1, #row do
+            if k ~= j and row[k] == row[j] then
+              has_repeats = true
+              first_repeat = k
+              break
+            end
+          end
+
+          if not has_repeats then
+            matrix[i][j] = '|'
+          else
+            local k = first_repeat
+            local this_k = matrix[i][k]
+            local below_k = matrix[i + 1][k]
+            if below_k == this_k then
+              matrix[i][j] = '|'
+            end
+          end
+        end
+      end
+    end
+
+    -- horizontal connections
+    --
+    -- a stopped connector is one that has a void cell below it
+    --
+    local stopped = {}
+    for j = 1, #row do
+      local this = matrix[i][j]
+      local below = matrix[i + 1][j] or ' '
+      if this ~= ' ' and below == ' ' then
+        stopped[#stopped + 1] = j
+      end
+    end
+    -- now lets get the intervals between the stopped connetors
+    -- and other connectors of the same commit hash
+    local intervals = {}
+    local curr = 1
+    for _, j in ipairs(stopped) do
+      for k = curr, j do
+        if row[k] == row[j] then
+          if j > k then
+            intervals[#intervals + 1] = { start = k, stop = j }
+          end
+          curr = j
+          break
+        end
+      end
+    end
+
+    for _, interval in ipairs(intervals) do
+      local a = interval.start
+      local b = interval.stop
+      for j = a + 1, b - 1 do
+        local this = matrix[i][j]
+        if this == ' ' then
+          matrix[i][j] = '-'
+        end
+      end
+    end
+
+    debug_intervals[#debug_intervals + 1] = intervals
+  end
+
+  for idx, row in ipairs(matrix) do
+    local row_str = ''
+    for _, v in ipairs(row) do
+      row_str = row_str .. v
+    end
+
+    local intervals_str = ''
+    local deb_ints = debug_intervals[idx - 1]
+    if deb_ints then
+      for _, interval in ipairs(deb_ints) do
+        intervals_str = intervals_str .. '(' .. interval.start .. interval.stop .. ')'
+      end
+    end
+
+    row_str = row_str .. (' '):rep(8 - #row_str) .. intervals_str
+    print(row_str)
+  end
   print '----------------'
-  for _, r in ipairs(exp_rows) do
-    print(r)
+
+  print '----- stage 3 ----'
+  -- insert symbols on connector rows
+  --
+  -- note that there are 8 possible connections
+  -- under the assumption that any connector cell
+  -- has at least 2 neighbors but no more than 3
+  --
+  -- there are 4 ways to make the connections of three neighbors
+  -- there are 6 ways to make the connections of two neighbors
+  -- however two of them are the vertical and horizontal connections
+  -- that have already been taken care of
+  --
+  for i = 2, #matrix, 2 do
+    local row = matrix[i]
+    local above = matrix[i - 1]
+    local below = matrix[i + 1]
+    for j = 1, #row do
+    end
+  end
+  --
+  for _, row in ipairs(matrix) do
+    local row_str = ''
+    for _, v in ipairs(row) do
+      row_str = row_str .. v
+    end
+    print(row_str)
   end
 
   print '----------------'
