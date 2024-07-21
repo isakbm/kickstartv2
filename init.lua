@@ -282,6 +282,19 @@ vim.opt.softtabstop = 2
 vim.opt.tabstop = 2
 
 WIN_BORDER = { '╭', '─', '╮', '│', '╯', '─', '╰', '│' }
+
+-- git graph symbols
+GVER = '│'
+GHOR = '─'
+GCLD = '╮'
+GCRD = '╭'
+GCLU = '╯'
+GCRU = '╰'
+GLRU = '┴'
+GLRD = '┬'
+GLUD = '┤'
+GRUD = '├'
+
 --=========================== KEYMAPS =============================
 
 -- NOTE: hide higlights after hitting <Esc>
@@ -811,8 +824,10 @@ vim.keymap.set('n', '<leader>GG', function()
       for _, rc in ipairs(reserved) do
         if rc.is_void then
           row[#row + 1] = ' '
+          row[#row + 1] = ' '
         else
           row[#row + 1] = rc.msg
+          row[#row + 1] = ' '
         end
       end
       return row
@@ -826,8 +841,9 @@ vim.keymap.set('n', '<leader>GG', function()
         local j = find(reserved, c.hash)
 
         if j then
-          row[j] = c.msg
-          for i = j + 1, #row do
+          local k = 2 * j - 1
+          row[k] = c.msg
+          for i = k + 1, #row do
             local v = row[i]
             if v == c.msg then
               row[i] = ' '
@@ -934,17 +950,17 @@ vim.keymap.set('n', '<leader>GG', function()
   -- end
   -- print '----------------'
 
-  -- print '---- stage 1 -------'
-  -- -- creates an "alphabet matrix"
-  -- for _, row in ipairs(matrix) do
-  --   -- print(vim.inspect(row))
-  --   local row_str = ''
-  --   for _, v in ipairs(row) do
-  --     row_str = row_str .. v
-  --   end
-  --   print(row_str)
-  -- end
-  -- print '----------------'
+  print '---- stage 1 -------'
+  -- creates an "alphabet matrix"
+  for _, row in ipairs(matrix) do
+    -- print(vim.inspect(row))
+    local row_str = ''
+    for _, v in ipairs(row) do
+      row_str = row_str .. v
+    end
+    print(row_str)
+  end
+  print '----------------'
 
   print '---- stage 2 -------'
   -- inserts vertical and horizontal pipes
@@ -971,7 +987,7 @@ vim.keymap.set('n', '<leader>GG', function()
       local below = matrix[i + 1][j]
 
       if this ~= ' ' then
-        if below == this and (new_columns == 0 or above == this or above == '|') then
+        if below == this and (new_columns == 0 or above == this or above == GVER) then
           local has_repeats = false
           local first_repeat = nil
           for k = 1, #row do
@@ -983,13 +999,13 @@ vim.keymap.set('n', '<leader>GG', function()
           end
 
           if not has_repeats then
-            matrix[i][j] = '|'
+            matrix[i][j] = GVER
           else
             local k = first_repeat
             local this_k = matrix[i][k]
             local below_k = matrix[i + 1][k]
             if below_k == this_k then
-              matrix[i][j] = '|'
+              matrix[i][j] = GVER
             end
           end
         end
@@ -1024,13 +1040,39 @@ vim.keymap.set('n', '<leader>GG', function()
       end
     end
 
+    -- add intervals for the connectors of merge children
+    -- these are where we have multiple connector commit hashes
+    -- for a single merge child, that is, more than one connector
+    --
+    -- TODO: this method presented here is probably universal and covers
+    --       also for the previously computed intervals ... two birds one stone?
+    do
+      local low = #row
+      local high = 1
+      for j = 1, #row do
+        local c = row[j]
+        if c ~= ' ' and c ~= GHOR and c ~= GVER then
+          if j > high then
+            high = j
+          end
+          if j < low then
+            low = j
+          end
+        end
+      end
+
+      if high > low then
+        intervals[#intervals + 1] = { start = low, stop = high }
+      end
+    end
+
     for _, interval in ipairs(intervals) do
       local a = interval.start
       local b = interval.stop
       for j = a + 1, b - 1 do
         local this = matrix[i][j]
         if this == ' ' then
-          matrix[i][j] = '-'
+          matrix[i][j] = GHOR
         end
       end
     end
@@ -1074,6 +1116,49 @@ vim.keymap.set('n', '<leader>GG', function()
     local above = matrix[i - 1]
     local below = matrix[i + 1]
     for j = 1, #row do
+      local lc = row[j - 1]
+      local rc = row[j + 1]
+      local uc = above and above[j]
+      local dc = below and below[j]
+
+      local l = lc and (lc ~= ' ') or false
+      local r = rc and (rc ~= ' ') or false
+      local u = uc and (uc ~= ' ') or false
+      local d = dc and (dc ~= ' ') or false
+
+      local symb_id = ''
+      for _, b in ipairs { l, r, u, d } do
+        if b then
+          symb_id = symb_id .. '1'
+        else
+          symb_id = symb_id .. '0'
+        end
+      end
+
+      local symbol = ({
+        -- two neighbors (no straights)
+        ['1010'] = GCLU,
+        ['1001'] = GCLD,
+        ['0110'] = GCRU,
+        ['0101'] = GCRD,
+        -- three neighbors
+        ['1110'] = GLRU,
+        ['1101'] = GLRD,
+        ['1011'] = GLUD,
+        ['0111'] = GRUD,
+      })[symb_id] or '?'
+
+      local nn = 0
+
+      for _, n in pairs { l, r, d, u } do
+        if n then
+          nn = nn + 1
+        end
+      end
+
+      if row[j] ~= ' ' and row[j] ~= GHOR and row[j] ~= GVER then
+        row[j] = symbol
+      end
     end
   end
   --
