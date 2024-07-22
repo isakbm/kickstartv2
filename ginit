@@ -1,0 +1,63 @@
+#!/bin/bash
+
+name=$1
+echo initializing $name
+
+com() {
+  id=$1
+  touch $id
+  git add .
+  git checkout -b  "${id}"
+  git commit -m "${id}"
+  sleep 1
+}
+
+mkdir $name
+cd $name
+git init
+
+com A
+com B
+com C
+
+git checkout B
+com D
+com E
+
+git checkout C
+
+git checkout -b F
+git merge --no-ff D -m "F"
+sleep 1
+
+com G
+
+git checkout E
+com H
+
+git checkout C
+com I
+
+git checkout I
+git checkout -b J
+git merge --no-ff G -m "J"
+sleep 1
+
+git checkout F
+com K
+
+git checkout -b L
+git merge --no-ff H J -m "L"
+sleep 1
+
+git checkout C
+com M
+
+git log --graph --all --oneline --author-date-order
+
+# --author-date-order
+# --date-order
+# --topo-order
+
+
+
