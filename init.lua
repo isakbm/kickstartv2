@@ -649,9 +649,15 @@ end, { desc = 'insert unicode' })
 
 vim.keymap.set('n', '<leader>GG', function()
   -- build a git commit graph
-  -- local git_cmd = [[git log --pretty='format:%H %P']]
-  -- FIXME: remember to use full hash
-  local git_cmd = [[git log --all --pretty='format:%s %h %p']]
+  --
+  -- NOTE: you may be interested in knowin the difference between
+  --       git log 'author date' and 'commit date'
+  --
+  --       author date is the original date of the commit when it was first made
+  --       commit date is the date at which the commit was modified, i.e by an ammend
+  --       or by a rebase or any other action that could modify the commit
+  --
+  local git_cmd = [[git log --all --pretty='format:{{%s}} {{%aD}} {{%H}} {{%P}}']]
   local handle = io.popen(git_cmd)
   if not handle then
     print 'no handle?'
@@ -663,14 +669,25 @@ vim.keymap.set('n', '<leader>GG', function()
 
   handle:close()
 
+  ---@class I.Row
+  ---@field cells I.Cell[]
+  ---@field commit I.Commit? -- there's a single comit for every even "second"
+
+  -- TODO: make this into a proper class OO
+  --       should have the following methods
+  --       - hash : would return the commit hash or nil if cell is not a commit
+  --       - conn : would return the connector symbol or nil if cell is not a connector
+  --       - str  : would return the string representation
+  --
   ---@class I.Cell
-  ---@field commit I.Commit?
-  ---@field connector string?
+  ---@field commit I.Commit? -- a cell is either a commit or a connector
+  ---@field connector string? -- see above
 
   ---@class I.Commit
   ---@field hash string
-  ---@field is_void boolean
+  ---@field is_void boolean -- used for the "reservation" logic ... a bit confusing I have to admit
   ---@field msg string
+  ---@field author_date string
   ---@field explored boolean
   ---@field i integer
   ---@field j integer
@@ -686,27 +703,22 @@ vim.keymap.set('n', '<leader>GG', function()
   local hashes = {}
 
   for line in log:gmatch '[^\r\n]+' do
-    local iter = line:gmatch '[^%s]+'
+    local iter = line:gmatch '{{([^{]+)}}'
     local msg = iter()
+    local author_date = iter()
     local hash = iter()
+    local parent_iter = (iter() or ''):gmatch '[^%s]+'
+
     hashes[#hashes + 1] = hash
     local parents = {}
-    for p in iter do
+    for p in parent_iter do
       parents[#parents + 1] = p
     end
-
-    -- do
-    --   local hashpa = hash .. ': '
-    --   for _, p in ipairs(parents) do
-    --     hashpa = hashpa .. p .. ' '
-    --   end
-    --
-    --   print(hashpa)
-    -- end
 
     commits[hash] = {
       explored = false,
       msg = msg,
+      author_date = author_date,
       hash = hash,
       i = -1,
       j = -1,
@@ -769,8 +781,8 @@ vim.keymap.set('n', '<leader>GG', function()
     visit(commits[h])
   end
 
-  ---@type I.Cell[][]
-  local matrix = {}
+  ---@type I.Row[]
+  local graph = {}
 
   local debug_intervals = {}
 
@@ -804,41 +816,42 @@ vim.keymap.set('n', '<leader>GG', function()
 
     ---@param reserved I.Commit[]
     ---@return I.Cell[]
-    local function get_matrix_row(reserved)
+    local function get_matrix_row_cells(reserved)
       ---@type I.Cell[]
-      local row = {}
+      local rowc = {}
       for _, rc in ipairs(reserved) do
         if rc.is_void then
-          row[#row + 1] = { connector = ' ' }
-          row[#row + 1] = { connector = ' ' }
+          rowc[#rowc + 1] = { connector = ' ' }
+          rowc[#rowc + 1] = { connector = ' ' }
         else
-          row[#row + 1] = { commit = rc }
-          row[#row + 1] = { connector = ' ' }
+          rowc[#rowc + 1] = { commit = rc }
+          rowc[#rowc + 1] = { connector = ' ' }
         end
       end
-      return row
+      return rowc
     end
 
     for _, c in ipairs(sorted_commits) do
       --
       do
-        local row = get_matrix_row(reserved)
+        local rowc = get_matrix_row_cells(reserved)
 
         local j = find(reserved, c.hash)
 
         if j then
           local k = 2 * j - 1
-          row[k] = { commit = c }
-          for i = k + 1, #row do
-            local v = row[i]
+          rowc[k] = { commit = c }
+          for i = k + 1, #rowc do
+            local v = rowc[i]
             if v.commit and v.commit.hash == c.hash then
-              row[i] = { connector = ' ' }
+              rowc[i] = { connector = ' ' }
             end
           end
         else
-          row[#row + 1] = { commit = c }
+          rowc[#rowc + 1] = { commit = c }
         end
-        matrix[#matrix + 1] = row
+
+        graph[#graph + 1] = { cells = rowc, commit = c }
       end
 
       -- if we have been reserved
@@ -881,24 +894,27 @@ vim.keymap.set('n', '<leader>GG', function()
       end
 
       do
-        local row = get_matrix_row(reserved)
-        matrix[#matrix + 1] = row
+        local rowc = get_matrix_row_cells(reserved)
+        graph[#graph + 1] = { cells = rowc }
       end
     end
   end
 
   curve_j(sorted_commits)
 
-  ---@param matrix I.Cell[][]
-  local function show_matrix(matrix)
-    for idx, row in ipairs(matrix) do
+  ---@param graph I.Row[]
+  local function show_graph(graph)
+    for _, row in ipairs(graph) do
       local row_str = ''
-      for _, c in ipairs(row) do
+      for _, c in ipairs(row.cells) do
         row_str = row_str .. (c.connector or c.commit.msg)
       end
 
-      if idx % 2 == 1 then
-        row_str = row_str .. (' '):rep(15 - #row) .. idx .. 'hello'
+      local c = row.commit
+      if c then
+        local h = c.hash:sub(1, 7)
+        local ah = c.author_date
+        row_str = row_str .. (' '):rep(15 - #row.cells) .. h .. ' [' .. ah .. '] ' .. c.msg
       end
 
       print(row_str)
@@ -906,23 +922,17 @@ vim.keymap.set('n', '<leader>GG', function()
   end
 
   print '---- stage 1 ---'
-  show_matrix(matrix)
+  show_graph(graph)
   print '----------------'
 
   -- inserts vertical and horizontal pipes
-  for i = 2, #matrix - 1 do
-    local row = matrix[i]
+  for i = 2, #graph - 1 do
+    local row = graph[i]
 
-    -- TODO: make this into a proper class OO
-    --       should have the following methods
-    --       - hash : would return the commit hash or nil if cell is not a commit
-    --       - conn : would return the connector symbol or nil if cell is not a connector
-    --       - str  : would return the string representation
-    --
-    ---@param row I.Cell[]
-    local function count_live(row)
+    ---@param cells I.Cell[]
+    local function count_live(cells)
       local n = 0
-      for _, r in ipairs(row) do
+      for _, r in ipairs(cells) do
         if r.commit or r.connector == GVER then
           n = n + 1
         end
@@ -930,13 +940,13 @@ vim.keymap.set('n', '<leader>GG', function()
       return n
     end
 
-    local new_columns = count_live(matrix[i]) - count_live(matrix[i - 1])
+    local new_columns = count_live(graph[i].cells) - count_live(graph[i - 1].cells)
 
     -- vertical connections
-    for j = 1, #row do
-      local above = matrix[i - 1][j]
-      local this = matrix[i][j]
-      local below = matrix[i + 1][j]
+    for j = 1, #row.cells do
+      local above = graph[i - 1].cells[j]
+      local this = graph[i].cells[j]
+      local below = graph[i + 1].cells[j]
 
       ---@param c I.Cell?
       ---@return string?
@@ -959,8 +969,8 @@ vim.keymap.set('n', '<leader>GG', function()
         if bch == tch and trivial_continuation then
           local has_repeats = false
           local first_repeat = nil
-          for k = 1, #row, 2 do
-            local rkc, rjc = row[k].commit, row[j].commit
+          for k = 1, #row.cells, 2 do
+            local rkc, rjc = row.cells[k].commit, row.cells[j].commit
 
             if k ~= j and (rkc and rjc) and rkc.hash == rjc.hash then
               has_repeats = true
@@ -970,14 +980,14 @@ vim.keymap.set('n', '<leader>GG', function()
           end
 
           if not has_repeats then
-            matrix[i][j] = { connector = GVER }
+            graph[i].cells[j] = { connector = GVER }
           else
             local k = first_repeat
-            local this_k = matrix[i][k]
-            local below_k = matrix[i + 1][k]
+            local this_k = graph[i].cells[k]
+            local below_k = graph[i + 1].cells[k]
             local bkc, tkc = below_k.commit, this_k.commit
             if (bkc and tkc) and bkc.hash == tkc.hash then
-              matrix[i][j] = { connector = GVER }
+              graph[i].cells[j] = { connector = GVER }
             end
           end
         end
@@ -989,9 +999,9 @@ vim.keymap.set('n', '<leader>GG', function()
     -- a stopped connector is one that has a void cell below it
     --
     local stopped = {}
-    for j = 1, #row do
-      local this = matrix[i][j]
-      local below = matrix[i + 1][j]
+    for j = 1, #row.cells do
+      local this = graph[i].cells[j]
+      local below = graph[i + 1].cells[j]
       if this.commit and not below.commit then
         stopped[#stopped + 1] = j
       end
@@ -1002,7 +1012,7 @@ vim.keymap.set('n', '<leader>GG', function()
     local curr = 1
     for _, j in ipairs(stopped) do
       for k = curr, j do
-        local rkc, rjc = row[k].commit, row[j].commit
+        local rkc, rjc = row.cells[k].commit, row.cells[j].commit
         if (rkc and rjc) and (rkc.hash == rjc.hash) then
           if j > k then
             intervals[#intervals + 1] = { start = k, stop = j }
@@ -1020,10 +1030,10 @@ vim.keymap.set('n', '<leader>GG', function()
     -- TODO: this method presented here is probably universal and covers
     --       also for the previously computed intervals ... two birds one stone?
     do
-      local low = #row
+      local low = #row.cells
       local high = 1
-      for j = 1, #row do
-        local c = row[j]
+      for j = 1, #row.cells do
+        local c = row.cells[j]
         if c.commit then
           if j > high then
             high = j
@@ -1042,7 +1052,7 @@ vim.keymap.set('n', '<leader>GG', function()
     for _, interval in ipairs(intervals) do
       local a, b = interval.start, interval.stop
       for j = a + 1, b - 1 do
-        local this = matrix[i][j]
+        local this = graph[i].cells[j]
         if this.connector == ' ' then
           this.connector = GHOR
         end
@@ -1053,24 +1063,7 @@ vim.keymap.set('n', '<leader>GG', function()
   end
 
   print '---- stage 2 -------'
-  show_matrix(matrix)
-  -- for idx, row in ipairs(matrix) do
-  --   local row_str = ''
-  --   for _, c in ipairs(row) do
-  --     row_str = row_str .. ((c.commit and c.commit.msg) or c.connector)
-  --   end
-  --
-  --   local intervals_str = ''
-  --   local deb_ints = debug_intervals[idx - 1]
-  --   if deb_ints then
-  --     for _, interval in ipairs(deb_ints) do
-  --       intervals_str = intervals_str .. '(' .. interval.start .. interval.stop .. ')'
-  --     end
-  --   end
-  --
-  --   row_str = row_str .. (' '):rep(8 - #row_str) .. intervals_str
-  --   print(row_str)
-  -- end
+  show_graph(graph)
   print '----------------'
 
   -- insert symbols on connector rows
@@ -1084,15 +1077,15 @@ vim.keymap.set('n', '<leader>GG', function()
   -- however two of them are the vertical and horizontal connections
   -- that have already been taken care of
   --
-  for i = 2, #matrix, 2 do
-    local row = matrix[i]
-    local above = matrix[i - 1]
-    local below = matrix[i + 1]
-    for j = 1, #row do
-      local lc = row[j - 1]
-      local rc = row[j + 1]
-      local uc = above and above[j]
-      local dc = below and below[j]
+  for i = 2, #graph, 2 do
+    local row = graph[i]
+    local above = graph[i - 1]
+    local below = graph[i + 1]
+    for j = 1, #row.cells do
+      local lc = row.cells[j - 1]
+      local rc = row.cells[j + 1]
+      local uc = above and above.cells[j]
+      local dc = below and below.cells[j]
 
       local l = lc and (lc.connector ~= ' ' or lc.commit) or false
       local r = rc and (rc.connector ~= ' ' or rc.commit) or false
@@ -1121,14 +1114,14 @@ vim.keymap.set('n', '<leader>GG', function()
         ['0111'] = GRUD,
       })[symb_id] or '?'
 
-      if row[j].commit then
-        row[j] = { connector = symbol }
+      if row.cells[j].commit then
+        row.cells[j] = { connector = symbol }
       end
     end
   end
 
   print '---- stage 3 ---'
-  show_matrix(matrix)
+  show_graph(graph)
   print '----------------'
 end)
 -- experiment with own replacement of flog ... because flog has been annoying
