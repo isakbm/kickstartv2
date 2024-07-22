@@ -102,6 +102,10 @@
 
   TODO:
 
+    >> The nice <leader>rn widget to do refactored renamings has an issue where
+       seemingly dependent on the cursor position, the rename will silently fail
+       or succeed, is easiest to reproduce for single character variable renamings
+
     >> There is literally a bug in flog so we'll be thinking about
        making a port of gitamine to nvim somehow, to see the bug
        look at commit 7422ae7f in laiout-core, note how this commit
@@ -659,6 +663,10 @@ vim.keymap.set('n', '<leader>GG', function()
 
   handle:close()
 
+  ---@class I.Cell
+  ---@field commit I.Commit?
+  ---@field connector string?
+
   ---@class I.Commit
   ---@field hash string
   ---@field is_void boolean
@@ -761,14 +769,7 @@ vim.keymap.set('n', '<leader>GG', function()
     visit(commits[h])
   end
 
-  -- experimental rows
-  --- @type string[]
-  local exp_rows = {}
-
-  --- @type string[]
-  local alphabet_rows = {}
-
-  ---@type string[][]
+  ---@type I.Cell[][]
   local matrix = {}
 
   local debug_intervals = {}
@@ -802,32 +803,17 @@ vim.keymap.set('n', '<leader>GG', function()
     end
 
     ---@param reserved I.Commit[]
-    ---@return string
-    local function get_alpha(reserved)
-      ---@type string
-      local alpha = ''
-      for _, rc in ipairs(reserved) do
-        if rc.is_void then
-          alpha = alpha .. ' '
-        else
-          alpha = alpha .. rc.msg
-        end
-      end
-      return alpha
-    end
-
-    ---@param reserved I.Commit[]
-    ---@return string[]
+    ---@return I.Cell[]
     local function get_matrix_row(reserved)
-      ---@type string[]
+      ---@type I.Cell[]
       local row = {}
       for _, rc in ipairs(reserved) do
         if rc.is_void then
-          row[#row + 1] = ' '
-          row[#row + 1] = ' '
+          row[#row + 1] = { connector = ' ' }
+          row[#row + 1] = { connector = ' ' }
         else
-          row[#row + 1] = rc.msg
-          row[#row + 1] = ' '
+          row[#row + 1] = { commit = rc }
+          row[#row + 1] = { connector = ' ' }
         end
       end
       return row
@@ -842,34 +828,18 @@ vim.keymap.set('n', '<leader>GG', function()
 
         if j then
           local k = 2 * j - 1
-          row[k] = c.msg
+          row[k] = { commit = c }
           for i = k + 1, #row do
             local v = row[i]
-            if v == c.msg then
-              row[i] = ' '
+            if v.commit and v.commit.hash == c.hash then
+              row[i] = { connector = ' ' }
             end
           end
         else
-          row[#row + 1] = c.msg
+          row[#row + 1] = { commit = c }
         end
         matrix[#matrix + 1] = row
       end
-
-      --
-      do
-        local alpha = get_alpha(reserved)
-
-        local j = find(reserved, c.hash)
-        if j then
-          alpha = alpha:sub(1, j - 1) .. c.msg .. alpha:sub(j + 1):gsub(c.msg, ' ')
-
-          alphabet_rows[#alphabet_rows + 1] = '* ' .. alpha
-        else
-          alphabet_rows[#alphabet_rows + 1] = '* ' .. alpha .. c.msg
-        end
-      end
-
-      local commit_row = ''
 
       -- if we have been reserved
       local j = find(reserved, c.hash)
@@ -910,68 +880,50 @@ vim.keymap.set('n', '<leader>GG', function()
         end
       end
 
-      local pipe_row = ''
-
-      for _, rc in ipairs(reserved) do
-        local symb = '| '
-        if rc.is_void then
-          symb = '  '
-        end
-        pipe_row = pipe_row .. symb
-      end
-
-      exp_rows[#exp_rows + 1] = commit_row
-      exp_rows[#exp_rows + 1] = pipe_row
-
       do
         local row = get_matrix_row(reserved)
         matrix[#matrix + 1] = row
       end
-
-      do
-        local alpha = get_alpha(reserved)
-        alphabet_rows[#alphabet_rows + 1] = '  ' .. alpha
-      end
     end
   end
 
-  -- print('data:', vim.inspect(sorted_commits))
   curve_j(sorted_commits)
 
-  -- print '----------------'
-  -- for _, r in ipairs(exp_rows) do
-  --   print(r)
-  -- end
-  --
+  ---@param matrix I.Cell[][]
+  local function show_matrix(matrix)
+    for idx, row in ipairs(matrix) do
+      local row_str = ''
+      for _, c in ipairs(row) do
+        row_str = row_str .. (c.connector or c.commit.msg)
+      end
 
-  -- print '----- alpha --------'
-  -- for _, r in ipairs(alphabet_rows) do
-  --   print(r)
-  -- end
-  -- print '----------------'
+      if idx % 2 == 1 then
+        row_str = row_str .. (' '):rep(15 - #row) .. idx .. 'hello'
+      end
 
-  print '---- stage 1 -------'
-  -- creates an "alphabet matrix"
-  for _, row in ipairs(matrix) do
-    -- print(vim.inspect(row))
-    local row_str = ''
-    for _, v in ipairs(row) do
-      row_str = row_str .. v
+      print(row_str)
     end
-    print(row_str)
   end
+
+  print '---- stage 1 ---'
+  show_matrix(matrix)
   print '----------------'
 
-  print '---- stage 2 -------'
   -- inserts vertical and horizontal pipes
   for i = 2, #matrix - 1 do
     local row = matrix[i]
 
-    ---@param row string[]
+    -- TODO: make this into a proper class OO
+    --       should have the following methods
+    --       - hash : would return the commit hash or nil if cell is not a commit
+    --       - conn : would return the connector symbol or nil if cell is not a connector
+    --       - str  : would return the string representation
+    --
+    ---@param row I.Cell[]
     local function count_live(row)
       local n = 0
       for _, r in ipairs(row) do
-        if r ~= ' ' then
+        if r.commit or r.connector == GVER then
           n = n + 1
         end
       end
@@ -986,12 +938,31 @@ vim.keymap.set('n', '<leader>GG', function()
       local this = matrix[i][j]
       local below = matrix[i + 1][j]
 
-      if this ~= ' ' then
-        if below == this and (new_columns == 0 or above == this or above == GVER) then
+      ---@param c I.Cell?
+      ---@return string?
+      local function hash(c)
+        return c and c.commit and c.commit.hash
+      end
+
+      ---@param c I.Cell?
+      ---@return string?
+      local function conn(c)
+        return c and c.connector
+      end
+
+      local ach, tch, bch = hash(above), hash(this), hash(below)
+      local acc = conn(above)
+
+      if this.commit then
+        local trivial_continuation = new_columns < 1 or ach == tch or acc == GVER
+
+        if bch == tch and trivial_continuation then
           local has_repeats = false
           local first_repeat = nil
-          for k = 1, #row do
-            if k ~= j and row[k] == row[j] then
+          for k = 1, #row, 2 do
+            local rkc, rjc = row[k].commit, row[j].commit
+
+            if k ~= j and (rkc and rjc) and rkc.hash == rjc.hash then
               has_repeats = true
               first_repeat = k
               break
@@ -999,13 +970,14 @@ vim.keymap.set('n', '<leader>GG', function()
           end
 
           if not has_repeats then
-            matrix[i][j] = GVER
+            matrix[i][j] = { connector = GVER }
           else
             local k = first_repeat
             local this_k = matrix[i][k]
             local below_k = matrix[i + 1][k]
-            if below_k == this_k then
-              matrix[i][j] = GVER
+            local bkc, tkc = below_k.commit, this_k.commit
+            if (bkc and tkc) and bkc.hash == tkc.hash then
+              matrix[i][j] = { connector = GVER }
             end
           end
         end
@@ -1019,8 +991,8 @@ vim.keymap.set('n', '<leader>GG', function()
     local stopped = {}
     for j = 1, #row do
       local this = matrix[i][j]
-      local below = matrix[i + 1][j] or ' '
-      if this ~= ' ' and below == ' ' then
+      local below = matrix[i + 1][j]
+      if this.commit and not below.commit then
         stopped[#stopped + 1] = j
       end
     end
@@ -1030,7 +1002,8 @@ vim.keymap.set('n', '<leader>GG', function()
     local curr = 1
     for _, j in ipairs(stopped) do
       for k = curr, j do
-        if row[k] == row[j] then
+        local rkc, rjc = row[k].commit, row[j].commit
+        if (rkc and rjc) and (rkc.hash == rjc.hash) then
           if j > k then
             intervals[#intervals + 1] = { start = k, stop = j }
           end
@@ -1051,7 +1024,7 @@ vim.keymap.set('n', '<leader>GG', function()
       local high = 1
       for j = 1, #row do
         local c = row[j]
-        if c ~= ' ' and c ~= GHOR and c ~= GVER then
+        if c.commit then
           if j > high then
             high = j
           end
@@ -1067,12 +1040,11 @@ vim.keymap.set('n', '<leader>GG', function()
     end
 
     for _, interval in ipairs(intervals) do
-      local a = interval.start
-      local b = interval.stop
+      local a, b = interval.start, interval.stop
       for j = a + 1, b - 1 do
         local this = matrix[i][j]
-        if this == ' ' then
-          matrix[i][j] = GHOR
+        if this.connector == ' ' then
+          this.connector = GHOR
         end
       end
     end
@@ -1080,26 +1052,27 @@ vim.keymap.set('n', '<leader>GG', function()
     debug_intervals[#debug_intervals + 1] = intervals
   end
 
-  for idx, row in ipairs(matrix) do
-    local row_str = ''
-    for _, v in ipairs(row) do
-      row_str = row_str .. v
-    end
-
-    local intervals_str = ''
-    local deb_ints = debug_intervals[idx - 1]
-    if deb_ints then
-      for _, interval in ipairs(deb_ints) do
-        intervals_str = intervals_str .. '(' .. interval.start .. interval.stop .. ')'
-      end
-    end
-
-    row_str = row_str .. (' '):rep(8 - #row_str) .. intervals_str
-    print(row_str)
-  end
+  print '---- stage 2 -------'
+  show_matrix(matrix)
+  -- for idx, row in ipairs(matrix) do
+  --   local row_str = ''
+  --   for _, c in ipairs(row) do
+  --     row_str = row_str .. ((c.commit and c.commit.msg) or c.connector)
+  --   end
+  --
+  --   local intervals_str = ''
+  --   local deb_ints = debug_intervals[idx - 1]
+  --   if deb_ints then
+  --     for _, interval in ipairs(deb_ints) do
+  --       intervals_str = intervals_str .. '(' .. interval.start .. interval.stop .. ')'
+  --     end
+  --   end
+  --
+  --   row_str = row_str .. (' '):rep(8 - #row_str) .. intervals_str
+  --   print(row_str)
+  -- end
   print '----------------'
 
-  print '----- stage 3 ----'
   -- insert symbols on connector rows
   --
   -- note that there are 8 possible connections
@@ -1121,10 +1094,10 @@ vim.keymap.set('n', '<leader>GG', function()
       local uc = above and above[j]
       local dc = below and below[j]
 
-      local l = lc and (lc ~= ' ') or false
-      local r = rc and (rc ~= ' ') or false
-      local u = uc and (uc ~= ' ') or false
-      local d = dc and (dc ~= ' ') or false
+      local l = lc and (lc.connector ~= ' ' or lc.commit) or false
+      local r = rc and (rc.connector ~= ' ' or rc.commit) or false
+      local u = uc and (uc.connector ~= ' ' or uc.commit) or false
+      local d = dc and (dc.connector ~= ' ' or dc.commit) or false
 
       local symb_id = ''
       for _, b in ipairs { l, r, u, d } do
@@ -1148,106 +1121,15 @@ vim.keymap.set('n', '<leader>GG', function()
         ['0111'] = GRUD,
       })[symb_id] or '?'
 
-      local nn = 0
-
-      for _, n in pairs { l, r, d, u } do
-        if n then
-          nn = nn + 1
-        end
-      end
-
-      if row[j] ~= ' ' and row[j] ~= GHOR and row[j] ~= GVER then
-        row[j] = symbol
+      if row[j].commit then
+        row[j] = { connector = symbol }
       end
     end
   end
-  --
-  for _, row in ipairs(matrix) do
-    local row_str = ''
-    for _, v in ipairs(row) do
-      row_str = row_str .. v
-    end
-    print(row_str)
-  end
 
+  print '---- stage 3 ---'
+  show_matrix(matrix)
   print '----------------'
-
-  -- for i, c in ipairs(sorted_commits) do
-  --   print(i, vim.inspect(c))
-  -- end
-  -- symbols: ┐ ┘ ├ ┼ ┤
-  --
-  ---@type string[]
-  local rows = {}
-  for i, c in ipairs(sorted_commits) do
-    local pref = (' '):rep(c.j - 1)
-    local post = (' '):rep(20 - #pref)
-
-    local prow = rows[i - 1]
-    -- local row = pref .. '*' .. post .. c.hash .. ' ' .. c.i .. ' ' .. c.j
-    local i_str = tostring(c.i)
-    local j_str = tostring(c.j)
-    i_str = (' '):rep(2 - #i_str) .. i_str
-    j_str = (' '):rep(2 - #j_str) .. j_str
-    local parents = ''
-    for _, h in ipairs(c.parents) do
-      local p = commits[h]
-      parents = parents .. p.msg .. ','
-    end
-    parents = parents:sub(0, #parents - 1)
-    local row = pref .. c.msg .. post .. c.hash .. ' ' .. i_str .. ' ' .. j_str .. ' : ' .. parents
-
-    -- I think the strategy is to connect commits to their children upwards
-    -- ... but maybe we should at some point contemplate on the possibility
-    -- to go downwards to parents ...
-
-    -- we start with the branch children
-    -- for _, h in ipairs(c.branch_children) do
-    --   local bc = commits[h]
-    --
-    --   if bc.j == c.j and c.i > bc.i + 1 then
-    --     -- this type of branch child is a continuation of c
-    --     -- and is not on the immediate prev row
-    --     prow[bc.j] = '|'
-    --   else
-    --     -- this type of branch child is a new branch
-    --     if bc.j > c.j then
-    --       for j = c.j + 1, bc.j do
-    --         row[j] = '-'
-    --       end
-    --     else
-    --       for j = bc.j, c.j - 1 do
-    --         row[j] = '-'
-    --       end
-    --     end
-    --   end
-    -- end
-
-    rows[i - 1] = prow
-    rows[i] = row
-  end
-
-  -- FIXME: there is a bug where we inconsistently get different `j`positions
-  --        seemingly randomly ...
-  print '-----------------'
-  for _, row in ipairs(rows) do
-    print(row)
-  end
-  print '-----------------'
-
-  -- control
-  local control_cmd = [[git log -n 10 --pretty='format:%h']]
-
-  local handle = io.popen(control_cmd)
-  if not handle then
-    print 'no handle?'
-    return
-  end
-
-  ---@type string
-  local control_log = handle:read '*a'
-  -- print 'CONTROL:'
-  -- print(control_log)
 end)
 -- experiment with own replacement of flog ... because flog has been annoying
 -- and git log --graph is king?
