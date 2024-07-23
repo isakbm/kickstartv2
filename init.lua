@@ -658,7 +658,7 @@ vim.keymap.set('n', '<leader>GL', function()
 
   -- print('lines:', lines)
 
-  vim.api.nvim_buf_set_lines(buf, 0, 0, false, lines)
+  vim.api.nvim_buf_set_lines(buf, 0, #lines, false, lines)
 
   -- for _, hls in ipairs(hlsr) do
   --   for _, hl in pairs(hls) do

@@ -9,7 +9,7 @@ local function gitgraph()
   --       commit date is the date at which the commit was modified, i.e by an ammend
   --       or by a rebase or any other action that could modify the commit
   --
-  local git_cmd = [[git log --all --pretty='format:{{%s}} {{%aD}} {{%H}} {{%P}}']]
+  local git_cmd = [[git log --all --pretty='format:%s%x00%aD%x00%H%x00%P']]
   -- local git_cmd = [[git log --all --pretty='format:{{%H}} {{%P}}']]
   local handle = io.popen(git_cmd)
   if not handle then
@@ -59,7 +59,7 @@ local function gitgraph()
   local hashes = {}
 
   for line in log:gmatch '[^\r\n]+' do
-    local iter = line:gmatch '{{([^{]+)}}'
+    local iter = line:gmatch '([^%z]+)'
     local msg = iter()
     local author_date = iter()
     local hash = iter()
@@ -74,9 +74,7 @@ local function gitgraph()
     commits[hash] = {
       explored = false,
       msg = msg,
-      -- msg = 'A',
-      -- author_date = author_date,
-      author_date = 'temp',
+      author_date = author_date,
       hash = hash,
       i = -1,
       j = -1,
@@ -95,12 +93,10 @@ local function gitgraph()
   --       while `ipairs` does keep an order
   for _, h in ipairs(hashes) do
     local c = commits[h]
+
     -- children
     for _, h in ipairs(c.parents) do
       local p = commits[h]
-      if not p then
-        print('NO P for hash = ', h)
-      end
       p.children[#p.children + 1] = c.hash
     end
 
@@ -148,7 +144,7 @@ local function gitgraph()
   local debug_intervals = {}
 
   ---@param sorted_commits I.Commit[]
-  local function curve_j(sorted_commits)
+  local function straight_j(sorted_commits)
     ---@param cells I.Cell[]
     ---@return I.Cell[]
     local function propagate(cells)
@@ -189,14 +185,16 @@ local function gitgraph()
     end
 
     for _, c in ipairs(sorted_commits) do
-      --
+      ---@type I.Cell[]
+      local rowc = {}
+
+      ---@type integer?
+      local j = nil
+
       do
-        ---@type I.Cell[]
-        local rowc = {}
-
-        ---@type integer?
-        local j = nil
-
+        --
+        -- commit row
+        --
         if #graph > 0 then
           rowc = propagate(graph[#graph].cells)
           j = find(graph[#graph].cells, c.hash)
@@ -222,46 +220,63 @@ local function gitgraph()
         end
 
         graph[#graph + 1] = { cells = rowc, commit = c }
+      end
 
-        -- at this point we should have a valid position for our commit (we have 'inserted' it)
-        assert(j)
-
-        -- now we proceed to add the parents of the commit we just added
-        --
+      do
         -- first we propagate
         local rowc = propagate(graph[#graph].cells)
 
-        if #c.parents > 0 then
-          -- reserve the first parent at our location, and preserve its children
-          rowc[j].commit = commits[c.parents[1]]
-          rowc[j].emphasis = true
-
-          -- reserve rest of the parents of c if they have not already been reserved
-          for i = 2, #c.parents do
-            local h = c.parents[i]
-
-            local j_child = graph[#graph].cells[j]
-            local j = find(graph[#graph].cells, h)
-
-            if not j then
-              local j = next_vacant_j(rowc)
-              -- prev cell at j is the child
-              rowc[j] = { commit = commits[h], emphasis = true, children = { j_child } }
-              rowc[j + 1] = { connector = ' ' }
-            else
-              -- prev cell at j is +1 child
-              rowc[j].children[#rowc[j].children + 1] = j_child
-              rowc[j].emphasis = true
-            end
+        local num_active = 0
+        for _, cell in ipairs(rowc) do
+          if cell.commit then
+            num_active = num_active + 1
           end
         end
 
-        graph[#graph + 1] = { cells = rowc }
+        if num_active > 1 or #c.parents > 0 then
+          --
+          -- connector row
+          --
+          -- at this point we should have a valid position for our commit (we have 'inserted' it)
+          assert(j)
+
+          -- now we proceed to add the parents of the commit we just added
+          --
+
+          if #c.parents > 0 then
+            -- reserve the first parent at our location, and preserve its children
+            rowc[j].commit = commits[c.parents[1]]
+            rowc[j].emphasis = true
+
+            -- reserve rest of the parents of c if they have not already been reserved
+            for i = 2, #c.parents do
+              local h = c.parents[i]
+
+              local j_child = graph[#graph].cells[j]
+              local j = find(graph[#graph].cells, h)
+
+              if not j then
+                local j = next_vacant_j(rowc)
+                -- prev cell at j is the child
+                rowc[j] = { commit = commits[h], emphasis = true, children = { j_child } }
+                rowc[j + 1] = { connector = ' ' }
+              else
+                -- prev cell at j is +1 child
+                rowc[j].children[#rowc[j].children + 1] = j_child
+                rowc[j].emphasis = true
+              end
+            end
+          end
+
+          graph[#graph + 1] = { cells = rowc }
+        else
+          graph[#graph + 1] = { cells = { { connector = ' ' }, { connector = ' ' } } }
+        end
       end
     end
   end
 
-  curve_j(sorted_commits)
+  straight_j(sorted_commits)
 
   ---@param graph I.Row[]
   ---@return string[]
@@ -307,12 +322,14 @@ local function gitgraph()
           end
 
           -- if child_row_commit_cell and vim.tbl_contains(c.children, child_row_commit_cell) then
-          if c.emphasis then
-            row_str = row_str .. c.commit.msg:lower()
-            -- row_str = row_str .. c.commit.msg
-          else
-            row_str = row_str .. c.commit.msg
-          end
+          -- if c.emphasis then
+          -- row_str = row_str .. c.commit.msg:lower()
+          -- row_str = row_str .. c.commit.msg
+          -- else
+          -- row_str = row_str .. c.commit.msg
+
+          -- end
+          row_str = row_str .. '*'
         else
           assert(c.connector)
           row_str = row_str .. c.connector
