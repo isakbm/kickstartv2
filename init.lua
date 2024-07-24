@@ -306,6 +306,11 @@ GRUDCU = '⓸'
 GLUDCD = '⓷'
 GLUDCU = '⓹'
 
+GLRDCL = 'ⓢ'
+GLRDCR = 'ⓣ'
+GLRUCL = 'ⓥ'
+GLRUCR = 'ⓤ'
+
 GRCM = 'ⓚ' -- 'M'
 GMCM = '⓮' -- '*'
 GRCME = 'ⓛ' -- 'M'

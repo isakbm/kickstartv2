@@ -756,28 +756,76 @@ local function gitgraph()
         ['0111'] = GRUD,
       })[symb_id] or '?'
 
-      ---@type 'u' | 'd' |  nil
-      local cl = nil
-      local commit_above = below.commit and below.commit.j == j
-      local commit_below = above.commit and above.commit.j == j
-      if commit_above and commit_below then
-        cl = #above.commit.parents > 1 and 'u' or 'd'
-      elseif commit_above then
-        cl = 'd'
-      elseif commit_below then
-        cl = 'u'
+      ---@type 'u' | 'd' |  nil -- placement of commit vertically if immediately above or below us
+      local clv = nil
+      local commit_dir_above = below.commit and below.commit.j == j
+      local commit_dir_below = above.commit and above.commit.j == j
+      if commit_dir_above and commit_dir_below then
+        clv = #above.commit.parents > 1 and 'u' or 'd'
+      elseif commit_dir_above then
+        clv = 'd'
+      elseif commit_dir_below then
+        clv = 'u'
       end
 
-      if cl and symbol == GLUD then
-        if cl == 'd' then
+      --[[ FIXME: the following is an example of a bug to render
+      --          correctly the T junction bellow and right of 5f948ee at laiout-core repo
+      --
+      --          the fix involves using the `clh_above` parameter ... etc ... which
+      --          is defined further down vvv
+      --
+⓸─⓷               ->  Merge branch 'dev' into staging Merge branch '846-whitelist-importable-svg-groups' into 'dev'
+│ ⓮               4d653c3 [Tue, 4 Jul 2023 16:50:11 +0000] Merge branch '846-whitelist-importable-svg-groups' into 'dev'
+│ ⓸─╮             ->  Merge branch '845-zones-shrink-from-a-single-edge-when-an-edge-is-passed' into 'dev' layout: whitelist importable SVG groups
+│ │ ⓚ             8ce1ae9 [Tue, 4 Jul 2023 18:35:21 +0200] layout: whitelist importable SVG groups
+│ │ │             ->  Merge branch '845-zones-shrink-from-a-single-edge-when-an-edge-is-passed' into 'dev'
+⓮ │ │             5f948ee [Tue, 4 Jul 2023 16:26:14 +0200] Merge branch 'dev' into staging
+⓸─┤ │             ->  Merge branch 'dev' into staging Merge branch '845-zones-shrink-from-a-single-edge-when-an-edge-is-passed' into 'dev'
+│ │ │ ⓛ           b20cdf3 [Tue, 4 Jul 2023 16:03:59 +0200] layout: comment out all `MutationDirection`
+│ │ │ │           ->  scenarios: turn off Growh, add EffectiveWidth
+│ │ │ ⓚ           2daa986 [Tue, 4 Jul 2023 15:00:36 +0200] scenarios: turn off Growh, add EffectiveWidth
+│ │ │ │           ->  layout: pass furniture preferences to mutations
+│ │ │ ⓚ           669cbd7 [Tue, 4 Jul 2023 12:26:17 +0200] layout: pass furniture preferences to mutations
+      --]]
+
+      ---@type 'l' | 'r' | nil -- placement of commit horizontally, only relevant if this is a connector row and if the cell is not immediately above or below the commit
+      local clh_above = nil
+      local commit_above = above.commit and above.commit.j ~= j
+      if commit_above then
+        clh_above = above.commit.j < j and 'l' or 'r'
+      end
+
+      ---@type 'l' | 'r' | nil -- placement of commit horizontally, only relevant if this is a connector row and if the cell is not immediately above or below the commit
+      local clh_below = nil
+      local commit_below = below.commit and below.commit.j ~= j
+      if commit_below then
+        clh_below = below.commit.j < j and 'l' or 'r'
+      end
+
+      if clh_above and symbol == GLRD then
+        if clh_above == 'l' then
+          symbol = GLRDCL -- '<'
+        elseif clh_above == 'r' then
+          symbol = GLRDCR -- '>'
+        end
+      elseif clh_below and symbol == GLRU then
+        if clh_below == 'l' then
+          symbol = GLRUCL -- '<'
+        elseif clh_below == 'r' then
+          symbol = GLRUCR -- '>'
+        end
+      end
+
+      if clv and symbol == GLUD then
+        if clv == 'd' then
           symbol = GLUDCD
-        elseif cl == 'u' then
+        elseif clv == 'u' then
           symbol = GLUDCU
         end
-      elseif cl and symbol == GRUD then
-        if cl == 'd' then
+      elseif clv and symbol == GRUD then
+        if clv == 'd' then
           symbol = GRUDCD
-        elseif cl == 'u' then
+        elseif clv == 'u' then
           symbol = GRUDCU
         end
       end
@@ -813,8 +861,8 @@ local function gitgraph()
   -- print '---- stage 3 ---'
   -- show_graph(graph)
   -- print '----------------'
-  return graph_to_lines(graph_1, graph_2)
-  -- return graph_to_lines(graph_2)
+  -- return graph_to_lines(graph_1, graph_2)
+  return graph_to_lines(graph_2)
 end
 
 return gitgraph
