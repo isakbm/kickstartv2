@@ -33,9 +33,9 @@ local function gitgraph()
   --       - str  : would return the string representation
   --
   ---@class I.Cell
-  ---@field commit I.Commit? -- a cell is either a commit or a connector
-  ---@field connector string? -- see above
-  ---@field children I.Cell[]? -- FIXME: might not need this? ... dont confuse this with child commits (subtly different)
+  ---@field is_commit boolean? -- when true this cell is a real commit
+  ---@field commit I.Commit? -- a cell is associated with a commit, but the empty column gaps don't have them
+  ---@field connector string? -- a cell is eventually given a connector
   ---@field emphasis boolean? -- when true indicates that this is a direct parent of cell on previous row
 
   ---@class I.Commit
@@ -118,21 +118,27 @@ local function gitgraph()
   ---@type I.Commit[]
   local sorted_commits = {}
 
-  ---@type integer
-  local i = 1
+  local function create_visitor()
+    ---@type integer
+    local i = 1
 
-  ---@param commit I.Commit
-  local function visit(commit)
-    if not commit.explored then
-      commit.explored = true
-      for _, h in ipairs(commit.children) do
-        visit(commits[h])
+    ---@param commit I.Commit
+    local function visit(commit)
+      if not commit.explored then
+        commit.explored = true
+        for _, h in ipairs(commit.children) do
+          visit(commits[h])
+        end
+        commit.i = i
+        i = i + 1
+        sorted_commits[#sorted_commits + 1] = commit
       end
-      commit.i = i
-      i = i + 1
-      sorted_commits[#sorted_commits + 1] = commit
     end
+
+    return visit
   end
+
+  local visit = create_visitor()
 
   for _, h in ipairs(hashes) do
     visit(commits[h])
@@ -140,6 +146,12 @@ local function gitgraph()
 
   ---@type I.Row[]
   local graph = {}
+
+  ---@type I.Row[]
+  local graph_1 = {}
+
+  ---@type I.Row[]
+  local graph_2 = {}
 
   local debug_intervals = {}
 
@@ -154,7 +166,7 @@ local function gitgraph()
           new_cells[#new_cells + 1] = { connector = ' ' }
         else
           assert(cell.commit)
-          new_cells[#new_cells + 1] = { commit = cell.commit, children = { cell } }
+          new_cells[#new_cells + 1] = { commit = cell.commit }
         end
       end
       return new_cells
@@ -162,9 +174,13 @@ local function gitgraph()
 
     ---@param cells I.Cell[]
     ---@param hash string
+    ---@param start integer?
     ---@return integer?
-    local function find(cells, hash)
-      for idx, c in ipairs(cells) do
+    local function find(cells, hash, start)
+      local start = start or 1
+      for idx = start, #cells do
+        -- for idx, c in ipairs(cells) do
+        local c = cells[idx]
         if c.commit and c.commit.hash == hash then
           return idx
         end
@@ -173,9 +189,11 @@ local function gitgraph()
     end
 
     ---@param cells I.Cell[]
+    ---@param start integer?
     ---@return integer
-    local function next_vacant_j(cells)
-      for i = 1, #cells, 2 do
+    local function next_vacant_j(cells, start)
+      local start = start or 1
+      for i = start, #cells, 2 do
         local cell = cells[i]
         if cell.connector == ' ' then
           return i
@@ -184,7 +202,7 @@ local function gitgraph()
       return #cells + 1
     end
 
-    for _, c in ipairs(sorted_commits) do
+    for i, c in ipairs(sorted_commits) do
       ---@type I.Cell[]
       local rowc = {}
 
@@ -202,20 +220,20 @@ local function gitgraph()
 
         -- if reserved location use it
         if j then
-          -- use reserved location and maintain prev children from propagation step
-          rowc[j].commit = c
+          c.j = j
+          rowc[j] = { commit = c, is_commit = true }
 
           -- clear any supurfluous reservations
-          for i = j + 1, #rowc do
-            local v = rowc[i]
+          for k = j + 1, #rowc do
+            local v = rowc[k]
             if v.commit and v.commit.hash == c.hash then
-              rowc[i] = { connector = ' ' }
+              rowc[k] = { connector = ' ' }
             end
           end
         else
           j = next_vacant_j(rowc)
-          -- add new reservation, NOTE that it has no children
-          rowc[j] = { commit = c }
+          c.j = j
+          rowc[j] = { commit = c, is_commit = true }
           rowc[j + 1] = { connector = ' ' }
         end
 
@@ -223,6 +241,8 @@ local function gitgraph()
       end
 
       do
+        -- connector row (reservation row)
+        --
         -- first we propagate
         local rowc = propagate(graph[#graph].cells)
 
@@ -239,38 +259,101 @@ local function gitgraph()
           --
           -- at this point we should have a valid position for our commit (we have 'inserted' it)
           assert(j)
+          local our_loc = j
 
           -- now we proceed to add the parents of the commit we just added
           --
 
           if #c.parents > 0 then
-            -- reserve the first parent at our location, and preserve its children
-            rowc[j].commit = commits[c.parents[1]]
-            rowc[j].emphasis = true
-
-            -- reserve rest of the parents of c if they have not already been reserved
-            for i = 2, #c.parents do
-              local h = c.parents[i]
-
-              local j_child = graph[#graph].cells[j]
-              local j = find(graph[#graph].cells, h)
-
-              if not j then
-                local j = next_vacant_j(rowc)
-                -- prev cell at j is the child
-                rowc[j] = { commit = commits[h], emphasis = true, children = { j_child } }
-                rowc[j + 1] = { connector = ' ' }
-              else
-                -- prev cell at j is +1 child
-                rowc[j].children[#rowc[j].children + 1] = j_child
-                rowc[j].emphasis = true
+            ---@param rem_parents string[]
+            local function reserve_remainder(rem_parents)
+              --
+              -- reserve the rest of the parents in slots to the right of us
+              --
+              -- ... another alternative is to reserve rest of the parents of c if they have not already been reserved
+              -- for i = 2, #c.parents do
+              for _, h in ipairs(rem_parents) do
+                local j = find(graph[#graph].cells, h, our_loc)
+                if not j then
+                  local j = next_vacant_j(rowc, our_loc)
+                  rowc[j] = { commit = commits[h], emphasis = true }
+                  rowc[j + 1] = { connector = ' ' }
+                else
+                  rowc[j].emphasis = true
+                end
               end
             end
-          end
 
-          graph[#graph + 1] = { cells = rowc }
-        else
-          graph[#graph + 1] = { cells = { { connector = ' ' }, { connector = ' ' } } }
+            -- we start by peeking at next commit and seeing if it is one of our parents
+            -- we only do this if one of our propagating branches is already destined for this commit
+
+            local next_commit = sorted_commits[i + 1]
+            ---@type I.Cell?
+            local tracker = nil
+            if next_commit then
+              for _, cell in ipairs(rowc) do
+                if cell.commit and cell.commit.hash == next_commit.hash then
+                  tracker = cell
+                  break
+                end
+              end
+            end
+
+            local next_p_idx = nil -- default to picking first parent
+            if tracker and next_commit then
+              -- this loop updates next_p_idx to the next commit if they are identical
+              for k, h in ipairs(c.parents) do
+                if h == next_commit.hash then
+                  next_p_idx = k
+                  break
+                end
+              end
+            end
+
+            -- add parents
+            if next_p_idx then
+              assert(tracker)
+              -- if next commit is our parent then we do some complex logic
+              if #c.parents == 1 then
+                -- simply place parent at our location
+                rowc[our_loc].commit = commits[c.parents[1]]
+                rowc[our_loc].emphasis = true
+              else
+                -- void the cell at our location (will be replaced by our parents in a moment)
+                rowc[our_loc] = { connector = ' ' }
+
+                -- put emphasis on tracker for the special parent
+                tracker.emphasis = true
+
+                -- only reserve parents that are different from next commit
+                ---@type string[]
+                local rem_parents = {}
+                for k, h in ipairs(c.parents) do
+                  if k ~= next_p_idx then
+                    rem_parents[#rem_parents + 1] = h
+                  end
+                end
+
+                assert(#rem_parents == #c.parents - 1, 'unexpected amount of rem parents')
+                reserve_remainder(rem_parents)
+              end
+            else
+              -- simply add first parent at our location and then reserve the rest
+              rowc[our_loc].commit = commits[c.parents[1]]
+              rowc[our_loc].emphasis = true
+
+              local rem_parents = {}
+              for k = 2, #c.parents do
+                rem_parents[#rem_parents + 1] = c.parents[k]
+              end
+
+              reserve_remainder(rem_parents)
+            end
+
+            graph[#graph + 1] = { cells = rowc }
+          else
+            graph[#graph + 1] = { cells = { { connector = ' ' }, { connector = ' ' } } }
+          end
         end
       end
     end
@@ -278,9 +361,14 @@ local function gitgraph()
 
   straight_j(sorted_commits)
 
-  ---@param graph I.Row[]
+  ---@param graph_1 I.Row[]
+  ---@param graph_2 I.Row[]?
   ---@return string[]
-  local function graph_to_lines(graph)
+  local function graph_to_lines(graph_1, graph_2)
+    if graph_1 and graph_2 then
+      print 'we have both graphs'
+    end
+
     ---@type string[]
     local lines = {}
 
@@ -296,67 +384,87 @@ local function gitgraph()
 
     local next_char = char_generator()
 
-    for idx, row in ipairs(graph) do
+    ---@param cell I.Cell
+    ---@return string
+    local function commit_cell_symb(cell)
+      assert(cell.is_commit)
+      if #cell.commit.parents > 1 then
+        -- merge commit
+        return #cell.commit.children == 0 and GMCME or GMCM
+      else
+        -- regular commit
+        return #cell.commit.children == 0 and GRCME or GRCM
+      end
+    end
+
+    ---@param row I.Row
+    ---@return string
+    local function row_to_str(row)
       local row_str = ''
-      for _, c in ipairs(row.cells) do
-        -- if not c.connector and not c.commit.debug then
-        --   c.commit.debug = next_char()
-        -- end
-
-        -- if c.commit then
-        --   c.commit.debug = c.commit.msg
-        -- end
-
-        if c.commit then
-          local child_row = graph[idx - 1]
-          local child_row_commit = child_row and child_row.commit
-          local child_row_commit_cell = nil
-
-          if child_row_commit then
-            for _, cell in ipairs(child_row.cells) do
-              if cell.commit and cell.commit.hash == child_row_commit.hash then
-                child_row_commit_cell = cell
-                break
-              end
-            end
-          end
-
-          -- if child_row_commit_cell and vim.tbl_contains(c.children, child_row_commit_cell) then
-          -- if c.emphasis then
-          -- row_str = row_str .. c.commit.msg:lower()
-          -- row_str = row_str .. c.commit.msg
-          -- else
-          -- row_str = row_str .. c.commit.msg
-
-          -- end
-          row_str = row_str .. '*'
+      for i = 1, #row.cells do
+        local cell = row.cells[i]
+        if cell.connector then
+          row_str = row_str .. cell.connector
         else
-          assert(c.connector)
-          row_str = row_str .. c.connector
+          assert(cell.commit)
+          row_str = row_str .. commit_cell_symb(cell)
+        end
+      end
+      return row_str
+    end
+
+    ---@param row I.Row
+    ---@return string
+    local function row_to_debg(row)
+      local row_str = ''
+
+      for i = 1, #row.cells do
+        local cell = row.cells[i]
+        if cell.connector then
+          row_str = row_str .. cell.connector
+        else
+          assert(cell.commit)
+          local symbol = cell.commit.msg
+          row_str = row_str .. symbol
         end
       end
 
-      local c = row.commit
+      return row_str
+    end
+
+    for idx = 1, #graph_1 do
+      local row_1 = graph_1[idx]
+      local row_2 = graph_2 and graph_2[idx]
+
+      local row_str = ''
+
+      -- part 1
+      row_str = row_str .. ((row_1 and row_2) and row_to_debg(row_1) or row_to_str(row_1))
+
+      -- part 2
+      if row_2 then
+        row_str = row_str .. (' '):rep(15 - #row_1.cells)
+        row_str = row_str .. row_to_str(row_2)
+      end
+
+      local c = row_1.commit
       if c then
         local h = c.hash:sub(1, 7)
         local ah = c.author_date
-        row_str = row_str .. (' '):rep(15 - #row.cells) .. h .. ' [' .. ah .. '] ' .. c.msg
+        row_str = row_str .. (' '):rep(15 - #row_1.cells) .. h .. ' [' .. ah .. '] ' .. c.msg
       else
-        -- since there may be some annoying trailing whitespace
-        row_str = row_str:gsub('%s+$', '')
+        local parents = ''
+        for _, h in ipairs(graph[idx - 1].commit.parents) do
+          local p = commits[h]
+          parents = parents .. ' ' .. p.msg
+        end
+        row_str = row_str .. (' '):rep(15 - #row_1.cells) .. '-> ' .. parents
       end
 
       lines[#lines + 1] = row_str
     end
 
     return lines
-  end
-
-  ---@param graph I.Row[]
-  local function show_graph(graph)
-    for _, line in ipairs(graph_to_lines(graph)) do
-      print(line)
-    end
   end
 
   -- if true then
@@ -366,6 +474,10 @@ local function gitgraph()
   -- print '---- stage 1 ---'
   -- show_graph(graph)
   -- print '----------------'
+
+  -- store stage 1 graph
+  graph_1 = vim.deepcopy(graph)
+  --
 
   -- inserts vertical and horizontal pipes
   for i = 2, #graph - 1 do
@@ -393,13 +505,10 @@ local function gitgraph()
       return n
     end
 
-    local new_columns = count_live(graph[i].cells) - count_live(graph[i - 1].cells)
-
     local num_emphasized = count_emph(graph[i].cells)
 
     -- vertical connections
     for j = 1, #row.cells do
-      local above = graph[i - 1].cells[j]
       local this = graph[i].cells[j]
       local below = graph[i + 1].cells[j]
 
@@ -409,27 +518,23 @@ local function gitgraph()
         return c and c.commit and c.commit.hash
       end
 
-      ---@param c I.Cell?
-      ---@return string?
-      local function conn(c)
-        return c and c.connector
-      end
+      local tch, bch = hash(this), hash(below)
 
-      local ach, tch, bch = hash(above), hash(this), hash(below)
-      local acc = conn(above)
-
-      if this.commit then
+      if not this.is_commit and not this.connector then
         -- local ch = row.commit and row.commit.hash
         -- local row_commit_is_child = ch and vim.tbl_contains(this.commit.children, ch)
         -- local trivial_continuation = (not row_commit_is_child) and (new_columns < 1 or ach == tch or acc == GVER)
         -- local trivial_continuation = (new_columns < 1 or ach == tch or acc == GVER)
-        local ignore_this = (num_emphasized > 1 and this.emphasis)
+        local ignore_this = (num_emphasized > 1 and (this.emphasis or false))
 
         if not ignore_this and bch == tch then -- and trivial_continuation then
           local has_repeats = false
           local first_repeat = nil
           for k = 1, #row.cells, 2 do
-            local rkc, rjc = row.cells[k].commit, row.cells[j].commit
+            local cell_k, cell_j = row.cells[k], row.cells[j]
+            local rkc, rjc = (not cell_k.connector and cell_k.commit), (not cell_j.connector and cell_j.commit)
+
+            -- local rkc, rjc = row.cells[k].commit, row.cells[j].commit
 
             if k ~= j and (rkc and rjc) and rkc.hash == rjc.hash then
               has_repeats = true
@@ -439,14 +544,19 @@ local function gitgraph()
           end
 
           if not has_repeats then
-            graph[i].cells[j] = { connector = GVER }
+            local cell = graph[i].cells[j]
+            cell.connector = GVER
           else
             local k = first_repeat
             local this_k = graph[i].cells[k]
             local below_k = graph[i + 1].cells[k]
-            local bkc, tkc = below_k.commit, this_k.commit
+
+            local bkc, tkc = (not below_k.connector and below_k.commit), (not this_k.connector and this_k.commit)
+
+            -- local bkc, tkc = below_k.commit, this_k.commit
             if (bkc and tkc) and bkc.hash == tkc.hash then
-              graph[i].cells[j] = { connector = GVER }
+              local cell = graph[i].cells[j]
+              cell.connector = GVER
             end
           end
         end
@@ -461,7 +571,8 @@ local function gitgraph()
     for j = 1, #row.cells do
       local this = graph[i].cells[j]
       local below = graph[i + 1].cells[j]
-      if this.commit and not below.commit then
+      if not this.connector and below.connector == ' ' then
+        assert(this.commit)
         stopped[#stopped + 1] = j
       end
     end
@@ -471,7 +582,8 @@ local function gitgraph()
     local curr = 1
     for _, j in ipairs(stopped) do
       for k = curr, j do
-        local rkc, rjc = row.cells[k].commit, row.cells[j].commit
+        local cell_k, cell_j = row.cells[k], row.cells[j]
+        local rkc, rjc = (not cell_k.connector and cell_k.commit), (not cell_j.connector and cell_j.commit)
         if (rkc and rjc) and (rkc.hash == rjc.hash) then
           if j > k then
             intervals[#intervals + 1] = { start = k, stop = j }
@@ -493,7 +605,7 @@ local function gitgraph()
       local high = 1
       for j = 1, #row.cells do
         local c = row.cells[j]
-        if c.commit then
+        if not c.connector and c.commit then
           if j > high then
             high = j
           end
@@ -534,11 +646,80 @@ local function gitgraph()
   -- however two of them are the vertical and horizontal connections
   -- that have already been taken care of
   --
+  for i = 1, #graph do
+    -- we assert that our cells know associated commits when
+    -- appropriate
+    local cells = graph[i].cells
+    for _, cell in ipairs(cells) do
+      local con = cell.connector
+      if con ~= ' ' and con ~= GHOR then
+        assert(cell.commit, 'expected commit')
+      end
+    end
+  end
+
   for i = 2, #graph, 2 do
     local row = graph[i]
     local above = graph[i - 1]
     local below = graph[i + 1]
+
+    -- heuristic to check if this row contains a "crossing" of branches
+    -- effectively, if this is a connector row, and the next commit being
+    -- introduced on the row below us is repeated in our conector row
+    -- with a gap in it, such as ABA, then we have a crossing
+    ---@return boolean, 'l' | 'r' | nil
+    local function get_is_crossing()
+      if i % 2 == 1 then
+        -- we're not  a connector row NOTE: 1 indexing of lua
+        return false
+      end
+
+      local next_commit = graph[i + 1].commit
+      assert(next_commit, 'expected a next commit')
+
+      local locations = {}
+      for loc, c in ipairs(row.cells) do
+        if c.commit and c.commit.hash == next_commit.hash then
+          locations[#locations + 1] = loc
+        end
+      end
+
+      if #locations < 2 then
+        return false, nil
+      end
+
+      -- get destination of "drain"
+      -- helpful later when chosing what symbol to use
+      local dest = 'l'
+      local max_loc = locations[#locations]
+      if max_loc < next_commit.j then
+        dest = 'r'
+      end
+
+      -- search for something sandwiched between, so that would be B in ABA
+      for k = 1, #locations - 1 do
+        local start, stop = locations[k], locations[k + 1]
+        for l = start + 1, stop - 1 do
+          local cell = row.cells[l]
+          if cell.commit and cell.commit.hash ~= next_commit.hash then
+            return true, dest
+          end
+        end
+      end
+
+      return false, nil
+    end
+
+    local is_crossing, destination = get_is_crossing()
+
     for j = 1, #row.cells do
+      local this = row.cells[j]
+
+      if this.connector == GVER then
+        -- because they are already taken care of
+        goto continue
+      end
+
       local lc = row.cells[j - 1]
       local rc = row.cells[j + 1]
       local uc = above and above.cells[j]
@@ -549,9 +730,13 @@ local function gitgraph()
       local u = uc and (uc.connector ~= ' ' or uc.commit) or false
       local d = dc and (dc.connector ~= ' ' or dc.commit) or false
 
+      -- number of neighbors
+      local nn = 0
+
       local symb_id = ''
       for _, b in ipairs { l, r, u, d } do
         if b then
+          nn = nn + 1
           symb_id = symb_id .. '1'
         else
           symb_id = symb_id .. '0'
@@ -571,16 +756,65 @@ local function gitgraph()
         ['0111'] = GRUD,
       })[symb_id] or '?'
 
-      if row.cells[j].commit then
-        row.cells[j] = { connector = symbol }
+      ---@type 'u' | 'd' |  nil
+      local cl = nil
+      local commit_above = below.commit and below.commit.j == j
+      local commit_below = above.commit and above.commit.j == j
+      if commit_above and commit_below then
+        cl = #above.commit.parents > 1 and 'u' or 'd'
+      elseif commit_above then
+        cl = 'd'
+      elseif commit_below then
+        cl = 'u'
       end
+
+      if cl and symbol == GLUD then
+        if cl == 'd' then
+          symbol = GLUDCD
+        elseif cl == 'u' then
+          symbol = GLUDCU
+        end
+      elseif cl and symbol == GRUD then
+        if cl == 'd' then
+          symbol = GRUDCD
+        elseif cl == 'u' then
+          symbol = GRUDCU
+        end
+      end
+
+      if nn == 4 then
+        if is_crossing then
+          if destination == 'l' then
+            symbol = GLUD
+          else
+            symbol = GRUD
+          end
+        else
+          symbol = GFORKU
+        end
+      end
+
+      -- if is_crossing then
+      --   symbol = '#'
+      -- end
+
+      if row.cells[j].commit then
+        row.cells[j].connector = symbol
+        -- row.cells[j] = { connector = symbol }
+      end
+
+      ::continue::
+      --
     end
   end
+
+  graph_2 = graph
 
   -- print '---- stage 3 ---'
   -- show_graph(graph)
   -- print '----------------'
-  return graph_to_lines(graph)
+  return graph_to_lines(graph_1, graph_2)
+  -- return graph_to_lines(graph_2)
 end
 
 return gitgraph

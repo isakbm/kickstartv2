@@ -299,6 +299,18 @@ GLRD = '┬'
 GLUD = '┤'
 GRUD = '├'
 
+GFORKU = '⓵'
+-- GFORKD TODO:
+GRUDCD = '⓶'
+GRUDCU = '⓸'
+GLUDCD = '⓷'
+GLUDCU = '⓹'
+
+GRCM = 'ⓚ' -- 'M'
+GMCM = '⓮' -- '*'
+GRCME = 'ⓛ' -- 'M'
+GMCME = '⓯' -- '*'
+
 --=========================== KEYMAPS =============================
 
 -- NOTE: hide higlights after hitting <Esc>
