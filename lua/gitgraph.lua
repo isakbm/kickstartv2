@@ -1,4 +1,11 @@
+---@class I.Highlight
+---@field hg integer
+---@field row integer
+---@field start integer
+---@field stop integer
+
 ---@return string[]
+---@return I.Highlight[]
 local function gitgraph()
   -- build a git commit graph
   --
@@ -14,7 +21,7 @@ local function gitgraph()
   local handle = io.popen(git_cmd)
   if not handle then
     print 'no handle?'
-    return {}
+    return {}, {}
   end
 
   ---@type string
@@ -23,6 +30,7 @@ local function gitgraph()
   handle:close()
 
   ---@class I.Row
+  ---@field i integer
   ---@field cells I.Cell[]
   ---@field commit I.Commit? -- there's a single comit for every even "second"
 
@@ -391,7 +399,8 @@ local function gitgraph()
           rowc[j + 1] = { connector = ' ' }
         end
 
-        graph[#graph + 1] = { cells = rowc, commit = c }
+        local row_idx = #graph + 1
+        graph[row_idx] = { i = row_idx, cells = rowc, commit = c }
       end
 
       do
@@ -504,7 +513,8 @@ local function gitgraph()
               reserve_remainder(rem_parents)
             end
 
-            graph[#graph + 1] = { cells = rowc }
+            local row_idx = #graph + 1
+            graph[row_idx] = { i = row_idx, cells = rowc }
 
             -- handle bi-connector rows
 
@@ -579,7 +589,8 @@ local function gitgraph()
               -- end
             end
           else
-            graph[#graph + 1] = { cells = { { connector = ' ' }, { connector = ' ' } } }
+            local row_idx = #graph + 1
+            graph[row_idx] = { i = row_idx, cells = { { connector = ' ' }, { connector = ' ' } } }
           end
         end
       end
@@ -591,9 +602,13 @@ local function gitgraph()
   ---@param graph_1 I.Row[]
   ---@param graph_2 I.Row[]?
   ---@return string[]
+  ---@return I.Highlight[]
   local function graph_to_lines(graph_1, graph_2)
     ---@type string[]
     local lines = {}
+
+    ---@type I.Highlight[]
+    local highlights = {}
 
     local function char_generator()
       local alphabet = { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W' }
@@ -624,8 +639,8 @@ local function gitgraph()
     ---@return string
     local function row_to_str(row)
       local row_str = ''
-      for i = 1, #row.cells do
-        local cell = row.cells[i]
+      for j = 1, #row.cells do
+        local cell = row.cells[j]
         if cell.connector then
           row_str = row_str .. cell.connector
         else
@@ -634,6 +649,32 @@ local function gitgraph()
         end
       end
       return row_str
+    end
+
+    ---@type table<string, integer>
+    local color_mapping = {}
+    local next_color_idx = 0
+    local NUM_COLORS = 5
+
+    ---@param row I.Row
+    ---@return I.Highlight[]
+    local function row_to_highlights(row)
+      local row_hls = {}
+      for j = 1, #row.cells do
+        local cell = row.cells[j]
+        if cell.commit then
+          -- local color_idx = color_mapping[cell.commit.hash]
+          local color_idx = (j % NUM_COLORS)
+          -- if not color_idx then
+          --   color_idx = next_color_idx
+          --   next_color_idx = (next_color_idx + 1) % NUM_COLORS
+          --   color_mapping[cell.commit.hash] = color_idx
+          -- end
+
+          row_hls[#row_hls + 1] = { hg = color_idx, row = row.i, start = j, stop = j }
+        end
+      end
+      return row_hls
     end
 
     ---@param row I.Row
@@ -685,9 +726,16 @@ local function gitgraph()
       end
 
       lines[#lines + 1] = row_str
+
+      do
+        local row = row_2 and row_2 or row_1
+        for _, hl in ipairs(row_to_highlights(row)) do
+          highlights[#highlights + 1] = hl
+        end
+      end
     end
 
-    return lines
+    return lines, highlights
   end
 
   -- if true then
@@ -932,68 +980,13 @@ local function gitgraph()
         ['0111'] = GRUD,
       })[symb_id] or '?'
 
-      ---@type 'u' | 'd' |  nil -- placement of commit vertically if immediately above or below us
-      local clv = nil
-      local commit_dir_above = below.commit and below.commit.j == j
-      local commit_dir_below = above.commit and above.commit.j == j
-      if commit_dir_above and commit_dir_below then
-        clv = #above.commit.parents > 1 and 'u' or 'd'
-      elseif commit_dir_above then
-        clv = 'd'
-      elseif commit_dir_below then
-        clv = 'u'
-      end
-
-      --[[ FIXME: the following is an example of a bug to render
-      --          correctly the T junction bellow and right of 5f948ee at laiout-core repo
-      --
-      --          the fix involves using the `clh_above` parameter ... etc ... which
-      --          is defined further down vvv
-      --
-⓸─⓷               ->  Merge branch 'dev' into staging Merge branch '846-whitelist-importable-svg-groups' into 'dev'
-│ ⓮               4d653c3 [Tue, 4 Jul 2023 16:50:11 +0000] Merge branch '846-whitelist-importable-svg-groups' into 'dev'
-│ ⓸─╮             ->  Merge branch '845-zones-shrink-from-a-single-edge-when-an-edge-is-passed' into 'dev' layout: whitelist importable SVG groups
-│ │ ⓚ             8ce1ae9 [Tue, 4 Jul 2023 18:35:21 +0200] layout: whitelist importable SVG groups
-│ │ │             ->  Merge branch '845-zones-shrink-from-a-single-edge-when-an-edge-is-passed' into 'dev'
-⓮ │ │             5f948ee [Tue, 4 Jul 2023 16:26:14 +0200] Merge branch 'dev' into staging
-⓸─┤ │             ->  Merge branch 'dev' into staging Merge branch '845-zones-shrink-from-a-single-edge-when-an-edge-is-passed' into 'dev'
-│ │ │ ⓛ           b20cdf3 [Tue, 4 Jul 2023 16:03:59 +0200] layout: comment out all `MutationDirection`
-│ │ │ │           ->  scenarios: turn off Growh, add EffectiveWidth
-│ │ │ ⓚ           2daa986 [Tue, 4 Jul 2023 15:00:36 +0200] scenarios: turn off Growh, add EffectiveWidth
-│ │ │ │           ->  layout: pass furniture preferences to mutations
-│ │ │ ⓚ           669cbd7 [Tue, 4 Jul 2023 12:26:17 +0200] layout: pass furniture preferences to mutations
-
-
-       --- Here we also have a problematic intersection below 291
-       ---   it should probably have been identified as a crossing
-       ---
-│ │ │             ->  layout: pass obstacles outisde zone to furniture code
-│ │ ⓚ             198eb73 [Mon, 5 Jun 2023 17:16:46 +0200] layout: pass obstacles outisde zone to furniture code
-│ │ │             ->  Merge branch 'fix-circulation-in-implenia' into 'dev'
-⓮ │ │             291bdf0 [Mon, 5 Jun 2023 11:56:05 +0200] Merge commit '2bdf8d5a5489049ffcf7ccd31cf615a0482ede2e' into staging
-⓸─⓵─ⓥ─╮           ->  layout: min undefined area target by open workspace Merge branch 'add-norwegian-properties-svg' into 'dev'
-│ ⓮   │           6afc909 [Mon, 5 Jun 2023 09:47:10 +0000] Merge branch 'fix-circulation-in-implenia' into 'dev'
-│ ⓸─╮ │           ->  Merge branch 'add-norwegian-properties-svg' into 'dev' expensive_tests: add Implenia to `check_to_islands`
-│ │ ⓚ │           3fbfb90 [Mon, 5 Jun 2023 11:43:00 +0200] expensive_tests: add Implenia to `check_to_islands`
-│ │ │ │           ->  scenarios: extend circulation
-│ │ ⓚ │           6287808 [Mon, 5 Jun 2023 11:40:54 +0200] scenarios: extend circulation
-│ ⓶─ⓥ─╯           ->  Merge branch 'add-norwegian-properties-svg' into 'dev'
-│ ⓮               2bdf8d5 [Fri, 2 Jun 2023 09:36:15 +0000] Merge branch 'add-norwegian-properties-svg' into 'dev'
-│ ⓸─╮             ->  scenari
-      --]]
+      local commit_dir_above = above.commit and above.commit.j == j
 
       ---@type 'l' | 'r' | nil -- placement of commit horizontally, only relevant if this is a connector row and if the cell is not immediately above or below the commit
       local clh_above = nil
       local commit_above = above.commit and above.commit.j ~= j
       if commit_above then
         clh_above = above.commit.j < j and 'l' or 'r'
-      end
-
-      ---@type 'l' | 'r' | nil -- placement of commit horizontally, only relevant if this is a connector row and if the cell is not immediately above or below the commit
-      local clh_below = nil
-      local commit_below = below.commit and below.commit.j ~= j
-      if commit_below then
-        clh_below = below.commit.j < j and 'l' or 'r'
       end
 
       if clh_above and symbol == GLRD then
@@ -1006,39 +999,20 @@ local function gitgraph()
         -- because nothing else is possible with our
         -- current implicit graph building rules?
         symbol = GLRUCL -- '<'
-        -- symbol = GLRUCR -- '>'
-        -- end
-      end
-      -- elseif clh_below and symbol == GLRU then
-      --   if clh_below == 'l' then
-      --     symbol = GLRUCL -- '<'
-      --   elseif clh_below == 'r' then
-      --     symbol = GLRUCR -- '>'
-      --   end
-      -- end
-
-      if clv and symbol == GLUD then
-        if clv == 'd' then
-          symbol = GLUDCD
-        elseif clv == 'u' then
-          symbol = GLUDCU
-        end
-      elseif clv and symbol == GRUD then
-        if clv == 'd' then
-          symbol = GRUDCD
-        elseif clv == 'u' then
-          symbol = GRUDCU
-        end
       end
 
-      -- if is_bi_crossing then
-      --   symbol = '#'
-      -- elseif nn == 4 then
-      --   symbol = GFORKU
-      -- end
+      local merge_dir_above = commit_dir_above and #above.commit.parents > 1
+
+      if symbol == GLUD then
+        symbol = merge_dir_above and GLUDCU or GLUDCD
+      end
+
+      if symbol == GRUD then
+        symbol = merge_dir_above and GRUDCU or GRUDCD
+      end
 
       if nn == 4 then
-        symbol = GFORKU
+        symbol = merge_dir_above and GFORKD or GFORKU
       end
 
       if row.cells[j].commit then
@@ -1055,8 +1029,8 @@ local function gitgraph()
   -- print '---- stage 3 ---'
   -- show_graph(graph)
   -- print '----------------'
-  -- return graph_to_lines(graph_1, graph_2)
-  return graph_to_lines(graph_2)
+  return graph_to_lines(graph_1, graph_2)
+  -- return graph_to_lines(graph_2)
 end
 
 return gitgraph

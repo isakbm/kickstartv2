@@ -288,21 +288,22 @@ vim.opt.tabstop = 2
 WIN_BORDER = { '╭', '─', '╮', '│', '╯', '─', '╰', '│' }
 
 -- git graph symbols
-GVER = '│'
-GHOR = '─'
-GCLD = '╮'
-GCRD = '╭'
-GCLU = '╯'
-GCRU = '╰'
+GVER = '│' -- '|'
+GHOR = '─' -- '-'
+GCLD = '╮' -- '┐'
+GCRD = '╭' -- '┌'
+GCLU = '╯' -- '┘'
+GCRU = '╰' -- '└'
 GLRU = '┴'
 GLRD = '┬'
 GLUD = '┤'
 GRUD = '├'
 
 GFORKU = '⓵'
--- GFORKD TODO:
-GRUDCD = '⓶'
-GRUDCU = '⓸'
+GFORKD = '⓴'
+
+GRUDCD = '⓶' -- '├'
+GRUDCU = '⓸' -- '├'
 GLUDCD = '⓷'
 GLUDCU = '⓹'
 
@@ -311,10 +312,10 @@ GLRDCR = 'ⓣ'
 GLRUCL = 'ⓥ'
 GLRUCR = 'ⓤ'
 
-GRCM = 'ⓚ' -- 'M'
-GMCM = '⓮' -- '*'
-GRCME = 'ⓛ' -- 'M'
-GMCME = '⓯' -- '*'
+GRCM = 'ⓚ' -- '*'
+GMCM = '⓮' -- 'M'
+GRCME = 'ⓛ' -- '*'
+GMCME = '⓯' -- 'M'
 
 --=========================== KEYMAPS =============================
 
@@ -671,7 +672,7 @@ vim.keymap.set('n', '<leader>GL', function()
   local gitgraph = require 'gitgraph'
 
   ---@type string[]
-  local lines = gitgraph()
+  local lines, highlights = gitgraph()
 
   -- print('lines:', lines)
 
@@ -683,7 +684,26 @@ vim.keymap.set('n', '<leader>GL', function()
   --     if not hlg then
   --     -- print('unable to find', hl.code)
   --     else
-  --       vim.api.nvim_buf_add_highlight(buf, 0, hlg, hl.row - 1, hl.col_s - 1, hl.col_e)
+  --
+
+  local idx_to_hlg = {
+    [0] = 'flogBranch0',
+    [1] = 'flogBranch1',
+    [2] = 'flogBranch2',
+    [3] = 'flogBranch3',
+    [4] = 'flogBranch4',
+    [5] = 'flogBranch5',
+    [6] = 'flogBranch6',
+    [7] = 'flogBranch7',
+    [8] = 'flogBranch8',
+    [9] = 'flogBranch9',
+  }
+
+  for _, hl in ipairs(highlights) do
+    print('HLG:', hl.hg)
+    local hlg = idx_to_hlg[hl.hg]
+    vim.api.nvim_buf_add_highlight(buf, 0, hlg, hl.row - 1, hl.start - 1 + 15, hl.stop + 15)
+  end
   --     end
   --   end
   -- end
