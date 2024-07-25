@@ -43,6 +43,7 @@ local function gitgraph()
   ---@class I.Cell
   ---@field is_commit boolean? -- when true this cell is a real commit
   ---@field commit I.Commit? -- a cell is associated with a commit, but the empty column gaps don't have them
+  ---@field symbol string?
   ---@field connector string? -- a cell is eventually given a connector
   ---@field emphasis boolean? -- when true indicates that this is a direct parent of cell on previous row
 
@@ -642,36 +643,62 @@ local function gitgraph()
       for j = 1, #row.cells do
         local cell = row.cells[j]
         if cell.connector then
-          row_str = row_str .. cell.connector
+          cell.symbol = cell.connector -- TODO: connector and symbol should not be duplicating data?
         else
           assert(cell.commit)
-          row_str = row_str .. commit_cell_symb(cell)
+          cell.symbol = commit_cell_symb(cell)
         end
+
+        row_str = row_str .. cell.symbol
       end
       return row_str
     end
 
-    ---@type table<string, integer>
-    local color_mapping = {}
-    local next_color_idx = 0
     local NUM_COLORS = 5
 
     ---@param row I.Row
     ---@return I.Highlight[]
     local function row_to_highlights(row)
       local row_hls = {}
+      local offset = 0
       for j = 1, #row.cells do
         local cell = row.cells[j]
-        if cell.commit then
-          -- local color_idx = color_mapping[cell.commit.hash]
-          local color_idx = (j % NUM_COLORS)
-          -- if not color_idx then
-          --   color_idx = next_color_idx
-          --   next_color_idx = (next_color_idx + 1) % NUM_COLORS
-          --   color_mapping[cell.commit.hash] = color_idx
-          -- end
 
-          row_hls[#row_hls + 1] = { hg = color_idx, row = row.i, start = j, stop = j }
+        local width = #cell.symbol
+        local start = offset
+        local stop = start + width
+        offset = offset + width
+
+        if cell.commit then
+          local color_idx = (j % NUM_COLORS)
+          row_hls[#row_hls + 1] = { hg = color_idx, row = row.i, start = start, stop = stop }
+        elseif cell.symbol == GHOR then
+          -- take color from first right cell that attaches to this connector
+          for k = j + 1, #row.cells do
+            local rcell = row.cells[k]
+
+            -- TODO: would be nice with a better way than this hacky method of
+            --       to figure out where our vertical branch is
+            local continuations = {
+              GCLD,
+              GCLU,
+              --
+              GFORKD,
+              GFORKU,
+              --
+              GLUDCD,
+              GLUDCU,
+              --
+              GLRDCL,
+              GLRUCL,
+            }
+
+            if rcell.commit and vim.tbl_contains(continuations, rcell.symbol) then
+              local color_idx = (k % NUM_COLORS)
+              row_hls[#row_hls + 1] = { hg = color_idx, row = row.i, start = start, stop = stop }
+              break
+            end
+          end
         end
       end
       return row_hls
@@ -1029,8 +1056,8 @@ local function gitgraph()
   -- print '---- stage 3 ---'
   -- show_graph(graph)
   -- print '----------------'
-  return graph_to_lines(graph_1, graph_2)
-  -- return graph_to_lines(graph_2)
+  -- return graph_to_lines(graph_1, graph_2)
+  return graph_to_lines(graph_2)
 end
 
 return gitgraph

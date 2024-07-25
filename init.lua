@@ -702,7 +702,8 @@ vim.keymap.set('n', '<leader>GL', function()
   for _, hl in ipairs(highlights) do
     print('HLG:', hl.hg)
     local hlg = idx_to_hlg[hl.hg]
-    vim.api.nvim_buf_add_highlight(buf, 0, hlg, hl.row - 1, hl.start - 1 + 15, hl.stop + 15)
+
+    vim.api.nvim_buf_add_highlight(buf, 0, hlg, hl.row - 1, hl.start - 1 + 1, hl.stop + 1)
   end
   --     end
   --   end
