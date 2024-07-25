@@ -365,10 +365,6 @@ local function gitgraph()
   ---@param graph_2 I.Row[]?
   ---@return string[]
   local function graph_to_lines(graph_1, graph_2)
-    if graph_1 and graph_2 then
-      print 'we have both graphs'
-    end
-
     ---@type string[]
     local lines = {}
 
@@ -663,54 +659,158 @@ local function gitgraph()
     local above = graph[i - 1]
     local below = graph[i + 1]
 
-    -- heuristic to check if this row contains a "crossing" of branches
-    -- effectively, if this is a connector row, and the next commit being
-    -- introduced on the row below us is repeated in our conector row
-    -- with a gap in it, such as ABA, then we have a crossing
-    ---@return boolean, 'l' | 'r' | nil
-    local function get_is_crossing()
+    -- heuristic to check if this row contains a "bi-crossing" of branches
+    --
+    -- a bi-crossing is when we have more than one branch "propagating" horizontally
+    -- on a connector row
+    --
+    -- this can only happen when the commit on the row
+    -- above the connector row is a merge commit
+    -- but it doesn't always happen
+    --
+    -- in addition to needing a merge commit on the row above
+    -- we need the span (interval) of the "emphasized" connector cells
+    -- (they correspond to connectors to the parents of the merge commit)
+    -- we need that span to overlap with at least one connector cell that
+    -- is destined for the commit on the next row
+    -- (the commit before the merge commit)
+    -- in addition, we need there to be more than one connector cell
+    -- destined to the next commit
+    --
+    -- here is an example
+    --
+    --
+    --   j i i          ⓮ │ │   j -> g h
+    --   g i i h        ?─?─?─╮
+    --   g i   h        │ ⓚ   │ i
+    --
+    -- overlap:
+    --
+    --   g-----h 1 4
+    --     i-i   2 3
+    --
+    -- NOTE how `i` is the commit that the `i` cells are destined for
+    --      notice how there is more than on `i` in the connector row
+    --      and that it lies in the span of g-h
+    --
+    -- some more examples
+    --
+    -- -------------------------------------
+    --
+    --   S T S          │ ⓮ │ T -> R S
+    --   S R S          ?─?─?
+    --   S R            ⓚ │   S
+    --
+    -- overlap:
+    --
+    --   S-R    1 2
+    --   S---S  1 3
+    --
+    -- -------------------------------------
+    --
+    --
+    --   c b a b        ⓮ │ │ │ c -> Z a
+    --   Z b a b        ?─?─?─?
+    --   Z b a          │ ⓚ │   b
+    --
+    -- overlap:
+    --
+    --   Z---a    1 3
+    --     b---b  2 4
+    --
+    -- -------------------------------------
+    --
+    -- finally a negative example where there is no problem
+    --
+    --
+    --   W V V          ⓮ │ │ W -> S V
+    --   S V V          ⓸─⓵─╯
+    --   S V            │ ⓚ   V
+    --
+    -- no overlap:
+    --
+    --   S-V    1 2
+    --     V-V  2 3
+    --
+    -- the reason why there is no problem (bi-crossing) above
+    -- follows from the fact that the span from V <- V only
+    -- touches the span S -> V it does not overlap it, so
+    -- figuratively we have S -> V <- V which is fine
+    --
+    --
+    ---@param i integer -- the row index
+    ---@return boolean
+    local function get_is_bi_crossing(i)
       if i % 2 == 1 then
-        -- we're not  a connector row NOTE: 1 indexing of lua
+        return false -- we're not a connector row NOTE: 1 indexing of lua
+      end
+
+      local prev = graph[i - 1].commit
+      local next = graph[i + 1].commit
+      assert(prev, 'expected a prev commit')
+      assert(next, 'expected a next commit')
+
+      if #prev.parents < 2 then
+        return false -- bi-crossings only happen when prev is a merge commit
+      end
+
+      local row = graph[i]
+
+      ---@param k integer
+      local function interval_upd(x, k)
+        if k < x.start then
+          x.start = k
+        end
+        if k > x.stop then
+          x.stop = k
+        end
+      end
+
+      -- compute the emphasized interval (merge commit parent interval)
+      local emi = { start = #row.cells, stop = 1 }
+      for k, cell in ipairs(row.cells) do
+        if cell.commit and cell.emphasis then
+          interval_upd(emi, k)
+        end
+      end
+
+      -- compute connector interval
+      local coi = { start = #row.cells, stop = 1 }
+      for k, cell in ipairs(row.cells) do
+        if cell.commit and cell.commit.hash == next.hash then
+          interval_upd(coi, k)
+        end
+      end
+
+      -- return earily when connector interval is trivial
+      if coi.start == coi.stop then
         return false
       end
 
-      local next_commit = graph[i + 1].commit
-      assert(next_commit, 'expected a next commit')
-
-      local locations = {}
-      for loc, c in ipairs(row.cells) do
-        if c.commit and c.commit.hash == next_commit.hash then
-          locations[#locations + 1] = loc
+      -- check overlap
+      do
+        -- are intervals identical, then that counts as overlap
+        if coi.start == emi.start and coi.stop == emi.stop then
+          return true
+        end
+      end
+      for _, k in pairs(emi) do
+        -- emi endpoints inside coi ?
+        if coi.start < k and k < coi.stop then
+          return true
+        end
+      end
+      for _, k in pairs(coi) do
+        -- coi endpoints inside emi ?
+        if emi.start < k and k < emi.stop then
+          return true
         end
       end
 
-      if #locations < 2 then
-        return false, nil
-      end
-
-      -- get destination of "drain"
-      -- helpful later when chosing what symbol to use
-      local dest = 'l'
-      local max_loc = locations[#locations]
-      if max_loc < next_commit.j then
-        dest = 'r'
-      end
-
-      -- search for something sandwiched between, so that would be B in ABA
-      for k = 1, #locations - 1 do
-        local start, stop = locations[k], locations[k + 1]
-        for l = start + 1, stop - 1 do
-          local cell = row.cells[l]
-          if cell.commit and cell.commit.hash ~= next_commit.hash then
-            return true, dest
-          end
-        end
-      end
-
-      return false, nil
+      return false
     end
 
-    local is_crossing, destination = get_is_crossing()
+    local is_bi_crossing = get_is_bi_crossing(i)
 
     for j = 1, #row.cells do
       local this = row.cells[j]
@@ -786,6 +886,24 @@ local function gitgraph()
 │ │ │ ⓚ           2daa986 [Tue, 4 Jul 2023 15:00:36 +0200] scenarios: turn off Growh, add EffectiveWidth
 │ │ │ │           ->  layout: pass furniture preferences to mutations
 │ │ │ ⓚ           669cbd7 [Tue, 4 Jul 2023 12:26:17 +0200] layout: pass furniture preferences to mutations
+
+
+       --- Here we also have a problematic intersection below 291
+       ---   it should probably have been identified as a crossing
+       ---
+│ │ │             ->  layout: pass obstacles outisde zone to furniture code
+│ │ ⓚ             198eb73 [Mon, 5 Jun 2023 17:16:46 +0200] layout: pass obstacles outisde zone to furniture code
+│ │ │             ->  Merge branch 'fix-circulation-in-implenia' into 'dev'
+⓮ │ │             291bdf0 [Mon, 5 Jun 2023 11:56:05 +0200] Merge commit '2bdf8d5a5489049ffcf7ccd31cf615a0482ede2e' into staging
+⓸─⓵─ⓥ─╮           ->  layout: min undefined area target by open workspace Merge branch 'add-norwegian-properties-svg' into 'dev'
+│ ⓮   │           6afc909 [Mon, 5 Jun 2023 09:47:10 +0000] Merge branch 'fix-circulation-in-implenia' into 'dev'
+│ ⓸─╮ │           ->  Merge branch 'add-norwegian-properties-svg' into 'dev' expensive_tests: add Implenia to `check_to_islands`
+│ │ ⓚ │           3fbfb90 [Mon, 5 Jun 2023 11:43:00 +0200] expensive_tests: add Implenia to `check_to_islands`
+│ │ │ │           ->  scenarios: extend circulation
+│ │ ⓚ │           6287808 [Mon, 5 Jun 2023 11:40:54 +0200] scenarios: extend circulation
+│ ⓶─ⓥ─╯           ->  Merge branch 'add-norwegian-properties-svg' into 'dev'
+│ ⓮               2bdf8d5 [Fri, 2 Jun 2023 09:36:15 +0000] Merge branch 'add-norwegian-properties-svg' into 'dev'
+│ ⓸─╮             ->  scenari
       --]]
 
       ---@type 'l' | 'r' | nil -- placement of commit horizontally, only relevant if this is a connector row and if the cell is not immediately above or below the commit
@@ -830,25 +948,14 @@ local function gitgraph()
         end
       end
 
-      if nn == 4 then
-        if is_crossing then
-          if destination == 'l' then
-            symbol = GLUD
-          else
-            symbol = GRUD
-          end
-        else
-          symbol = GFORKU
-        end
+      if is_bi_crossing then
+        symbol = '#'
+      elseif nn == 4 then
+        symbol = GFORKU
       end
-
-      -- if is_crossing then
-      --   symbol = '#'
-      -- end
 
       if row.cells[j].commit then
         row.cells[j].connector = symbol
-        -- row.cells[j] = { connector = symbol }
       end
 
       ::continue::
@@ -861,8 +968,8 @@ local function gitgraph()
   -- print '---- stage 3 ---'
   -- show_graph(graph)
   -- print '----------------'
-  -- return graph_to_lines(graph_1, graph_2)
-  return graph_to_lines(graph_2)
+  return graph_to_lines(graph_1, graph_2)
+  -- return graph_to_lines(graph_3)
 end
 
 return gitgraph
