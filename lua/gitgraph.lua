@@ -16,8 +16,8 @@ local function gitgraph()
   --       commit date is the date at which the commit was modified, i.e by an ammend
   --       or by a rebase or any other action that could modify the commit
   --
-  local git_cmd = [[git log --all --pretty='format:%s%x00%aD%x00%H%x00%P']]
-  -- local git_cmd = [[git log --all --pretty='format:{{%H}} {{%P}}']]
+  -- local git_cmd = [[git log --all --pretty='format:%s%x00%aD%x00%H%x00%P']]
+  local git_cmd = [[git log --all --pretty='format:%s%x00%ad%x00%H%x00%P' --date="format:%H:%M:%S %d-%m-%Y"]]
   local handle = io.popen(git_cmd)
   if not handle then
     print 'no handle?'
@@ -742,14 +742,18 @@ local function gitgraph()
       if c then
         local h = c.hash:sub(1, 7)
         local ah = c.author_date
-        row_str = row_str .. (' '):rep(15 - #row_1.cells) .. h .. ' [' .. ah .. '] ' .. c.msg
+        row_str = row_str .. (' '):rep(15 - #row_1.cells) .. h .. '  ' .. ah
       else
         local parents = ''
         for _, h in ipairs(graph[idx - 1].commit.parents) do
           local p = commits[h]
           parents = parents .. ' ' .. p.msg
         end
-        row_str = row_str .. (' '):rep(15 - #row_1.cells) .. '-> ' .. parents
+        -- row_str = row_str .. (' '):rep(15 - #row_1.cells) .. '-> ' .. parents
+        local c = graph_1[idx - 1].commit
+        assert(c)
+        row_str = row_str:gsub('%s*$', '')
+        -- row_str = row_str .. (' '):rep(15 - #row_1.cells) .. c.msg
       end
 
       lines[#lines + 1] = row_str
