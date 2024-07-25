@@ -155,6 +155,160 @@ local function gitgraph()
 
   local debug_intervals = {}
 
+  -- heuristic to check if this row contains a "bi-crossing" of branches
+  --
+  -- a bi-crossing is when we have more than one branch "propagating" horizontally
+  -- on a connector row
+  --
+  -- this can only happen when the commit on the row
+  -- above the connector row is a merge commit
+  -- but it doesn't always happen
+  --
+  -- in addition to needing a merge commit on the row above
+  -- we need the span (interval) of the "emphasized" connector cells
+  -- (they correspond to connectors to the parents of the merge commit)
+  -- we need that span to overlap with at least one connector cell that
+  -- is destined for the commit on the next row
+  -- (the commit before the merge commit)
+  -- in addition, we need there to be more than one connector cell
+  -- destined to the next commit
+  --
+  -- here is an example
+  --
+  --
+  --   j i i          ⓮ │ │   j -> g h
+  --   g i i h        ?─?─?─╮
+  --   g i   h        │ ⓚ   │ i
+  --
+  -- overlap:
+  --
+  --   g-----h 1 4
+  --     i-i   2 3
+  --
+  -- NOTE how `i` is the commit that the `i` cells are destined for
+  --      notice how there is more than on `i` in the connector row
+  --      and that it lies in the span of g-h
+  --
+  -- some more examples
+  --
+  -- -------------------------------------
+  --
+  --   S T S          │ ⓮ │ T -> R S
+  --   S R S          ?─?─?
+  --   S R            ⓚ │   S
+  --
+  -- overlap:
+  --
+  --   S-R    1 2
+  --   S---S  1 3
+  --
+  -- -------------------------------------
+  --
+  --
+  --   c b a b        ⓮ │ │ │ c -> Z a
+  --   Z b a b        ?─?─?─?
+  --   Z b a          │ ⓚ │   b
+  --
+  -- overlap:
+  --
+  --   Z---a    1 3
+  --     b---b  2 4
+  --
+  -- -------------------------------------
+  --
+  -- finally a negative example where there is no problem
+  --
+  --
+  --   W V V          ⓮ │ │ W -> S V
+  --   S V V          ⓸─⓵─╯
+  --   S V            │ ⓚ   V
+  --
+  -- no overlap:
+  --
+  --   S-V    1 2
+  --     V-V  2 3
+  --
+  -- the reason why there is no problem (bi-crossing) above
+  -- follows from the fact that the span from V <- V only
+  -- touches the span S -> V it does not overlap it, so
+  -- figuratively we have S -> V <- V which is fine
+  --
+  -- TODO:
+  -- FIXME: need to test if we handle two bi-connectors in succession
+  --        correctly
+  --
+  ---@param i integer -- the row index
+  ---@param graph I.Row[] -- the row index
+  ---@param next_commit I.Commit -- the next commit
+  ---@return boolean
+  local function get_is_bi_crossing(graph, next_commit, i)
+    if i % 2 == 1 then
+      return false -- we're not a connector row NOTE: 1 indexing of lua
+    end
+
+    local prev = graph[i - 1].commit
+    assert(prev, 'expected a prev commit')
+
+    if #prev.parents < 2 then
+      return false -- bi-crossings only happen when prev is a merge commit
+    end
+
+    local row = graph[i]
+
+    ---@param k integer
+    local function interval_upd(x, k)
+      if k < x.start then
+        x.start = k
+      end
+      if k > x.stop then
+        x.stop = k
+      end
+    end
+
+    -- compute the emphasized interval (merge commit parent interval)
+    local emi = { start = #row.cells, stop = 1 }
+    for k, cell in ipairs(row.cells) do
+      if cell.commit and cell.emphasis then
+        interval_upd(emi, k)
+      end
+    end
+
+    -- compute connector interval
+    local coi = { start = #row.cells, stop = 1 }
+    for k, cell in ipairs(row.cells) do
+      if cell.commit and cell.commit.hash == next_commit.hash then
+        interval_upd(coi, k)
+      end
+    end
+
+    -- return earily when connector interval is trivial
+    if coi.start == coi.stop then
+      return false
+    end
+
+    -- check overlap
+    do
+      -- are intervals identical, then that counts as overlap
+      if coi.start == emi.start and coi.stop == emi.stop then
+        return true
+      end
+    end
+    for _, k in pairs(emi) do
+      -- emi endpoints inside coi ?
+      if coi.start < k and k < coi.stop then
+        return true
+      end
+    end
+    for _, k in pairs(coi) do
+      -- coi endpoints inside emi ?
+      if emi.start < k and k < emi.stop then
+        return true
+      end
+    end
+
+    return false
+  end
+
   ---@param sorted_commits I.Commit[]
   local function straight_j(sorted_commits)
     ---@param cells I.Cell[]
@@ -351,6 +505,79 @@ local function gitgraph()
             end
 
             graph[#graph + 1] = { cells = rowc }
+
+            -- handle bi-connector rows
+
+            if get_is_bi_crossing(graph, next_commit, #graph) then
+              print 'we have a bi crossing'
+              local next = sorted_commits[i + 1]
+              assert(next)
+              -- void all repeated reservations of `next` from
+              -- this and the previous row
+              local prev_row = graph[#graph - 1]
+              local this_row = graph[#graph]
+              assert(prev_row and this_row, 'expecting two prior rows due to bi-connector')
+
+              ---@param row I.Row
+              --- example of what this does
+              ---
+              --- input:
+              ---
+              ---   j i i          │ │ │
+              ---   j i i          ⓮ │ │     <- prev
+              ---   g i i h        ⓸─⓵─ⓥ─╮   <- bi connector
+              ---
+              --- output:
+              ---
+              ---   j i i          │ ⓶─╯
+              ---   j i            ⓮ │       <- prev
+              ---   g i   h        ⓸─│───╮   <- bi connector
+              ---
+              ---@param row I.Row
+              ---@return integer
+              local function void_repeats(row)
+                local start_voiding = false
+                local ctr = 0
+                for k, cell in ipairs(row.cells) do
+                  if cell.commit and cell.commit.hash == next.hash then
+                    if not start_voiding then
+                      start_voiding = true
+                    else
+                      row.cells[k] = { connector = ' ' } -- void it
+                      ctr = ctr + 1
+                    end
+                  end
+                end
+                return ctr
+              end
+
+              local prev_rep_ctr = void_repeats(prev_row)
+              local this_rep_ctr = void_repeats(this_row)
+
+              assert(prev_rep_ctr == this_rep_ctr)
+
+              -- newly introduced tracking cells can be squeezed in
+              --
+              -- before:
+              --
+              --   j i i          │ ⓶─╯
+              --   j i            ⓮ │
+              --   g i   h        ⓸─│───╮
+              --
+              -- after:
+              --
+              --   j i i          │ ⓶─╯
+              --   j i            ⓮ │
+              --   g i h          ⓸─│─╮
+              --
+              -- can think of this as scooting the cell to the left
+              -- when the cell was just introduced
+              -- TODO: implement this at some point
+              -- for k, cell in ipairs(this_row.cells) do
+              --   if cell.commit and not prev_row.cells[k].commit and not this_row.cells[k - 2] then
+              --   end
+              -- end
+            end
           else
             graph[#graph + 1] = { cells = { { connector = ' ' }, { connector = ' ' } } }
           end
@@ -659,158 +886,7 @@ local function gitgraph()
     local above = graph[i - 1]
     local below = graph[i + 1]
 
-    -- heuristic to check if this row contains a "bi-crossing" of branches
-    --
-    -- a bi-crossing is when we have more than one branch "propagating" horizontally
-    -- on a connector row
-    --
-    -- this can only happen when the commit on the row
-    -- above the connector row is a merge commit
-    -- but it doesn't always happen
-    --
-    -- in addition to needing a merge commit on the row above
-    -- we need the span (interval) of the "emphasized" connector cells
-    -- (they correspond to connectors to the parents of the merge commit)
-    -- we need that span to overlap with at least one connector cell that
-    -- is destined for the commit on the next row
-    -- (the commit before the merge commit)
-    -- in addition, we need there to be more than one connector cell
-    -- destined to the next commit
-    --
-    -- here is an example
-    --
-    --
-    --   j i i          ⓮ │ │   j -> g h
-    --   g i i h        ?─?─?─╮
-    --   g i   h        │ ⓚ   │ i
-    --
-    -- overlap:
-    --
-    --   g-----h 1 4
-    --     i-i   2 3
-    --
-    -- NOTE how `i` is the commit that the `i` cells are destined for
-    --      notice how there is more than on `i` in the connector row
-    --      and that it lies in the span of g-h
-    --
-    -- some more examples
-    --
-    -- -------------------------------------
-    --
-    --   S T S          │ ⓮ │ T -> R S
-    --   S R S          ?─?─?
-    --   S R            ⓚ │   S
-    --
-    -- overlap:
-    --
-    --   S-R    1 2
-    --   S---S  1 3
-    --
-    -- -------------------------------------
-    --
-    --
-    --   c b a b        ⓮ │ │ │ c -> Z a
-    --   Z b a b        ?─?─?─?
-    --   Z b a          │ ⓚ │   b
-    --
-    -- overlap:
-    --
-    --   Z---a    1 3
-    --     b---b  2 4
-    --
-    -- -------------------------------------
-    --
-    -- finally a negative example where there is no problem
-    --
-    --
-    --   W V V          ⓮ │ │ W -> S V
-    --   S V V          ⓸─⓵─╯
-    --   S V            │ ⓚ   V
-    --
-    -- no overlap:
-    --
-    --   S-V    1 2
-    --     V-V  2 3
-    --
-    -- the reason why there is no problem (bi-crossing) above
-    -- follows from the fact that the span from V <- V only
-    -- touches the span S -> V it does not overlap it, so
-    -- figuratively we have S -> V <- V which is fine
-    --
-    --
-    ---@param i integer -- the row index
-    ---@return boolean
-    local function get_is_bi_crossing(i)
-      if i % 2 == 1 then
-        return false -- we're not a connector row NOTE: 1 indexing of lua
-      end
-
-      local prev = graph[i - 1].commit
-      local next = graph[i + 1].commit
-      assert(prev, 'expected a prev commit')
-      assert(next, 'expected a next commit')
-
-      if #prev.parents < 2 then
-        return false -- bi-crossings only happen when prev is a merge commit
-      end
-
-      local row = graph[i]
-
-      ---@param k integer
-      local function interval_upd(x, k)
-        if k < x.start then
-          x.start = k
-        end
-        if k > x.stop then
-          x.stop = k
-        end
-      end
-
-      -- compute the emphasized interval (merge commit parent interval)
-      local emi = { start = #row.cells, stop = 1 }
-      for k, cell in ipairs(row.cells) do
-        if cell.commit and cell.emphasis then
-          interval_upd(emi, k)
-        end
-      end
-
-      -- compute connector interval
-      local coi = { start = #row.cells, stop = 1 }
-      for k, cell in ipairs(row.cells) do
-        if cell.commit and cell.commit.hash == next.hash then
-          interval_upd(coi, k)
-        end
-      end
-
-      -- return earily when connector interval is trivial
-      if coi.start == coi.stop then
-        return false
-      end
-
-      -- check overlap
-      do
-        -- are intervals identical, then that counts as overlap
-        if coi.start == emi.start and coi.stop == emi.stop then
-          return true
-        end
-      end
-      for _, k in pairs(emi) do
-        -- emi endpoints inside coi ?
-        if coi.start < k and k < coi.stop then
-          return true
-        end
-      end
-      for _, k in pairs(coi) do
-        -- coi endpoints inside emi ?
-        if emi.start < k and k < emi.stop then
-          return true
-        end
-      end
-
-      return false
-    end
-
-    local is_bi_crossing = get_is_bi_crossing(i)
+    -- local is_bi_crossing = get_is_bi_crossing(graph, i)
 
     for j = 1, #row.cells do
       local this = row.cells[j]
@@ -926,13 +1002,20 @@ local function gitgraph()
         elseif clh_above == 'r' then
           symbol = GLRDCR -- '>'
         end
-      elseif clh_below and symbol == GLRU then
-        if clh_below == 'l' then
-          symbol = GLRUCL -- '<'
-        elseif clh_below == 'r' then
-          symbol = GLRUCR -- '>'
-        end
+      elseif symbol == GLRU then
+        -- because nothing else is possible with our
+        -- current implicit graph building rules?
+        symbol = GLRUCL -- '<'
+        -- symbol = GLRUCR -- '>'
+        -- end
       end
+      -- elseif clh_below and symbol == GLRU then
+      --   if clh_below == 'l' then
+      --     symbol = GLRUCL -- '<'
+      --   elseif clh_below == 'r' then
+      --     symbol = GLRUCR -- '>'
+      --   end
+      -- end
 
       if clv and symbol == GLUD then
         if clv == 'd' then
@@ -948,9 +1031,13 @@ local function gitgraph()
         end
       end
 
-      if is_bi_crossing then
-        symbol = '#'
-      elseif nn == 4 then
+      -- if is_bi_crossing then
+      --   symbol = '#'
+      -- elseif nn == 4 then
+      --   symbol = GFORKU
+      -- end
+
+      if nn == 4 then
         symbol = GFORKU
       end
 
@@ -968,8 +1055,8 @@ local function gitgraph()
   -- print '---- stage 3 ---'
   -- show_graph(graph)
   -- print '----------------'
-  return graph_to_lines(graph_1, graph_2)
-  -- return graph_to_lines(graph_3)
+  -- return graph_to_lines(graph_1, graph_2)
+  return graph_to_lines(graph_2)
 end
 
 return gitgraph
