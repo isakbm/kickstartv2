@@ -671,8 +671,72 @@ vim.keymap.set('n', '<leader>GL', function()
 
   local gitgraph = require 'gitgraph'
 
+  -- Start a profiling session:
+  -- require('jit.p').start('4ri1', '/tmp/lua-gg-profile')
+  -- require('jit.p').start('-10psi1', '/tmp/lua-gg-profile')
+  -- Perform arbitrary tasks (use plugins, scripts, etc.) ...
+  -- Stop the session. Profile is written to /tmp/profile.
+  --
+
+  local calls, rets, total, call_start = {}, {}, {}, {}
+  local start = nil
+
+  local function debg_hook(event)
+    local i = debug.getinfo(2, 'Sln')
+    if i.what ~= 'Lua' then
+      return
+    end
+    local func = (i.name or '?') .. ':' .. i.source .. ':' .. i.linedefined
+
+    if event == 'call' then
+      start = os.clock()
+      call_start[func] = start
+      calls[func] = (calls[func] or 0) + 1
+    elseif event == 'return' then
+      -- NOTE we go from start rather than call_start, since call_start is unrealible due to jit ? perhaps tailcall optimization?
+      local time = os.clock() - start -- call_start[func]
+      total[func] = (total[func] or 0) + time
+      rets[func] = (rets[func] or 0) + 1
+    end
+  end
+
+  debug.sethook(debg_hook, 'cr')
+
+  local start = os.clock()
   ---@type string[]
   local lines, highlights = gitgraph()
+  local elapsed = os.clock() - start
+  print('git graph took:', elapsed)
+
+  -- the code to debug ends here; reset the hook
+  debug.sethook()
+
+  -- print the results
+  --
+  local data = {}
+  local total_dt = 0
+  for f, time in pairs(total) do
+    data[#data + 1] = {
+      time = time,
+      avg_t = time / calls[f],
+      calls = calls[f],
+      rets = rets[f],
+      f = f,
+    }
+    total_dt = total_dt + time
+  end
+
+  table.sort(data, function(a, b)
+    return a.time > b.time
+  end)
+
+  for _, d in ipairs(data) do
+    print(('%.3fs %.3fs %07d %07d -> %s'):format(d.time, d.avg_t, d.calls, d.rets, d.f))
+  end
+
+  print(('%.3fs'):format(total_dt))
+
+  -- require('jit.p').stop()
 
   -- print('lines:', lines)
 
@@ -700,7 +764,6 @@ vim.keymap.set('n', '<leader>GL', function()
   }
 
   for _, hl in ipairs(highlights) do
-    print('HLG:', hl.hg)
     local hlg = idx_to_hlg[hl.hg]
 
     vim.api.nvim_buf_add_highlight(buf, 0, hlg, hl.row - 1, hl.start - 1 + 1, hl.stop + 1)

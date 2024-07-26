@@ -7,6 +7,13 @@
 ---@return string[]
 ---@return I.Highlight[]
 local function gitgraph()
+  -- ORGANIZATION
+  -- TODO: look at https://github.com/S1M0N38/my-awesome-plugin.nvim to start making this into a plugin :)
+  -- TODO: look at https://github.com/nvim-neorocks/nvim-best-practices
+  --
+  -- PERFORMANCE
+  -- TODO: look at https://www.lua.org/gems/sample.pdf
+
   -- build a git commit graph
   --
   -- NOTE: you may be interested in knowin the difference between
@@ -520,7 +527,7 @@ local function gitgraph()
             -- handle bi-connector rows
 
             if get_is_bi_crossing(graph, next_commit, #graph) then
-              print 'we have a bi crossing'
+              -- print 'we have a bi crossing'
               local next = sorted_commits[i + 1]
               assert(next)
               -- void all repeated reservations of `next` from
@@ -661,6 +668,7 @@ local function gitgraph()
     local function row_to_highlights(row)
       local row_hls = {}
       local offset = 0
+
       for j = 1, #row.cells do
         local cell = row.cells[j]
 
@@ -780,6 +788,12 @@ local function gitgraph()
   -- store stage 1 graph
   graph_1 = vim.deepcopy(graph)
   --
+  --
+  ---@param c I.Cell?
+  ---@return string?
+  local function hash(c)
+    return c and c.commit and c.commit.hash
+  end
 
   -- inserts vertical and horizontal pipes
   for i = 2, #graph - 1 do
@@ -813,12 +827,6 @@ local function gitgraph()
     for j = 1, #row.cells do
       local this = graph[i].cells[j]
       local below = graph[i + 1].cells[j]
-
-      ---@param c I.Cell?
-      ---@return string?
-      local function hash(c)
-        return c and c.commit and c.commit.hash
-      end
 
       local tch, bch = hash(this), hash(below)
 
