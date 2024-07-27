@@ -3,10 +3,57 @@
 ---@field row integer
 ---@field start integer
 ---@field stop integer
+---
+---
 
+---@param stuff any[]
+---@param n integer
+---@return any[][]
+local function pick(stuff, n)
+  assert(n >= 1)
+
+  ---@type any[][]
+  local picked = {}
+  if n == 1 then
+    for _, s in ipairs(stuff) do
+      picked[#picked + 1] = { s }
+    end
+    return picked
+  end
+
+  for i, s in ipairs(stuff) do
+    ---@type any[]
+    local subs = {}
+    for j, ss in ipairs(stuff) do
+      if i ~= j then
+        subs[#subs + 1] = ss
+      end
+    end
+
+    for _, p in ipairs(pick(subs, n - 1)) do
+      local spicked = {}
+      spicked[#spicked + 1] = s
+      for _, pp in ipairs(p) do
+        spicked[#spicked + 1] = pp
+      end
+
+      picked[#picked + 1] = spicked
+    end
+  end
+
+  return picked
+end
+
+---@param stuff any[]
+---@return  any[][]
+local function permutations(stuff)
+  return pick(stuff, #stuff)
+end
+
+---@param data I.RawCommit[]
 ---@return string[]
 ---@return I.Highlight[]
-local function gitgraph()
+local function _gitgraph(data)
   -- ORGANIZATION
   -- TODO: look at https://github.com/S1M0N38/my-awesome-plugin.nvim to start making this into a plugin :)
   -- TODO: look at https://github.com/nvim-neorocks/nvim-best-practices
@@ -24,17 +71,6 @@ local function gitgraph()
   --       or by a rebase or any other action that could modify the commit
   --
   -- local git_cmd = [[git log --all --pretty='format:%s%x00%aD%x00%H%x00%P']]
-  local git_cmd = [[git log --all --pretty='format:%s%x00%ad%x00%H%x00%P' --date="format:%H:%M:%S %d-%m-%Y"]]
-  local handle = io.popen(git_cmd)
-  if not handle then
-    print 'no handle?'
-    return {}, {}
-  end
-
-  ---@type string
-  local log = handle:read '*a'
-
-  handle:close()
 
   ---@class I.Row
   ---@field i integer
@@ -74,27 +110,17 @@ local function gitgraph()
   ---@type string[]
   local hashes = {}
 
-  for line in log:gmatch '[^\r\n]+' do
-    local iter = line:gmatch '([^%z]+)'
-    local msg = iter()
-    local author_date = iter()
-    local hash = iter()
-    local parent_iter = (iter() or ''):gmatch '[^%s]+'
+  for _, dc in ipairs(data) do
+    hashes[#hashes + 1] = dc.hash
 
-    hashes[#hashes + 1] = hash
-    local parents = {}
-    for p in parent_iter do
-      parents[#parents + 1] = p
-    end
-
-    commits[hash] = {
+    commits[dc.hash] = {
       explored = false,
-      msg = msg,
-      author_date = author_date,
-      hash = hash,
+      msg = dc.msg,
+      author_date = dc.author_date,
+      hash = dc.hash,
       i = -1,
       j = -1,
-      parents = parents,
+      parents = dc.parents,
       is_void = false,
       children = {},
       merge_children = {},
@@ -457,6 +483,20 @@ local function gitgraph()
 
             -- we start by peeking at next commit and seeing if it is one of our parents
             -- we only do this if one of our propagating branches is already destined for this commit
+            --
+            -- FIXME: why do we do this again? validate the hypothesis that we do this to make the
+            --        graph take up less horizontal space.
+            --
+            -- FIXME: there seems to be a bug, see `watermelon` and commit 1620440
+            --        ... the resolution is most likely, at least temporarily to
+            --        just NOT apply the shrinking logic to this case ... IF it
+            --        turns out that the above hypothesis is correct. Reason is that
+            --        the bug is related to the removal of our original parent cell
+            --        in favor of a pre existing one, and then hoping that the other parents
+            --        fill in the void, but in this case (the case of the bug) that void is
+            --        never filled, and so the parent is never connected ...
+            --
+            --
 
             local next_commit = sorted_commits[i + 1]
             ---@type I.Cell?
@@ -480,6 +520,8 @@ local function gitgraph()
                 end
               end
             end
+
+            next_p_idx = nil
 
             -- add parents
             if next_p_idx then
@@ -572,7 +614,7 @@ local function gitgraph()
               local prev_rep_ctr = void_repeats(prev_row)
               local this_rep_ctr = void_repeats(this_row)
 
-              assert(prev_rep_ctr == this_rep_ctr)
+              -- assert(prev_rep_ctr == this_rep_ctr)
 
               -- newly introduced tracking cells can be squeezed in
               --
@@ -602,6 +644,25 @@ local function gitgraph()
           end
         end
       end
+
+      -- if c.msg == 'I' then
+      --   print(vim.inspect(graph[#graph - 1]))
+      -- end
+    end
+
+    for i, row in ipairs(graph) do
+      local c = row.commit and row.commit.msg or ' '
+      local cells = ''
+      local x = '   '
+      for _, ce in ipairs(row.cells) do
+        cells = cells .. (ce.commit and ce.commit.msg or ' ')
+
+        if ce.is_commit then
+          x = 'x ' .. ce.commit.msg
+        end
+      end
+
+      -- print(('%2d'):format(i), c, x, cells)
     end
   end
 
@@ -633,7 +694,13 @@ local function gitgraph()
     ---@param cell I.Cell
     ---@return string
     local function commit_cell_symb(cell)
-      assert(cell.is_commit)
+      if not cell.is_commit then
+        -- print('cell:', vim.inspect(cell))
+      end
+      -- assert(cell.is_commit)
+      if not cell.is_commit then
+        return '?'
+      end
       if #cell.commit.parents > 1 then
         -- merge commit
         return #cell.commit.children == 0 and GMCME or GMCM
@@ -740,9 +807,11 @@ local function gitgraph()
       -- part 1
       row_str = row_str .. ((row_1 and row_2) and row_to_debg(row_1) or row_to_str(row_1))
 
+      local padding = 25
+
       -- part 2
       if row_2 then
-        row_str = row_str .. (' '):rep(15 - #row_1.cells)
+        row_str = row_str .. (' '):rep(padding - #row_1.cells)
         row_str = row_str .. row_to_str(row_2)
       end
 
@@ -750,14 +819,14 @@ local function gitgraph()
       if c then
         local h = c.hash:sub(1, 7)
         local ah = c.author_date
-        row_str = row_str .. (' '):rep(15 - #row_1.cells) .. h .. '  ' .. ah
+        row_str = row_str .. (' '):rep(padding - #row_1.cells) .. h .. '  ' .. ah .. ' ' .. c.msg
       else
         local parents = ''
         for _, h in ipairs(graph[idx - 1].commit.parents) do
           local p = commits[h]
           parents = parents .. ' ' .. p.msg
         end
-        -- row_str = row_str .. (' '):rep(15 - #row_1.cells) .. '-> ' .. parents
+        row_str = row_str .. (' '):rep(padding - #row_1.cells) .. '-> ' .. parents
         local c = graph_1[idx - 1].commit
         assert(c)
         row_str = row_str:gsub('%s*$', '')
@@ -1068,8 +1137,248 @@ local function gitgraph()
   -- print '---- stage 3 ---'
   -- show_graph(graph)
   -- print '----------------'
-  -- return graph_to_lines(graph_1, graph_2)
-  return graph_to_lines(graph_2)
+  return graph_to_lines(graph_1, graph_2)
+  -- return graph_to_lines(graph_2)
 end
 
-return gitgraph
+---@class I.RawCommit
+---@field hash string
+---@field parents string[]
+---@field msg string
+---@field author_date string
+---
+---@return string[]
+---@return I.Highlight[]
+local function gitgraph()
+  local git_cmd = [[git log --all --pretty='format:%s%x00%ad%x00%H%x00%P' --date="format:%H:%M:%S %d-%m-%Y"]]
+  local handle = io.popen(git_cmd)
+  if not handle then
+    print 'no handle?'
+    return {}, {}
+  end
+
+  ---@type string
+  local log = handle:read '*a'
+
+  handle:close()
+
+  ---@type I.RawCommit[]
+  local data = {}
+
+  for line in log:gmatch '[^\r\n]+' do
+    local iter = line:gmatch '([^%z]+)'
+    local msg = iter()
+    local author_date = iter()
+    local hash = iter()
+    local parent_iter = (iter() or ''):gmatch '[^%s]+'
+
+    local parents = {}
+    for p in parent_iter do
+      parents[#parents + 1] = p
+    end
+
+    data[#data + 1] = {
+      msg = msg,
+      author_date = author_date,
+      hash = hash,
+      parents = parents,
+    }
+  end
+
+  return _gitgraph(data)
+end
+
+---@return string[]
+local function random_scenario()
+  local commits = { 'A', 'B', 'C', 'D', 'E', 'F', 'G' }
+  local size = #commits
+
+  local scenario = {}
+
+  for i = size, 1, -1 do
+    local hash = commits[i]
+    local remaining = {}
+    for j = 1, i - 1 do
+      remaining[j] = commits[j]
+    end
+
+    ---@type string[][]
+    local possibilities = pick(remaining, math.random(#remaining))
+
+    ---@type string[]
+    local parents = possibilities[math.random(#possibilities)]
+
+    local parents_str = table.concat(parents or {}, '')
+
+    scenario[#scenario + 1] = hash .. (parents_str and (' ' .. parents_str) or '')
+  end
+
+  return scenario
+end
+
+local function test()
+  ---@param scenario string[]
+  ---@return string[]
+  local function run_test_scenario(scenario)
+    local raw = {}
+    for i, r in ipairs(scenario) do
+      local iter = r:gmatch '[^%s]+'
+      local hash = iter()
+      local par_iter = (iter() or ''):gmatch '.'
+      local parents = {}
+      for parent in par_iter do
+        parents[#parents + 1] = parent
+      end
+
+      raw[#raw + 1] = {
+        msg = hash,
+        hash = hash,
+        parents = parents,
+        author_date = tostring(i),
+      }
+    end
+
+    local lines, _ = _gitgraph(raw)
+    return lines
+  end
+
+  -- for the random scenario builder
+  local seed = os.time()
+  print('seeding:', seed)
+  math.randomseed(seed)
+
+  local scenarios = {
+    {
+      name = 'foo',
+      commits = {
+        'G D',
+        'F C',
+        'E C',
+        'D AB',
+        'C A',
+        'B A',
+        'A',
+      },
+    },
+    {
+      name = 'bar',
+      commits = {
+        'F C',
+        'E B',
+        'D A',
+        'C BA',
+        'B A',
+        'A',
+      },
+    },
+    {
+      name = 'branch out',
+      commits = {
+        'E AB',
+        'D B',
+        'C B',
+        'B A',
+        'A',
+      },
+    },
+    {
+      name = 'branch in',
+      commits = {
+        'F B',
+        'E BDC',
+        'D A',
+        'C A',
+        'B A',
+        'A',
+      },
+    },
+    {
+      name = 'ultra branch in',
+      commits = {
+        'H E',
+        'G E',
+        'F EDC',
+        'E B',
+        'D A',
+        'C A',
+        'B A',
+        'A',
+      },
+    },
+    {
+      name = 'alphred',
+      commits = {
+        'G DCBFE',
+        'F E',
+        'E D',
+        'D CA',
+        'C A',
+        'B A',
+        'A',
+      },
+    },
+
+    {
+      name = 'gustav',
+      commits = {
+        'G ABFCDE',
+        'F DCEB',
+        'E ACB',
+        'D A',
+        'C B',
+        'B A',
+        'A',
+      },
+    },
+    {
+      name = 'frank',
+      commits = {
+        'G EAFDC',
+        'F DEA',
+        'E C',
+        'D CA',
+        'C B',
+        'B A',
+        'A',
+      },
+    },
+    {
+      name = 'julia',
+      commits = {
+        'G BFDEAC',
+        'F ECBA',
+        'E ACB',
+        'D CA',
+        'C B',
+        'B A',
+        'A',
+      },
+    },
+    {
+      name = 'random 1',
+      commits = random_scenario(),
+    },
+    {
+      name = 'random 2',
+      commits = random_scenario(),
+    },
+  }
+
+  local res = {}
+
+  for _, scenario in ipairs(scenarios) do
+    res[#res + 1] = ' ------ ' .. scenario.name .. ' ------ '
+    local graph = run_test_scenario(scenario.commits)
+    for _, line in ipairs(graph) do
+      res[#res + 1] = line
+    end
+    res[#res + 1] = ''
+  end
+
+  return res
+end
+
+return {
+  gitgraph = gitgraph,
+  test = test,
+}

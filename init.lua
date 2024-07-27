@@ -665,11 +665,27 @@ vim.keymap.set('n', '<leader>U', function()
   vim.api.nvim_set_current_line(new_line)
 end, { desc = 'insert unicode' })
 
+vim.keymap.set('n', '<leader>GT', function()
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_win_set_buf(0, buf)
+
+  local test = require('gitgraph').test
+  local lines = test()
+
+  vim.api.nvim_buf_set_lines(buf, 0, #lines, false, lines)
+
+  local cursor_line = 1
+  vim.api.nvim_win_set_cursor(0, { cursor_line, 0 })
+
+  -- FIXME:
+  vim.api.nvim_buf_set_option(buf, 'modifiable', false)
+end)
+
 vim.keymap.set('n', '<leader>GL', function()
   local buf = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_win_set_buf(0, buf)
 
-  local gitgraph = require 'gitgraph'
+  local gitgraph = require('gitgraph').gitgraph
 
   -- Start a profiling session:
   -- require('jit.p').start('4ri1', '/tmp/lua-gg-profile')
@@ -718,7 +734,7 @@ vim.keymap.set('n', '<leader>GL', function()
   for f, time in pairs(total) do
     data[#data + 1] = {
       time = time,
-      avg_t = time / calls[f],
+      avg_t = time / (calls[f] or 1),
       calls = calls[f],
       rets = rets[f],
       f = f,
@@ -766,7 +782,9 @@ vim.keymap.set('n', '<leader>GL', function()
   for _, hl in ipairs(highlights) do
     local hlg = idx_to_hlg[hl.hg]
 
-    vim.api.nvim_buf_add_highlight(buf, 0, hlg, hl.row - 1, hl.start - 1 + 1, hl.stop + 1)
+    local offset = 25
+
+    vim.api.nvim_buf_add_highlight(buf, 0, hlg, hl.row - 1, hl.start - 1 + 25, hl.stop + 25)
   end
   --     end
   --   end
