@@ -125,6 +125,8 @@ local function _gitgraph(data, opt)
   ---@field hash string
   ---@field is_void boolean -- used for the "reservation" logic ... a bit confusing I have to admit
   ---@field msg string
+  ---@field branch_names string[]
+  ---@field tags string[]
   ---@field debug string?
   ---@field author_date string
   ---@field explored boolean
@@ -132,8 +134,8 @@ local function _gitgraph(data, opt)
   ---@field j integer
   ---@field parents string[]
   ---@field children string[]
-  ---@field merge_children string[]
-  ---@field branch_children string[]
+  -- -@field merge_children string[]
+  -- -@field branch_children string[]
   ---
   ---@type table<string, I.Commit>
   local commits = {}
@@ -147,6 +149,8 @@ local function _gitgraph(data, opt)
     commits[dc.hash] = {
       explored = false,
       msg = dc.msg,
+      branch_names = dc.branch_names,
+      tags = dc.tags,
       author_date = dc.author_date,
       hash = dc.hash,
       i = -1,
@@ -154,8 +158,8 @@ local function _gitgraph(data, opt)
       parents = dc.parents,
       is_void = false,
       children = {},
-      merge_children = {},
-      branch_children = {},
+      -- merge_children = {},
+      -- branch_children = {},
     }
   end
 
@@ -170,22 +174,41 @@ local function _gitgraph(data, opt)
     -- children
     for _, h in ipairs(c.parents) do
       local p = commits[h]
-      p.children[#p.children + 1] = c.hash
+      if p then
+        p.children[#p.children + 1] = c.hash
+      else
+        -- create a virtual parent, it is not added to the list of commit hashes
+        commits[h] = {
+          hash = h,
+          is_void = false,
+          msg = 'virtual parent',
+          explored = false,
+          author_date = 'unknown',
+          parents = {},
+          children = { c.hash },
+          i = -1,
+          j = -1,
+        }
+      end
     end
 
     -- branch children
-    local h = c.parents[1]
-    if h then
-      local p = commits[h]
-      p.branch_children[#p.branch_children + 1] = c.hash
-    end
+    -- local h = c.parents[1]
+    -- if h then
+    --   local p = commits[h]
+    --   if p then
+    --     p.branch_children[#p.branch_children + 1] = c.hash
+    --   end
+    -- end
 
     -- merge children
-    for i = 2, #c.parents do
-      local h = c.parents[i]
-      local p = commits[h]
-      p.merge_children[#p.merge_children + 1] = c.hash
-    end
+    -- for i = 2, #c.parents do
+    --   local h = c.parents[i]
+    --   local p = commits[h]
+    --   if p then
+    --     p.merge_children[#p.merge_children + 1] = c.hash
+    --   end
+    -- end
   end
 
   ---@type I.Commit[]
@@ -400,9 +423,11 @@ local function _gitgraph(data, opt)
       for _, cell in ipairs(graph[#graph].cells) do
         if cell.connector then
           new_cells[#new_cells + 1] = { connector = ' ' }
-        else
+        elseif cell.commit then
           assert(cell.commit)
           new_cells[#new_cells + 1] = { commit = cell.commit }
+        else
+          new_cells[#new_cells + 1] = { connector = ' ' }
         end
       end
       return new_cells
@@ -760,13 +785,7 @@ local function _gitgraph(data, opt)
     ---@param cell I.Cell
     ---@return string
     local function commit_cell_symb(cell)
-      if not cell.is_commit then
-        -- print('cell:', vim.inspect(cell))
-      end
-      -- assert(cell.is_commit)
-      if not cell.is_commit then
-        return '?'
-      end
+      assert(cell.is_commit)
       if #cell.commit.parents > 1 then
         -- merge commit
         return #cell.commit.children == 0 and GMCME or GMCM
@@ -890,18 +909,27 @@ local function _gitgraph(data, opt)
         if c then
           local h = c.hash:sub(1, 7)
           local ah = c.author_date
-          row_str = row_str .. (' '):rep(padding - #alpha_row.cells) .. h .. '  ' .. ah .. ' ' .. c.msg
+
+          local branch_names = #c.branch_names > 0 and (' (%s)'):format(table.concat(c.branch_names, ' ')) or ''
+
+          local tag_names = #c.tags > 0 and (' (%s)'):format(table.concat(c.tags, ' ')) or ''
+
+          local pad_str = (' '):rep(padding - #alpha_row.cells)
+
+          row_str = row_str .. ('%s %s %s%s%s'):format(pad_str, h, ah, branch_names, tag_names)
         else
-          local parents = ''
-          for _, h in ipairs(graph[idx - 1].commit.parents) do
-            local p = commits[h]
-            parents = parents .. ' ' .. p.msg
-          end
-          row_str = row_str .. (' '):rep(padding - #alpha_row.cells) .. '-> ' .. parents
           local c = alpha_graph[idx - 1].commit
           assert(c)
-          row_str = row_str:gsub('%s*$', '')
-          -- row_str = row_str .. (' '):rep(15 - #row_1.cells) .. c.msg
+          if options.mode == 'debug' then
+            local parents = ''
+            for _, h in ipairs(graph[idx - 1].commit.parents) do
+              local p = commits[h]
+              parents = parents .. ' ' .. (p and p.msg or '?')
+            end
+            row_str = row_str .. (' '):rep(padding - #alpha_row.cells) .. c.msg '-> ' .. parents
+          end
+          row_str = row_str .. (' '):rep(padding - #alpha_row.cells) .. (' '):rep(9) .. c.msg
+          -- row_str = row_str:gsub('%s*$', '')
         end
 
         for _, hl in ipairs(row_to_highlights(proper_row)) do
@@ -1101,7 +1129,10 @@ local function _gitgraph(data, opt)
     for _, cell in ipairs(cells) do
       local con = cell.connector
       if con ~= ' ' and con ~= GHOR then
-        assert(cell.commit, 'expected commit')
+        if not cell.commit then
+          print('bad cell:', vim.inspect(cell))
+        end
+        -- assert(cell.commit, 'expected commit')
       end
     end
   end
@@ -1157,6 +1188,10 @@ local function _gitgraph(data, opt)
         ['0111'] = GRUD,
       })[symb_id] or '?'
 
+      if i == #graph and symbol == '?' then
+        symbol = GVER
+      end
+
       local commit_dir_above = above.commit and above.commit.j == j
 
       ---@type 'l' | 'r' | nil -- placement of commit horizontally, only relevant if this is a connector row and if the cell is not immediately above or below the commit
@@ -1206,17 +1241,40 @@ local function _gitgraph(data, opt)
   return graph_to_lines(opt, alpha_graph, proper_graph)
 end
 
+---@class I.GitLogArgs
+---@field all? boolean
+---@field revision_range? string
+---@field max_count? integer
+---@field skip? integer
+
 ---@class I.RawCommit
 ---@field hash string
 ---@field parents string[]
 ---@field msg string
+---@field branch_names string[]
+---@field tags string[]
 ---@field author_date string
 ---
 ---@param options I.DrawOptions
+---@param args I.GitLogArgs
 ---@return string[]
 ---@return I.Highlight[]
-local function gitgraph(options)
-  local git_cmd = [[git log --all --pretty='format:%s%x00%ad%x00%H%x00%P' --date="format:%H:%M:%S %d-%m-%Y"]]
+local function gitgraph(options, args)
+  -- you cannot use both all and range at the same time
+  if args.all and args.revision_range then
+    args.revision_range = nil
+  end
+
+  -- format to enable extracting information
+  local revision_range = args.revision_range or ''
+
+  local format = 'format:%s%x00(%D)%x00%ad%x00%H%x00%P'
+  local date_format = 'format:%H:%M:%S %d-%m-%Y'
+  local all = args.all and '--all' or ''
+  local max_count = args.max_count and ('--max-count=%d'):format(args.max_count) or ''
+  local skip = args.skip and ('--skip=%d'):format(args.skip) or ''
+
+  local git_cmd = ([[git log %s %s --pretty='%s' --date='%s' %s %s]]):format(revision_range, all, format, date_format, max_count, skip)
   local handle = io.popen(git_cmd)
   if not handle then
     print 'no handle?'
@@ -1234,9 +1292,20 @@ local function gitgraph(options)
   for line in log:gmatch '[^\r\n]+' do
     local iter = line:gmatch '([^%z]+)'
     local msg = iter()
+    local describers = iter():gsub('[%(%)]', '') -- tags, branch names etc
     local author_date = iter()
     local hash = iter()
     local parent_iter = (iter() or ''):gmatch '[^%s]+'
+
+    local branch_names = {}
+    local tags = {}
+    for desc in describers:gsub(', ', '\0'):gmatch '[^%z]+' do
+      if desc:match 'tag:.+' then
+        tags[#tags + 1] = desc
+      else
+        branch_names[#branch_names + 1] = desc
+      end
+    end
 
     local parents = {}
     for p in parent_iter do
@@ -1245,6 +1314,8 @@ local function gitgraph(options)
 
     data[#data + 1] = {
       msg = msg,
+      branch_names = branch_names,
+      tags = tags,
       author_date = author_date,
       hash = hash,
       parents = parents,

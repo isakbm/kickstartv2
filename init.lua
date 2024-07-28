@@ -737,7 +737,12 @@ vim.keymap.set('n', '<leader>GL', function()
 
   local start = os.clock()
   ---@type string[]
-  local lines, highlights = gitgraph {}
+  ---
+  -- local lines, highlights = gitgraph({}, { range = 'c77fd48a..44efb5f3' })
+  -- local lines, highlights = gitgraph({}, { all = true, skip = 10 })
+  local lines, highlights = gitgraph({}, { all = true })
+  -- local lines, highlights = gitgraph({}, { revision_range = '5dc790c..be262db' })
+
   local elapsed = os.clock() - start
   print('git graph took:', elapsed)
 
