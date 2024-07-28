@@ -716,7 +716,7 @@ vim.keymap.set('n', '<leader>GL', function()
     end
   end
 
-  debug.sethook(debg_hook, 'cr')
+  -- debug.sethook(debg_hook, 'cr')
 
   local start = os.clock()
   ---@type string[]
@@ -725,7 +725,7 @@ vim.keymap.set('n', '<leader>GL', function()
   print('git graph took:', elapsed)
 
   -- the code to debug ends here; reset the hook
-  debug.sethook()
+  -- debug.sethook()
 
   -- print the results
   --
@@ -747,7 +747,7 @@ vim.keymap.set('n', '<leader>GL', function()
   end)
 
   for _, d in ipairs(data) do
-    print(('%.3fs %.3fs %07d %07d -> %s'):format(d.time, d.avg_t, d.calls, d.rets, d.f))
+    print(('%.3fs %.3fs %07d %07d -> %s'):format(d.time, d.avg_t, d.calls or 0, d.rets, d.f))
   end
 
   print(('%.3fs'):format(total_dt))
@@ -782,9 +782,9 @@ vim.keymap.set('n', '<leader>GL', function()
   for _, hl in ipairs(highlights) do
     local hlg = idx_to_hlg[hl.hg]
 
-    local offset = 25
+    local offset = 1
 
-    vim.api.nvim_buf_add_highlight(buf, 0, hlg, hl.row - 1, hl.start - 1 + 25, hl.stop + 25)
+    vim.api.nvim_buf_add_highlight(buf, 0, hlg, hl.row - 1, hl.start - 1 + offset, hl.stop + offset)
   end
   --     end
   --   end

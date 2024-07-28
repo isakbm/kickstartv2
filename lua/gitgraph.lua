@@ -222,6 +222,7 @@ local function _gitgraph(data)
   --   g i i h        ?─?─?─╮
   --   g i   h        │ ⓚ   │ i
   --
+  --
   -- overlap:
   --
   --   g-----h 1 4
@@ -238,6 +239,7 @@ local function _gitgraph(data)
   --   S T S          │ ⓮ │ T -> R S
   --   S R S          ?─?─?
   --   S R            ⓚ │   S
+  --
   --
   -- overlap:
   --
@@ -282,17 +284,18 @@ local function _gitgraph(data)
   ---@param i integer -- the row index
   ---@param graph I.Row[] -- the row index
   ---@param next_commit I.Commit -- the next commit
-  ---@return boolean
+  ---@return boolean -- whether or not this is a bi crossing
+  ---@return boolean -- whether or not it can be resolved safely by edge lifting
   local function get_is_bi_crossing(graph, next_commit, i)
     if i % 2 == 1 then
-      return false -- we're not a connector row NOTE: 1 indexing of lua
+      return false, false -- we're not a connector row NOTE: 1 indexing of lua
     end
 
     local prev = graph[i - 1].commit
     assert(prev, 'expected a prev commit')
 
     if #prev.parents < 2 then
-      return false -- bi-crossings only happen when prev is a merge commit
+      return false, false -- bi-crossings only happen when prev is a merge commit
     end
 
     local row = graph[i]
@@ -323,32 +326,38 @@ local function _gitgraph(data)
       end
     end
 
+    -- unsafe if starts of intervals overlap and are equal to direct parent location
+    local safe = not (emi.start == coi.start and prev.j == emi.start)
+
     -- return earily when connector interval is trivial
     if coi.start == coi.stop then
-      return false
+      return false, safe
     end
+
+    -- print('emi:', vim.inspect(emi))
+    -- print('coi:', vim.inspect(coi))
 
     -- check overlap
     do
       -- are intervals identical, then that counts as overlap
       if coi.start == emi.start and coi.stop == emi.stop then
-        return true
+        return true, safe
       end
     end
     for _, k in pairs(emi) do
       -- emi endpoints inside coi ?
       if coi.start < k and k < coi.stop then
-        return true
+        return true, safe
       end
     end
     for _, k in pairs(coi) do
       -- coi endpoints inside emi ?
       if emi.start < k and k < emi.stop then
-        return true
+        return true, safe
       end
     end
 
-    return false
+    return false, safe
   end
 
   ---@param sorted_commits I.Commit[]
@@ -483,21 +492,6 @@ local function _gitgraph(data)
 
             -- we start by peeking at next commit and seeing if it is one of our parents
             -- we only do this if one of our propagating branches is already destined for this commit
-            --
-            -- FIXME: why do we do this again? validate the hypothesis that we do this to make the
-            --        graph take up less horizontal space.
-            --
-            -- FIXME: there seems to be a bug, see `watermelon` and commit 1620440
-            --        ... the resolution is most likely, at least temporarily to
-            --        just NOT apply the shrinking logic to this case ... IF it
-            --        turns out that the above hypothesis is correct. Reason is that
-            --        the bug is related to the removal of our original parent cell
-            --        in favor of a pre existing one, and then hoping that the other parents
-            --        fill in the void, but in this case (the case of the bug) that void is
-            --        never filled, and so the parent is never connected ...
-            --
-            --
-
             local next_commit = sorted_commits[i + 1]
             ---@type I.Cell?
             local tracker = nil
@@ -521,7 +515,7 @@ local function _gitgraph(data)
               end
             end
 
-            next_p_idx = nil
+            -- next_p_idx = nil
 
             -- add parents
             if next_p_idx then
@@ -549,6 +543,14 @@ local function _gitgraph(data)
 
                 assert(#rem_parents == #c.parents - 1, 'unexpected amount of rem parents')
                 reserve_remainder(rem_parents)
+
+                -- we fill this with the next commit if it is empty, a bit hacky
+                if rowc[our_loc].connector == ' ' then
+                  rowc[our_loc].commit = tracker.commit
+                  rowc[our_loc].emphasis = true
+                  rowc[our_loc].connector = nil
+                  tracker.emphasis = false
+                end
               end
             else
               -- simply add first parent at our location and then reserve the rest
@@ -567,8 +569,12 @@ local function _gitgraph(data)
             graph[row_idx] = { i = row_idx, cells = rowc }
 
             -- handle bi-connector rows
+            local is_bi_crossing, bi_crossing_safely_resolveable = get_is_bi_crossing(graph, next_commit, #graph)
 
-            if get_is_bi_crossing(graph, next_commit, #graph) then
+            -- if get_is_bi_crossing(graph, next_commit, #graph) then
+            if is_bi_crossing and bi_crossing_safely_resolveable then
+              -- if false then
+              -- if false then -- get_is_bi_crossing(graph, next_commit, #graph) then
               -- print 'we have a bi crossing'
               local next = sorted_commits[i + 1]
               assert(next)
@@ -602,7 +608,9 @@ local function _gitgraph(data)
                   if cell.commit and cell.commit.hash == next.hash then
                     if not start_voiding then
                       start_voiding = true
-                    else
+                    elseif not row.cells[k].emphasis then
+                      -- else
+
                       row.cells[k] = { connector = ' ' } -- void it
                       ctr = ctr + 1
                     end
@@ -613,6 +621,47 @@ local function _gitgraph(data)
 
               local prev_rep_ctr = void_repeats(prev_row)
               local this_rep_ctr = void_repeats(this_row)
+
+              -- we must also take care when the prev prev has a repeat where
+              -- the repeat is not the direct parent of its child
+              --
+              --   G                        ⓯
+              --   e d c                    ⓸─ⓢ─╮
+              --   E D C F                  │ │ │ ⓯
+              --   e D C c b a d            ⓶─⓵─│─⓴─ⓢ─ⓢ─? <--- to resolve this
+              --   E D C C B A              ⓮ │ │ │ │ │
+              --   c D C C b A              ⓸─│─ⓥ─ⓥ─⓷ │
+              --   C D     B A              │ ⓮     │ │
+              --   C c     b a              ⓶─ⓥ─────⓵─⓷
+              --   C       B A              ⓮       │ │
+              --   b       B a              ⓸───────ⓥ─⓷
+              --   B         A              ⓚ         │
+              --   a         A              ⓶─────────╯
+              --   A                        ⓚ
+              local prev_prev_row = graph[#graph - 2]
+              local prev_prev_prev_row = graph[#graph - 3]
+              assert(prev_prev_row and prev_prev_prev_row)
+              do
+                local start_voiding = false
+                local ctr = 0
+                ---@type I.Cell?
+                local replacer = nil
+                for k, cell in ipairs(prev_prev_row.cells) do
+                  if cell.commit and cell.commit.hash == next.hash then
+                    if not start_voiding then
+                      start_voiding = true
+                      replacer = cell
+                    elseif k ~= prev_prev_prev_row.commit.j then
+                      local ppcell = prev_prev_prev_row.cells[k]
+                      if (not ppcell) or (ppcell and ppcell.connector == ' ') then
+                        prev_prev_row.cells[k] = { connector = ' ' } -- void it
+                        replacer.emphasis = true
+                        ctr = ctr + 1
+                      end
+                    end
+                  end
+                end
+              end
 
               -- assert(prev_rep_ctr == this_rep_ctr)
 
@@ -644,25 +693,6 @@ local function _gitgraph(data)
           end
         end
       end
-
-      -- if c.msg == 'I' then
-      --   print(vim.inspect(graph[#graph - 1]))
-      -- end
-    end
-
-    for i, row in ipairs(graph) do
-      local c = row.commit and row.commit.msg or ' '
-      local cells = ''
-      local x = '   '
-      for _, ce in ipairs(row.cells) do
-        cells = cells .. (ce.commit and ce.commit.msg or ' ')
-
-        if ce.is_commit then
-          x = 'x ' .. ce.commit.msg
-        end
-      end
-
-      -- print(('%2d'):format(i), c, x, cells)
     end
   end
 
@@ -790,7 +820,9 @@ local function _gitgraph(data)
           row_str = row_str .. cell.connector
         else
           assert(cell.commit)
+
           local symbol = cell.commit.msg
+          symbol = cell.emphasis and symbol:lower() or symbol
           row_str = row_str .. symbol
         end
       end
@@ -1137,8 +1169,8 @@ local function _gitgraph(data)
   -- print '---- stage 3 ---'
   -- show_graph(graph)
   -- print '----------------'
-  return graph_to_lines(graph_1, graph_2)
-  -- return graph_to_lines(graph_2)
+  -- return graph_to_lines(graph_1, graph_2)
+  return graph_to_lines(graph_2)
 end
 
 ---@class I.RawCommit
@@ -1272,6 +1304,58 @@ local function test()
       },
     },
     {
+      name = 'bi-crossing 1',
+      commits = {
+        'J G',
+        'I F',
+        'H F',
+        'G EB',
+        'F D',
+        'E A',
+        'D A',
+        'C A',
+        'B A',
+        'A',
+      },
+    },
+    {
+      name = 'bi-crossing 2',
+      commits = {
+        'G C',
+        'F D',
+        'E C',
+        'D CB',
+        'C A',
+        'B A ',
+        'A',
+      },
+    },
+    {
+      name = 'strange 1',
+      commits = {
+        'G ADBEF',
+        'F CADEB',
+        'E DA',
+        'D BC',
+        'C BA',
+        'B A',
+        'A ',
+      },
+    },
+
+    {
+      name = 'strange 2',
+      commits = {
+        'G BDECFA',
+        'F BECAD',
+        'E BAD',
+        'D C',
+        'C AB',
+        'B A',
+        'A ',
+      },
+    },
+    {
       name = 'branch out',
       commits = {
         'E AB',
@@ -1367,12 +1451,25 @@ local function test()
   local res = {}
 
   for _, scenario in ipairs(scenarios) do
+    -- if scenario.name ~= 'strange 2' then
+    --   goto continue
+    -- end
+
     res[#res + 1] = ' ------ ' .. scenario.name .. ' ------ '
+
+    for _, com in ipairs(scenario.commits) do
+      res[#res + 1] = com
+    end
+
+    res[#res + 1] = ' ------ ' .. ' result ' .. ' ------ '
+
     local graph = run_test_scenario(scenario.commits)
     for _, line in ipairs(graph) do
       res[#res + 1] = line
     end
     res[#res + 1] = ''
+
+    ::continue::
   end
 
   return res
