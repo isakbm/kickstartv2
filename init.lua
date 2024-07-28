@@ -287,35 +287,36 @@ vim.opt.tabstop = 2
 
 WIN_BORDER = { '╭', '─', '╮', '│', '╯', '─', '╰', '│' }
 
+-- TODO: these should be removed eventually
 -- git graph symbols
-GVER = '│' -- '|'
-GHOR = '─' -- '-'
-GCLD = '╮' -- '┐'
-GCRD = '╭' -- '┌'
-GCLU = '╯' -- '┘'
-GCRU = '╰' -- '└'
-GLRU = '┴'
-GLRD = '┬'
-GLUD = '┤'
-GRUD = '├'
-
-GFORKU = '⓵'
-GFORKD = '⓴'
-
-GRUDCD = '⓶' -- '├'
-GRUDCU = '⓸' -- '├'
-GLUDCD = '⓷'
-GLUDCU = '⓹'
-
-GLRDCL = 'ⓢ'
-GLRDCR = 'ⓣ'
-GLRUCL = 'ⓥ'
-GLRUCR = 'ⓤ'
-
-GRCM = 'ⓚ' -- '*'
-GMCM = '⓮' -- 'M'
-GRCME = 'ⓛ' -- '*'
-GMCME = '⓯' -- 'M'
+-- GVER = '│' -- '|'
+-- GHOR = '─' -- '-'
+-- GCLD = '╮' -- '┐'
+-- GCRD = '╭' -- '┌'
+-- GCLU = '╯' -- '┘'
+-- GCRU = '╰' -- '└'
+-- GLRU = '┴'
+-- GLRD = '┬'
+-- GLUD = '┤'
+-- GRUD = '├'
+--
+-- GFORKU = '⓵'
+-- GFORKD = '⓴'
+--
+-- GRUDCD = '⓶' -- '├'
+-- GRUDCU = '⓸' -- '├'
+-- GLUDCD = '⓷'
+-- GLUDCU = '⓹'
+--
+-- GLRDCL = 'ⓢ'
+-- GLRDCR = 'ⓣ'
+-- GLRUCL = 'ⓥ'
+-- GLRUCR = 'ⓤ'
+--
+-- GRCM = 'ⓚ' -- '*'
+-- GMCM = '⓮' -- 'M'
+-- GRCME = 'ⓛ' -- '*'
+-- GMCME = '⓯' -- 'M'
 
 --=========================== KEYMAPS =============================
 
@@ -670,7 +671,23 @@ vim.keymap.set('n', '<leader>GT', function()
   vim.api.nvim_win_set_buf(0, buf)
 
   local test = require('gitgraph').test
-  local lines = test()
+  local lines, failure = test()
+
+  vim.api.nvim_buf_set_lines(buf, 0, #lines, false, lines)
+
+  local cursor_line = #lines
+  vim.api.nvim_win_set_cursor(0, { cursor_line, 0 })
+
+  -- FIXME:
+  vim.api.nvim_buf_set_option(buf, 'modifiable', false)
+end)
+
+vim.keymap.set('n', '<leader>GR', function()
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_win_set_buf(0, buf)
+
+  local random = require('gitgraph').random
+  local lines = random()
 
   vim.api.nvim_buf_set_lines(buf, 0, #lines, false, lines)
 
@@ -720,7 +737,7 @@ vim.keymap.set('n', '<leader>GL', function()
 
   local start = os.clock()
   ---@type string[]
-  local lines, highlights = gitgraph()
+  local lines, highlights = gitgraph {}
   local elapsed = os.clock() - start
   print('git graph took:', elapsed)
 

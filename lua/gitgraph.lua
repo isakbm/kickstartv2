@@ -51,9 +51,40 @@ local function permutations(stuff)
 end
 
 ---@param data I.RawCommit[]
+---@param opt I.DrawOptions
 ---@return string[]
 ---@return I.Highlight[]
-local function _gitgraph(data)
+local function _gitgraph(data, opt)
+  -- git graph symbols
+  local GVER = '│' -- '|'
+  local GHOR = '─' -- '-'
+  local GCLD = '╮' -- '┐'
+  local GCRD = '╭' -- '┌'
+  local GCLU = '╯' -- '┘'
+  local GCRU = '╰' -- '└'
+  local GLRU = '┴'
+  local GLRD = '┬'
+  local GLUD = '┤'
+  local GRUD = '├'
+
+  local GFORKU = opt.pretty and '⓵' or '┼'
+  local GFORKD = opt.pretty and '⓴' or '┼'
+
+  local GRUDCD = opt.pretty and '⓶' or '├'
+  local GRUDCU = opt.pretty and '⓸' or '├'
+  local GLUDCD = opt.pretty and '⓷' or '┤'
+  local GLUDCU = opt.pretty and '⓹' or '┤'
+
+  local GLRDCL = opt.pretty and 'ⓢ' or '┬'
+  local GLRDCR = opt.pretty and 'ⓣ' or '┬'
+  local GLRUCL = opt.pretty and 'ⓥ' or '┴'
+  local GLRUCR = opt.pretty and 'ⓤ' or '┴'
+
+  local GRCM = opt.pretty and 'ⓚ' or '*'
+  local GMCM = opt.pretty and '⓮' or '●'
+  local GRCME = opt.pretty and 'ⓛ' or '*'
+  local GMCME = opt.pretty and '⓯' or '●'
+
   -- ORGANIZATION
   -- TODO: look at https://github.com/S1M0N38/my-awesome-plugin.nvim to start making this into a plugin :)
   -- TODO: look at https://github.com/nvim-neorocks/nvim-best-practices
@@ -190,10 +221,10 @@ local function _gitgraph(data)
   local graph = {}
 
   ---@type I.Row[]
-  local graph_1 = {}
+  local alpha_graph = {}
 
   ---@type I.Row[]
-  local graph_2 = {}
+  local proper_graph = {}
 
   local debug_intervals = {}
 
@@ -698,11 +729,16 @@ local function _gitgraph(data)
 
   straight_j(sorted_commits)
 
-  ---@param graph_1 I.Row[]
-  ---@param graph_2 I.Row[]?
+  ---@class I.DrawOptions
+  ---@field mode? 'debug' | 'test'
+  ---@field pretty? boolean
+
+  ---@param alpha_graph I.Row[]
+  ---@param proper_graph I.Row[]
+  ---@param options I.DrawOptions
   ---@return string[]
   ---@return I.Highlight[]
-  local function graph_to_lines(graph_1, graph_2)
+  local function graph_to_lines(options, alpha_graph, proper_graph)
     ---@type string[]
     local lines = {}
 
@@ -769,7 +805,7 @@ local function _gitgraph(data)
       for j = 1, #row.cells do
         local cell = row.cells[j]
 
-        local width = #cell.symbol
+        local width = cell.symbol and #cell.symbol or 1
         local start = offset
         local stop = start + width
         offset = offset + width
@@ -830,49 +866,50 @@ local function _gitgraph(data)
       return row_str
     end
 
-    for idx = 1, #graph_1 do
-      local row_1 = graph_1[idx]
-      local row_2 = graph_2 and graph_2[idx]
+    for idx = 1, #alpha_graph do
+      local alpha_row = alpha_graph[idx]
+      local proper_row = proper_graph[idx]
 
       local row_str = ''
 
-      -- part 1
-      row_str = row_str .. ((row_1 and row_2) and row_to_debg(row_1) or row_to_str(row_1))
-
       local padding = 25
 
-      -- part 2
-      if row_2 then
-        row_str = row_str .. (' '):rep(padding - #row_1.cells)
-        row_str = row_str .. row_to_str(row_2)
-      end
-
-      local c = row_1.commit
-      if c then
-        local h = c.hash:sub(1, 7)
-        local ah = c.author_date
-        row_str = row_str .. (' '):rep(padding - #row_1.cells) .. h .. '  ' .. ah .. ' ' .. c.msg
+      -- part 1
+      if options.mode == 'debug' then
+        row_str = row_str .. row_to_debg(alpha_row)
+        row_str = row_str .. (' '):rep(padding - #alpha_row.cells)
+        row_str = row_str .. row_to_str(proper_row)
+      elseif options.mode == 'test' then
+        row_str = row_str .. row_to_debg(alpha_row)
       else
-        local parents = ''
-        for _, h in ipairs(graph[idx - 1].commit.parents) do
-          local p = commits[h]
-          parents = parents .. ' ' .. p.msg
-        end
-        row_str = row_str .. (' '):rep(padding - #row_1.cells) .. '-> ' .. parents
-        local c = graph_1[idx - 1].commit
-        assert(c)
-        row_str = row_str:gsub('%s*$', '')
-        -- row_str = row_str .. (' '):rep(15 - #row_1.cells) .. c.msg
+        row_str = row_str .. row_to_str(proper_row)
       end
 
-      lines[#lines + 1] = row_str
+      if options.mode ~= 'test' then
+        local c = alpha_row.commit
+        if c then
+          local h = c.hash:sub(1, 7)
+          local ah = c.author_date
+          row_str = row_str .. (' '):rep(padding - #alpha_row.cells) .. h .. '  ' .. ah .. ' ' .. c.msg
+        else
+          local parents = ''
+          for _, h in ipairs(graph[idx - 1].commit.parents) do
+            local p = commits[h]
+            parents = parents .. ' ' .. p.msg
+          end
+          row_str = row_str .. (' '):rep(padding - #alpha_row.cells) .. '-> ' .. parents
+          local c = alpha_graph[idx - 1].commit
+          assert(c)
+          row_str = row_str:gsub('%s*$', '')
+          -- row_str = row_str .. (' '):rep(15 - #row_1.cells) .. c.msg
+        end
 
-      do
-        local row = row_2 and row_2 or row_1
-        for _, hl in ipairs(row_to_highlights(row)) do
+        for _, hl in ipairs(row_to_highlights(proper_row)) do
           highlights[#highlights + 1] = hl
         end
       end
+
+      lines[#lines + 1] = row_str
     end
 
     return lines, highlights
@@ -887,7 +924,7 @@ local function _gitgraph(data)
   -- print '----------------'
 
   -- store stage 1 graph
-  graph_1 = vim.deepcopy(graph)
+  alpha_graph = vim.deepcopy(graph)
   --
   --
   ---@param c I.Cell?
@@ -1164,13 +1201,9 @@ local function _gitgraph(data)
     end
   end
 
-  graph_2 = graph
+  proper_graph = graph
 
-  -- print '---- stage 3 ---'
-  -- show_graph(graph)
-  -- print '----------------'
-  -- return graph_to_lines(graph_1, graph_2)
-  return graph_to_lines(graph_2)
+  return graph_to_lines(opt, alpha_graph, proper_graph)
 end
 
 ---@class I.RawCommit
@@ -1179,9 +1212,10 @@ end
 ---@field msg string
 ---@field author_date string
 ---
+---@param options I.DrawOptions
 ---@return string[]
 ---@return I.Highlight[]
-local function gitgraph()
+local function gitgraph(options)
   local git_cmd = [[git log --all --pretty='format:%s%x00%ad%x00%H%x00%P' --date="format:%H:%M:%S %d-%m-%Y"]]
   local handle = io.popen(git_cmd)
   if not handle then
@@ -1217,7 +1251,7 @@ local function gitgraph()
     }
   end
 
-  return _gitgraph(data)
+  return _gitgraph(data, options)
 end
 
 ---@return string[]
@@ -1248,32 +1282,37 @@ local function random_scenario()
   return scenario
 end
 
-local function test()
-  ---@param scenario string[]
-  ---@return string[]
-  local function run_test_scenario(scenario)
-    local raw = {}
-    for i, r in ipairs(scenario) do
-      local iter = r:gmatch '[^%s]+'
-      local hash = iter()
-      local par_iter = (iter() or ''):gmatch '.'
-      local parents = {}
-      for parent in par_iter do
-        parents[#parents + 1] = parent
-      end
-
-      raw[#raw + 1] = {
-        msg = hash,
-        hash = hash,
-        parents = parents,
-        author_date = tostring(i),
-      }
+---@param scenario string[]
+---@return string[]
+---@param show_graph? boolean
+local function run_test_scenario(scenario, show_graph)
+  local raw = {}
+  for i, r in ipairs(scenario) do
+    local iter = r:gmatch '[^%s]+'
+    local hash = iter()
+    local par_iter = (iter() or ''):gmatch '.'
+    local parents = {}
+    for parent in par_iter do
+      parents[#parents + 1] = parent
     end
 
-    local lines, _ = _gitgraph(raw)
-    return lines
+    raw[#raw + 1] = {
+      msg = hash,
+      hash = hash,
+      parents = parents,
+      author_date = tostring(i),
+    }
   end
 
+  local options = { mode = (show_graph and 'debug' or 'test') }
+  local lines, _ = _gitgraph(raw, options)
+
+  return lines
+end
+
+---@return string[]
+---@return boolean
+local function test()
   -- for the random scenario builder
   local seed = os.time()
   print('seeding:', seed)
@@ -1291,6 +1330,21 @@ local function test()
         'B A',
         'A',
       },
+      expect = {
+        'G ',
+        'd ',
+        'D F ',
+        'D c ',
+        'D C E ',
+        'D C c ',
+        'D C   ',
+        'a C   b ',
+        'A C   B ',
+        'A a   B ',
+        'A A   B ',
+        'A A   a ',
+        'A       ',
+      },
     },
     {
       name = 'bar',
@@ -1301,6 +1355,19 @@ local function test()
         'C BA',
         'B A',
         'A',
+      },
+      expect = {
+        'F ',
+        'c ',
+        'C E ',
+        'C b ',
+        'C B D ',
+        'C B a ',
+        'C B A ',
+        'b B a ',
+        'B   A ',
+        'a   A ',
+        'A     ',
       },
     },
     {
@@ -1317,6 +1384,27 @@ local function test()
         'B A',
         'A',
       },
+      expect = {
+        'J ',
+        'g ',
+        'G I ',
+        'G f ',
+        'G F H ',
+        'G F f ',
+        'G F   ',
+        'e F   b ',
+        'E F   B ',
+        'E d   B ',
+        'E D   B ',
+        'a D   B ',
+        'A D   B ',
+        'A a   B ',
+        'A A C B ',
+        'A A a B ',
+        'A A A B ',
+        'A A A a ',
+        'A       ',
+      },
     },
     {
       name = 'bi-crossing 2',
@@ -1329,6 +1417,21 @@ local function test()
         'B A ',
         'A',
       },
+      expect = {
+        'G ',
+        'c ',
+        'C F ',
+        'C d ',
+        'C D E ',
+        'C D c ',
+        'C D   ',
+        'c b   ',
+        'C B   ',
+        'a B   ',
+        'A B   ',
+        'A a   ',
+        'A     ',
+      },
     },
     {
       name = 'strange 1',
@@ -1340,6 +1443,21 @@ local function test()
         'C BA',
         'B A',
         'A ',
+      },
+      expect = {
+        'G ',
+        'a d b e f ',
+        'A D B E F ',
+        'A d B e c a   b ',
+        'A D B E C A   B ',
+        'A D B d C a   B ',
+        'A D B   C A   B ',
+        'A c b   C A   B ',
+        'A C B     A   B ',
+        'A b B     a   B ',
+        'A B       A     ',
+        'A a       A     ',
+        'A               ',
       },
     },
 
@@ -1354,6 +1472,21 @@ local function test()
         'B A',
         'A ',
       },
+      expect = {
+        'G ',
+        'b d e c f a ',
+        'B D E C F A ',
+        'B d e C b a c   ',
+        'B D E C B A C   ',
+        'B D d C b a C   ',
+        'B D   C B A C   ',
+        'B c   C B A C   ',
+        'B C       A     ',
+        'B b       a     ',
+        'B         A     ',
+        'a         A     ',
+        'A               ',
+      },
     },
     {
       name = 'branch out',
@@ -1363,6 +1496,17 @@ local function test()
         'C B',
         'B A',
         'A',
+      },
+      expect = {
+        'E ',
+        'a b ',
+        'A B D ',
+        'A B b ',
+        'A B B C ',
+        'A B B b ',
+        'A B     ',
+        'A a     ',
+        'A       ',
       },
     },
     {
@@ -1374,6 +1518,19 @@ local function test()
         'C A',
         'B A',
         'A',
+      },
+      expect = {
+        'F ',
+        'b ',
+        'B E ',
+        'B b d c ',
+        'B B D C ',
+        'B B a C ',
+        'B B A C ',
+        'B B A a ',
+        'B   A A ',
+        'a   A A ',
+        'A       ',
       },
     },
     {
@@ -1388,6 +1545,23 @@ local function test()
         'B A',
         'A',
       },
+      expect = {
+        'H ',
+        'e ',
+        'E G ',
+        'E e ',
+        'E   F ',
+        'e   d c ',
+        'E   D C ',
+        'b   D C ',
+        'B   D C ',
+        'B   a C ',
+        'B   A C ',
+        'B   A a ',
+        'B   A A ',
+        'a   A A ',
+        'A       ',
+      },
     },
     {
       name = 'alphred',
@@ -1399,6 +1573,21 @@ local function test()
         'C A',
         'B A',
         'A',
+      },
+      expect = {
+        'G ',
+        'd c b f e ',
+        'D C B F E ',
+        'D C B e E ',
+        'D C B E   ',
+        'D C B d   ',
+        'D C B     ',
+        'a c B     ',
+        'A C B     ',
+        'A a B     ',
+        'A A B     ',
+        'A A a     ',
+        'A         ',
       },
     },
 
@@ -1413,6 +1602,21 @@ local function test()
         'B A',
         'A',
       },
+      expect = {
+        'G ',
+        'a b f c d e ',
+        'A B F C D E ',
+        'A B b c d e ',
+        'A B B C D E ',
+        'A B B C D a c b ',
+        'A B B C D A C B ',
+        'A B B C a A C B ',
+        'A B B C A A   B ',
+        'A B B b A A   B ',
+        'A B     A A     ',
+        'A a     A A     ',
+        'A               ',
+      },
     },
     {
       name = 'frank',
@@ -1424,6 +1628,21 @@ local function test()
         'C B',
         'B A',
         'A',
+      },
+      expect = {
+        'G ',
+        'e a f d c ',
+        'E A F D C ',
+        'e A a d C ',
+        'E A A D C ',
+        'c A A D C ',
+        'C A A D   ',
+        'c A A a   ',
+        'C A A A   ',
+        'b A A A   ',
+        'B A A A   ',
+        'a A A A   ',
+        'A         ',
       },
     },
     {
@@ -1437,18 +1656,31 @@ local function test()
         'B A',
         'A',
       },
-    },
-    {
-      name = 'random 1',
-      commits = random_scenario(),
-    },
-    {
-      name = 'random 2',
-      commits = random_scenario(),
+      expect = {
+        'G ',
+        'b f d e a c ',
+        'B F D E A C ',
+        'B b D e a c ',
+        'B B D E A C ',
+        'B B D a A c b ',
+        'B B D A A C B ',
+        'B B c a A C B ',
+        'B B C A A   B ',
+        'B B b A A   B ',
+        'B     A A     ',
+        'a     A A     ',
+        'A             ',
+      },
     },
   }
 
   local res = {}
+
+  local failures = 0
+
+  local function report_failure(msg)
+    res[#res + 1] = msg
+  end
 
   for _, scenario in ipairs(scenarios) do
     -- if scenario.name ~= 'strange 2' then
@@ -1463,19 +1695,54 @@ local function test()
 
     res[#res + 1] = ' ------ ' .. ' result ' .. ' ------ '
 
-    local graph = run_test_scenario(scenario.commits)
-    for _, line in ipairs(graph) do
-      res[#res + 1] = line
+    -- currently we only check that the alphabet matrix is
+    -- as we expect it to be hence the two locals below
+    local alpha_graph = run_test_scenario(scenario.commits)
+
+    -- this is used to visualize the scenario that is being tested
+    -- we keep this separate from the actual test result data since
+    -- we are not confident yet about the rendering, but we are confident
+    -- about the alphabet matrix
+    local graph = run_test_scenario(scenario.commits, true)
+
+    for i, line in ipairs(graph) do
+      res[#res + 1] = string.format('%02d', i) .. '   ' .. line
     end
+
+    for i, line in ipairs(alpha_graph) do
+      if line ~= scenario.expect[i] then
+        report_failure '------ FAILURE ------'
+        report_failure('failure in scenario ' .. scenario.name .. ' at line ' .. tostring(i))
+        report_failure 'expected:'
+        report_failure('    ' .. scenario.expect[i])
+        report_failure 'got:'
+        report_failure('    ' .. line)
+        report_failure '---------------------'
+        failures = failures + 1
+      end
+    end
+
     res[#res + 1] = ''
 
     ::continue::
   end
 
-  return res
+  if failures > 0 then
+    report_failure(tostring(failures) .. ' failures')
+  end
+
+  report_failure(tostring(#scenarios - failures) .. ' of ' .. tostring(#scenarios) .. ' tests passed')
+
+  return res, failures > 0
+end
+
+local function random()
+  local commits = random_scenario()
+  return run_test_scenario(commits, true)
 end
 
 return {
   gitgraph = gitgraph,
   test = test,
+  random = random,
 }
