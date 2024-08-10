@@ -102,6 +102,13 @@
 
   TODO:
 
+    >> for the new git graph plugin
+
+       - indicate the active HEAD -> by
+         changing the symbol used for the commit "dot"
+
+       - add separateors between branch_names and tags, specifically "|"
+
     >> The nice <leader>rn widget to do refactored renamings has an issue where
        seemingly dependent on the cursor position, the rename will silently fail
        or succeed, is easiest to reproduce for single character variable renamings
@@ -666,159 +673,6 @@ vim.keymap.set('n', '<leader>U', function()
   vim.api.nvim_set_current_line(new_line)
 end, { desc = 'insert unicode' })
 
-vim.keymap.set('n', '<leader>GT', function()
-  local buf = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_win_set_buf(0, buf)
-
-  local test = require('gitgraph').test
-  local lines, failure = test()
-
-  vim.api.nvim_buf_set_lines(buf, 0, #lines, false, lines)
-
-  local cursor_line = #lines
-  vim.api.nvim_win_set_cursor(0, { cursor_line, 0 })
-
-  -- FIXME:
-  vim.api.nvim_buf_set_option(buf, 'modifiable', false)
-end)
-
-vim.keymap.set('n', '<leader>GR', function()
-  local buf = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_win_set_buf(0, buf)
-
-  local random = require('gitgraph').random
-  local lines = random()
-
-  vim.api.nvim_buf_set_lines(buf, 0, #lines, false, lines)
-
-  local cursor_line = 1
-  vim.api.nvim_win_set_cursor(0, { cursor_line, 0 })
-
-  -- FIXME:
-  vim.api.nvim_buf_set_option(buf, 'modifiable', false)
-end)
-
-vim.keymap.set('n', '<leader>GL', function()
-  local buf = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_win_set_buf(0, buf)
-
-  local gitgraph = require('gitgraph').gitgraph
-
-  -- Start a profiling session:
-  -- require('jit.p').start('4ri1', '/tmp/lua-gg-profile')
-  -- require('jit.p').start('-10psi1', '/tmp/lua-gg-profile')
-  -- Perform arbitrary tasks (use plugins, scripts, etc.) ...
-  -- Stop the session. Profile is written to /tmp/profile.
-  --
-
-  local calls, rets, total, call_start = {}, {}, {}, {}
-  local start = nil
-
-  local function debg_hook(event)
-    local i = debug.getinfo(2, 'Sln')
-    if i.what ~= 'Lua' then
-      return
-    end
-    local func = (i.name or '?') .. ':' .. i.source .. ':' .. i.linedefined
-
-    if event == 'call' then
-      start = os.clock()
-      call_start[func] = start
-      calls[func] = (calls[func] or 0) + 1
-    elseif event == 'return' then
-      -- NOTE we go from start rather than call_start, since call_start is unrealible due to jit ? perhaps tailcall optimization?
-      local time = os.clock() - start -- call_start[func]
-      total[func] = (total[func] or 0) + time
-      rets[func] = (rets[func] or 0) + 1
-    end
-  end
-
-  -- debug.sethook(debg_hook, 'cr')
-
-  local start = os.clock()
-  ---@type string[]
-  ---
-  -- local lines, highlights = gitgraph({}, { range = 'c77fd48a..44efb5f3' })
-  -- local lines, highlights = gitgraph({}, { all = true, skip = 10 })
-  local lines, highlights = gitgraph({}, { all = true })
-  -- local lines, highlights = gitgraph({}, { revision_range = '5dc790c..be262db' })
-
-  local elapsed = os.clock() - start
-  print('git graph took:', elapsed)
-
-  -- the code to debug ends here; reset the hook
-  -- debug.sethook()
-
-  -- print the results
-  --
-  local data = {}
-  local total_dt = 0
-  for f, time in pairs(total) do
-    data[#data + 1] = {
-      time = time,
-      avg_t = time / (calls[f] or 1),
-      calls = calls[f],
-      rets = rets[f],
-      f = f,
-    }
-    total_dt = total_dt + time
-  end
-
-  table.sort(data, function(a, b)
-    return a.time > b.time
-  end)
-
-  for _, d in ipairs(data) do
-    print(('%.3fs %.3fs %07d %07d -> %s'):format(d.time, d.avg_t, d.calls or 0, d.rets, d.f))
-  end
-
-  print(('%.3fs'):format(total_dt))
-
-  -- require('jit.p').stop()
-
-  -- print('lines:', lines)
-
-  vim.api.nvim_buf_set_lines(buf, 0, #lines, false, lines)
-
-  -- for _, hls in ipairs(hlsr) do
-  --   for _, hl in pairs(hls) do
-  --     local hlg = code2name[hl.code]
-  --     if not hlg then
-  --     -- print('unable to find', hl.code)
-  --     else
-  --
-
-  local idx_to_hlg = {
-    [0] = 'flogBranch0',
-    [1] = 'flogBranch1',
-    [2] = 'flogBranch2',
-    [3] = 'flogBranch3',
-    [4] = 'flogBranch4',
-    [5] = 'flogBranch5',
-    [6] = 'flogBranch6',
-    [7] = 'flogBranch7',
-    [8] = 'flogBranch8',
-    [9] = 'flogBranch9',
-  }
-
-  for _, hl in ipairs(highlights) do
-    local hlg = idx_to_hlg[hl.hg]
-
-    local offset = 1
-
-    vim.api.nvim_buf_add_highlight(buf, 0, hlg, hl.row - 1, hl.start - 1 + offset, hl.stop + offset)
-  end
-  --     end
-  --   end
-  -- end
-
-  local cursor_line = 1
-  vim.api.nvim_win_set_cursor(0, { cursor_line, 0 })
-
-  -- FIXME:
-  vim.api.nvim_buf_set_option(buf, 'modifiable', false)
-end, { desc = 'new git graph' })
-
 require('lazy').setup({
   'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
 
@@ -827,6 +681,226 @@ require('lazy').setup({
     config = function()
       vim.keymap.set('n', '<leader>u', ':UndotreeToggle<CR>', { desc = 'Toggle Undotree' })
     end,
+  },
+
+  {
+    'foo.nvim',
+    dev = true, -- lazy then knows to look in my dev place see h: lazy.nvim-configuration
+    opts = {
+      color = 'red',
+    },
+    init = function()
+      -- require('foo').echo()
+    end,
+  },
+
+  {
+    'gitgraph.nvim',
+    dev = true, -- lazy then knows to look in my dev place see h: lazy.nvim-configuration
+    ---@type I.GGConfig
+    opts = {
+      symbols = {
+        merge_commit = 'M',
+        commit = '*',
+      },
+      format = {
+        timestamp = '%H:%M:%S %d-%m-%Y',
+        fields = { 'hash', 'timestamp', 'author', 'branch_name', 'tag' },
+      },
+      hooks = {
+        on_select_commit = function(commit)
+          print('selected commit:', commit.hash)
+          vim.cmd(':DiffviewOpen ' .. commit.hash .. '^!')
+        end,
+        on_select_range_commit = function(from, to)
+          print('selected range:', from.hash, to.hash)
+        end,
+      },
+    },
+    keys = {
+      {
+        '<leader>gl',
+        function()
+          require('gitgraph').draw({}, { all = true, max_count = 10 })
+        end,
+        desc = 'GitGraph - Draw',
+      },
+      {
+        '<leader>gt',
+        function()
+          -- require('gitgraph').test()
+
+          local buf = vim.api.nvim_create_buf(false, true)
+          vim.api.nvim_win_set_buf(0, buf)
+
+          local test = require('gitgraph').test
+          local lines, failure = test()
+
+          vim.api.nvim_buf_set_lines(buf, 0, #lines, false, lines)
+
+          local cursor_line = #lines
+          vim.api.nvim_win_set_cursor(0, { cursor_line, 0 })
+
+          -- FIXME:
+          vim.api.nvim_buf_set_option(buf, 'modifiable', false)
+        end,
+        desc = 'GitGraph - Draw',
+      },
+    },
+    -- init = function()
+    --   vim.keymap.set('n', '<leader>GR', function()
+    --     local buf = vim.api.nvim_create_buf(false, true)
+    --     vim.api.nvim_win_set_buf(0, buf)
+    --
+    --     local random = require('gitgraph').random
+    --     local lines = random()
+    --
+    --     vim.api.nvim_buf_set_lines(buf, 0, #lines, false, lines)
+    --
+    --     local cursor_line = 1
+    --     vim.api.nvim_win_set_cursor(0, { cursor_line, 0 })
+    --
+    --     -- FIXME:
+    --     vim.api.nvim_buf_set_option(buf, 'modifiable', false)
+    --   end)
+    --
+    --   vim.keymap.set('n', '<leader>GT', function()
+    --     local buf = vim.api.nvim_create_buf(false, true)
+    --     vim.api.nvim_win_set_buf(0, buf)
+    --
+    --     local test = require('gitgraph').test
+    --     local lines, failure = test()
+    --
+    --     vim.api.nvim_buf_set_lines(buf, 0, #lines, false, lines)
+    --
+    --     local cursor_line = #lines
+    --     vim.api.nvim_win_set_cursor(0, { cursor_line, 0 })
+    --
+    --     -- FIXME:
+    --     vim.api.nvim_buf_set_option(buf, 'modifiable', false)
+    --   end)
+    --   -- require('foo').echo()
+    --   --
+    --   vim.keymap.set('n', '<leader>GD', function()
+    --     local buf = vim.api.nvim_create_buf(false, true)
+    --     vim.api.nvim_win_set_buf(0, buf)
+    --
+    --     local gitgraph = require('gitgraph').gitgraph
+    --
+    --     -- Start a profiling session:
+    --     -- require('jit.p').start('4ri1', '/tmp/lua-gg-profile')
+    --     -- require('jit.p').start('-10psi1', '/tmp/lua-gg-profile')
+    --     -- Perform arbitrary tasks (use plugins, scripts, etc.) ...
+    --     -- Stop the session. Profile is written to /tmp/profile.
+    --     --
+    --
+    --     local calls, rets, total, call_start = {}, {}, {}, {}
+    --     local start = nil
+    --
+    --     local function debg_hook(event)
+    --       local i = debug.getinfo(2, 'Sln')
+    --       if i.what ~= 'Lua' then
+    --         return
+    --       end
+    --       local func = (i.name or '?') .. ':' .. i.source .. ':' .. i.linedefined
+    --
+    --       if event == 'call' then
+    --         start = os.clock()
+    --         call_start[func] = start
+    --         calls[func] = (calls[func] or 0) + 1
+    --       elseif event == 'return' then
+    --         -- NOTE we go from start rather than call_start, since call_start is unrealible due to jit ? perhaps tailcall optimization?
+    --         local time = os.clock() - start -- call_start[func]
+    --         total[func] = (total[func] or 0) + time
+    --         rets[func] = (rets[func] or 0) + 1
+    --       end
+    --     end
+    --
+    --     -- debug.sethook(debg_hook, 'cr')
+    --
+    --     local start = os.clock()
+    --     ---@type string[]
+    --     ---
+    --     -- local lines, highlights = gitgraph({}, { range = 'c77fd48a..44efb5f3' })
+    --     -- local lines, highlights = gitgraph({}, { all = true, skip = 10 })
+    --     local lines, highlights = gitgraph({}, { all = true }) -- max_count = 20 })
+    --     -- local lines, highlights = gitgraph({}, { revision_range = '5dc790c..be262db' })
+    --
+    --     local elapsed = os.clock() - start
+    --     print('git graph took:', elapsed)
+    --
+    --     -- the code to debug ends here; reset the hook
+    --     -- debug.sethook()
+    --
+    --     -- print the results
+    --     --
+    --     local data = {}
+    --     local total_dt = 0
+    --     for f, time in pairs(total) do
+    --       data[#data + 1] = {
+    --         time = time,
+    --         avg_t = time / (calls[f] or 1),
+    --         calls = calls[f],
+    --         rets = rets[f],
+    --         f = f,
+    --       }
+    --       total_dt = total_dt + time
+    --     end
+    --
+    --     table.sort(data, function(a, b)
+    --       return a.time > b.time
+    --     end)
+    --
+    --     for _, d in ipairs(data) do
+    --       print(('%.3fs %.3fs %07d %07d -> %s'):format(d.time, d.avg_t, d.calls or 0, d.rets, d.f))
+    --     end
+    --
+    --     print(('%.3fs'):format(total_dt))
+    --
+    --     -- require('jit.p').stop()
+    --
+    --     -- print('lines:', lines)
+    --
+    --     vim.api.nvim_buf_set_lines(buf, 0, #lines, false, lines)
+    --
+    --     -- for _, hls in ipairs(hlsr) do
+    --     --   for _, hl in pairs(hls) do
+    --     --     local hlg = code2name[hl.code]
+    --     --     if not hlg then
+    --     --     -- print('unable to find', hl.code)
+    --     --     else
+    --     --
+    --
+    --     for _, hl in ipairs(highlights) do
+    --       local offset = 1
+    --       vim.api.nvim_buf_add_highlight(buf, 0, hl.hg, hl.row - 1, hl.start - 1 + offset, hl.stop + offset)
+    --     end
+    --     --     end
+    --     --   end
+    --     -- end
+    --
+    --     local cursor_line = 1
+    --     vim.api.nvim_win_set_cursor(0, { cursor_line, 0 })
+    --
+    --     -- FIXME:
+    --     vim.api.nvim_buf_set_option(buf, 'modifiable', false)
+    --   end, { desc = 'new git graph' })
+    --
+    --   vim.keymap.set('n', '<leader>GL', function()
+    --     require('gitgraph').draw({}, { all = true, max_count = 100 })
+    --   end, { desc = 'new git graph' })
+    --
+    --   local augroup = vim.api.nvim_create_augroup('MyScratchBufferGroup', { clear = true })
+    --
+    --   vim.api.nvim_create_autocmd('FileType', {
+    --     group = augroup,
+    --     pattern = 'gitgraph.nvim',
+    --     callback = function()
+    --       -- Define the custom keymap for the buffer with 'myscratch' filetype
+    --       vim.api.nvim_buf_set_keymap(0, 'n', '<leader>QQ', ':lua = print("hello world")<CR>', { noremap = true, silent = true })
+    --     end,
+    --   })
+    -- end,
   },
 
   {
@@ -1043,79 +1117,81 @@ require('lazy').setup({
       'sindrets/diffview.nvim',
     },
     config = function()
-      vim.keymap.set('n', '<leader>gl', function()
-        -- whenever we enter a flog buffer we want to register
-        -- this autocommand ONCE, it in turn registers the esc esc
-        -- key binding on the buffer in it such that it's easy to
-        -- leave flog
-        vim.api.nvim_create_autocmd({ 'BufEnter' }, {
-          callback = function(ctx)
-            -- this helps us catch any bugs, if we see this in the fidget history
-            -- then we know that we did not deregister the autocommand correctly, the use of once should make this automatic
-            require('fidget').notify('flog - buf enter', '@comment.error', { annote = 'FLOG' })
-            esc_esc_once_buf(ctx.buf)
-          end,
-          once = true,
-        })
-        vim.cmd [[:Flog -all -max-count=999999 -date=relative]]
-        vim.fn.timer_start(60, function()
-          vim.fn.search 'HEAD ->'
-          vim.api.nvim_feedkeys('zz', 'n', false)
+      require('diffview').setup()
 
-          local buf = vim.api.nvim_get_current_buf()
-
-          pcall(vim.keymap.del, { 'n', 'i' }, '<CR>', { buffer = buf })
-
-          ---@param line string
-          ---@return string
-          local get_commit = function(line)
-            return line:match '%[(%x+)%]'
-          end
-
-          -- show diff for commit under cursor
-          vim.keymap.set('n', '<CR>', function()
-            local lnr = vim.api.nvim_win_get_cursor(0)[1]
-            local line = vim.api.nvim_buf_get_lines(0, lnr - 1, lnr, false)[1]
-            local commit = get_commit(line)
-            vim.cmd(':DiffviewOpen ' .. commit .. '^!')
-          end, { buffer = buf, desc = 'Show diff for commit' })
-
-          -- show diff for selected range of commits
-          vim.keymap.set('v', '<CR>', function()
-            -- NOTE: that for some reason we need to hit esc and wait a bit in order
-            --       for the visual selection range to update
-            vim.api.nvim_input '<Esc>'
-            vim.fn.timer_start(50, function()
-              -- get start end commit hashes
-              local ab = {}
-              for _, mark in pairs { "'<", "'>" } do
-                local lnr = vim.fn.getpos(mark)[2]
-                local line = vim.api.nvim_buf_get_lines(0, lnr - 1, lnr, false)[1]
-                ab[#ab + 1] = get_commit(line)
-              end
-
-              if not ab[1] or not ab[2] then
-                print 'invalid range'
-                return
-              end
-
-              if ab[1] == ab[2] then
-                print 'start and end ar the same'
-                return
-              end
-
-              vim.cmd(':DiffviewOpen ' .. ab[2] .. '^..' .. ab[1])
-            end)
-          end, { buffer = buf, desc = 'Show diff for range' })
-
-          vim.api.nvim_create_autocmd('User', {
-            pattern = 'FugitiveChanged',
-            callback = function()
-              pcall(vim.cmd.normal, '<Plug>(FlogUpdate)')
-            end,
-          })
-        end)
-      end, { desc = '[G]it [L]og' })
+      -- vim.keymap.set('n', '<leader>gl', function()
+      --   -- whenever we enter a flog buffer we want to register
+      --   -- this autocommand ONCE, it in turn registers the esc esc
+      --   -- key binding on the buffer in it such that it's easy to
+      --   -- leave flog
+      --   vim.api.nvim_create_autocmd({ 'BufEnter' }, {
+      --     callback = function(ctx)
+      --       -- this helps us catch any bugs, if we see this in the fidget history
+      --       -- then we know that we did not deregister the autocommand correctly, the use of once should make this automatic
+      --       require('fidget').notify('flog - buf enter', '@comment.error', { annote = 'FLOG' })
+      --       esc_esc_once_buf(ctx.buf)
+      --     end,
+      --     once = true,
+      --   })
+      --   vim.cmd [[:Flog -all -max-count=999999 -date=relative]]
+      --   vim.fn.timer_start(60, function()
+      --     vim.fn.search 'HEAD ->'
+      --     vim.api.nvim_feedkeys('zz', 'n', false)
+      --
+      --     local buf = vim.api.nvim_get_current_buf()
+      --
+      --     pcall(vim.keymap.del, { 'n', 'i' }, '<CR>', { buffer = buf })
+      --
+      --     ---@param line string
+      --     ---@return string
+      --     local get_commit = function(line)
+      --       return line:match '%[(%x+)%]'
+      --     end
+      --
+      --     -- show diff for commit under cursor
+      --     vim.keymap.set('n', '<CR>', function()
+      --       local lnr = vim.api.nvim_win_get_cursor(0)[1]
+      --       local line = vim.api.nvim_buf_get_lines(0, lnr - 1, lnr, false)[1]
+      --       local commit = get_commit(line)
+      --       vim.cmd(':DiffviewOpen ' .. commit .. '^!')
+      --     end, { buffer = buf, desc = 'Show diff for commit' })
+      --
+      --     -- show diff for selected range of commits
+      --     vim.keymap.set('v', '<CR>', function()
+      --       -- NOTE: that for some reason we need to hit esc and wait a bit in order
+      --       --       for the visual selection range to update
+      --       vim.api.nvim_input '<Esc>'
+      --       vim.fn.timer_start(50, function()
+      --         -- get start end commit hashes
+      --         local ab = {}
+      --         for _, mark in pairs { "'<", "'>" } do
+      --           local lnr = vim.fn.getpos(mark)[2]
+      --           local line = vim.api.nvim_buf_get_lines(0, lnr - 1, lnr, false)[1]
+      --           ab[#ab + 1] = get_commit(line)
+      --         end
+      --
+      --         if not ab[1] or not ab[2] then
+      --           print 'invalid range'
+      --           return
+      --         end
+      --
+      --         if ab[1] == ab[2] then
+      --           print 'start and end ar the same'
+      --           return
+      --         end
+      --
+      --         vim.cmd(':DiffviewOpen ' .. ab[2] .. '^..' .. ab[1])
+      --       end)
+      --     end, { buffer = buf, desc = 'Show diff for range' })
+      --
+      --     vim.api.nvim_create_autocmd('User', {
+      --       pattern = 'FugitiveChanged',
+      --       callback = function()
+      --         pcall(vim.cmd.normal, '<Plug>(FlogUpdate)')
+      --       end,
+      --     })
+      --   end)
+      -- end, { desc = '[G]it [L]og' })
       -- vim.keymap.set('n', '<leader>gl', ':Flog -format=%ar%x20[%h]%x20%d%x20%an <cr>', { desc = '[G]it [L]og' })
       vim.keymap.set('n', '<leader>gs', ':Git<cr>', { desc = '[G]it [S]tatus', silent = true })
       vim.api.nvim_create_autocmd({ 'BufEnter' }, {
@@ -1574,7 +1650,8 @@ require('lazy').setup({
                 callSnippet = 'Replace',
               },
               workspace = {
-                checkThirdParty = 'Disable',
+                -- checkThirdParty = 'Disable',
+                checkThirdParty = false, -- for some reason this works better ^ ^
               },
               -- You can toggle below to ignore Lua_LS's noisy `missing-fields` warnings
               -- diagnostics = { disable = { 'missing-fields' } },
@@ -2021,6 +2098,19 @@ require('lazy').setup({
           set_hl('flogBranch8', { fg = '#b53a35' })
           set_hl('flogBranch9', { fg = '#d5651c' })
 
+          set_hl('GitGraphBranch1', { fg = c.blue3 })
+          set_hl('GitGraphBranch2', { fg = c.pink })
+          set_hl('GitGraphBranch3', { fg = c.sand })
+          set_hl('GitGraphBranch4', { fg = c.pear })
+          set_hl('GitGraphBranch5', { fg = c.orange })
+
+          set_hl('GitGraphHash', { fg = c.teal })
+          set_hl('GitGraphTimestamp', { fg = c.sand })
+          set_hl('GitGraphAuthor', { fg = c.brown })
+          set_hl('GitGraphBranchName', { fg = c.pear })
+          set_hl('GitGraphBranchTag', { fg = c.pink })
+          set_hl('GitGraphBranchMsg', { fg = c.gray })
+
           set_hl({
             'DiffAdd',
             'DiffChange',
@@ -2288,6 +2378,7 @@ require('lazy').setup({
 
       -- ... and there is more!
       --  Check out: https://github.com/echasnovski/mini.nvim
+      --
     end,
   },
   {
@@ -2398,6 +2489,9 @@ require('lazy').setup({
   --    For additional information, see `:help lazy.nvim-lazy.nvim-structuring-your-plugins`
   -- { import = 'custom.plugins' },
 }, {
+  dev = {
+    path = '~/code/nvim-plugins',
+  },
   ui = {
     border = WIN_BORDER,
     -- If you have a Nerd Font, set icons to an empty table which will use the
