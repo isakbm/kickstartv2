@@ -294,37 +294,6 @@ vim.opt.tabstop = 2
 
 WIN_BORDER = { '╭', '─', '╮', '│', '╯', '─', '╰', '│' }
 
--- TODO: these should be removed eventually
--- git graph symbols
--- GVER = '│' -- '|'
--- GHOR = '─' -- '-'
--- GCLD = '╮' -- '┐'
--- GCRD = '╭' -- '┌'
--- GCLU = '╯' -- '┘'
--- GCRU = '╰' -- '└'
--- GLRU = '┴'
--- GLRD = '┬'
--- GLUD = '┤'
--- GRUD = '├'
---
--- GFORKU = '⓵'
--- GFORKD = '⓴'
---
--- GRUDCD = '⓶' -- '├'
--- GRUDCU = '⓸' -- '├'
--- GLUDCD = '⓷'
--- GLUDCU = '⓹'
---
--- GLRDCL = 'ⓢ'
--- GLRDCR = 'ⓣ'
--- GLRUCL = 'ⓥ'
--- GLRUCR = 'ⓤ'
---
--- GRCM = 'ⓚ' -- '*'
--- GMCM = '⓮' -- 'M'
--- GRCME = 'ⓛ' -- '*'
--- GMCME = '⓯' -- 'M'
-
 --=========================== KEYMAPS =============================
 
 -- NOTE: hide higlights after hitting <Esc>
@@ -684,17 +653,6 @@ require('lazy').setup({
   },
 
   {
-    'foo.nvim',
-    dev = true, -- lazy then knows to look in my dev place see h: lazy.nvim-configuration
-    opts = {
-      color = 'red',
-    },
-    init = function()
-      -- require('foo').echo()
-    end,
-  },
-
-  {
     'gitgraph.nvim',
     dev = true, -- lazy then knows to look in my dev place see h: lazy.nvim-configuration
     ---@type I.GGConfig
@@ -721,7 +679,7 @@ require('lazy').setup({
       {
         '<leader>gl',
         function()
-          require('gitgraph').draw({}, { all = true, max_count = 10 })
+          require('gitgraph').draw({}, { all = true })
         end,
         desc = 'GitGraph - Draw',
       },
@@ -746,161 +704,26 @@ require('lazy').setup({
         end,
         desc = 'GitGraph - Draw',
       },
+      {
+        '<leader>gR',
+        function()
+          local buf = vim.api.nvim_create_buf(false, true)
+          vim.api.nvim_win_set_buf(0, buf)
+
+          local random = require('gitgraph').random
+          local lines = random()
+
+          vim.api.nvim_buf_set_lines(buf, 0, #lines, false, lines)
+
+          local cursor_line = 1
+          vim.api.nvim_win_set_cursor(0, { cursor_line, 0 })
+
+          -- FIXME:
+          vim.api.nvim_buf_set_option(buf, 'modifiable', false)
+        end,
+        desc = 'random gitgraph',
+      },
     },
-    -- init = function()
-    --   vim.keymap.set('n', '<leader>GR', function()
-    --     local buf = vim.api.nvim_create_buf(false, true)
-    --     vim.api.nvim_win_set_buf(0, buf)
-    --
-    --     local random = require('gitgraph').random
-    --     local lines = random()
-    --
-    --     vim.api.nvim_buf_set_lines(buf, 0, #lines, false, lines)
-    --
-    --     local cursor_line = 1
-    --     vim.api.nvim_win_set_cursor(0, { cursor_line, 0 })
-    --
-    --     -- FIXME:
-    --     vim.api.nvim_buf_set_option(buf, 'modifiable', false)
-    --   end)
-    --
-    --   vim.keymap.set('n', '<leader>GT', function()
-    --     local buf = vim.api.nvim_create_buf(false, true)
-    --     vim.api.nvim_win_set_buf(0, buf)
-    --
-    --     local test = require('gitgraph').test
-    --     local lines, failure = test()
-    --
-    --     vim.api.nvim_buf_set_lines(buf, 0, #lines, false, lines)
-    --
-    --     local cursor_line = #lines
-    --     vim.api.nvim_win_set_cursor(0, { cursor_line, 0 })
-    --
-    --     -- FIXME:
-    --     vim.api.nvim_buf_set_option(buf, 'modifiable', false)
-    --   end)
-    --   -- require('foo').echo()
-    --   --
-    --   vim.keymap.set('n', '<leader>GD', function()
-    --     local buf = vim.api.nvim_create_buf(false, true)
-    --     vim.api.nvim_win_set_buf(0, buf)
-    --
-    --     local gitgraph = require('gitgraph').gitgraph
-    --
-    --     -- Start a profiling session:
-    --     -- require('jit.p').start('4ri1', '/tmp/lua-gg-profile')
-    --     -- require('jit.p').start('-10psi1', '/tmp/lua-gg-profile')
-    --     -- Perform arbitrary tasks (use plugins, scripts, etc.) ...
-    --     -- Stop the session. Profile is written to /tmp/profile.
-    --     --
-    --
-    --     local calls, rets, total, call_start = {}, {}, {}, {}
-    --     local start = nil
-    --
-    --     local function debg_hook(event)
-    --       local i = debug.getinfo(2, 'Sln')
-    --       if i.what ~= 'Lua' then
-    --         return
-    --       end
-    --       local func = (i.name or '?') .. ':' .. i.source .. ':' .. i.linedefined
-    --
-    --       if event == 'call' then
-    --         start = os.clock()
-    --         call_start[func] = start
-    --         calls[func] = (calls[func] or 0) + 1
-    --       elseif event == 'return' then
-    --         -- NOTE we go from start rather than call_start, since call_start is unrealible due to jit ? perhaps tailcall optimization?
-    --         local time = os.clock() - start -- call_start[func]
-    --         total[func] = (total[func] or 0) + time
-    --         rets[func] = (rets[func] or 0) + 1
-    --       end
-    --     end
-    --
-    --     -- debug.sethook(debg_hook, 'cr')
-    --
-    --     local start = os.clock()
-    --     ---@type string[]
-    --     ---
-    --     -- local lines, highlights = gitgraph({}, { range = 'c77fd48a..44efb5f3' })
-    --     -- local lines, highlights = gitgraph({}, { all = true, skip = 10 })
-    --     local lines, highlights = gitgraph({}, { all = true }) -- max_count = 20 })
-    --     -- local lines, highlights = gitgraph({}, { revision_range = '5dc790c..be262db' })
-    --
-    --     local elapsed = os.clock() - start
-    --     print('git graph took:', elapsed)
-    --
-    --     -- the code to debug ends here; reset the hook
-    --     -- debug.sethook()
-    --
-    --     -- print the results
-    --     --
-    --     local data = {}
-    --     local total_dt = 0
-    --     for f, time in pairs(total) do
-    --       data[#data + 1] = {
-    --         time = time,
-    --         avg_t = time / (calls[f] or 1),
-    --         calls = calls[f],
-    --         rets = rets[f],
-    --         f = f,
-    --       }
-    --       total_dt = total_dt + time
-    --     end
-    --
-    --     table.sort(data, function(a, b)
-    --       return a.time > b.time
-    --     end)
-    --
-    --     for _, d in ipairs(data) do
-    --       print(('%.3fs %.3fs %07d %07d -> %s'):format(d.time, d.avg_t, d.calls or 0, d.rets, d.f))
-    --     end
-    --
-    --     print(('%.3fs'):format(total_dt))
-    --
-    --     -- require('jit.p').stop()
-    --
-    --     -- print('lines:', lines)
-    --
-    --     vim.api.nvim_buf_set_lines(buf, 0, #lines, false, lines)
-    --
-    --     -- for _, hls in ipairs(hlsr) do
-    --     --   for _, hl in pairs(hls) do
-    --     --     local hlg = code2name[hl.code]
-    --     --     if not hlg then
-    --     --     -- print('unable to find', hl.code)
-    --     --     else
-    --     --
-    --
-    --     for _, hl in ipairs(highlights) do
-    --       local offset = 1
-    --       vim.api.nvim_buf_add_highlight(buf, 0, hl.hg, hl.row - 1, hl.start - 1 + offset, hl.stop + offset)
-    --     end
-    --     --     end
-    --     --   end
-    --     -- end
-    --
-    --     local cursor_line = 1
-    --     vim.api.nvim_win_set_cursor(0, { cursor_line, 0 })
-    --
-    --     -- FIXME:
-    --     vim.api.nvim_buf_set_option(buf, 'modifiable', false)
-    --   end, { desc = 'new git graph' })
-    --
-    --   vim.keymap.set('n', '<leader>GL', function()
-    --     require('gitgraph').draw({}, { all = true, max_count = 100 })
-    --   end, { desc = 'new git graph' })
-    --
-    --   local augroup = vim.api.nvim_create_augroup('MyScratchBufferGroup', { clear = true })
-    --
-    --   vim.api.nvim_create_autocmd('FileType', {
-    --     group = augroup,
-    --     pattern = 'gitgraph.nvim',
-    --     callback = function()
-    --       -- Define the custom keymap for the buffer with 'myscratch' filetype
-    --       vim.api.nvim_buf_set_keymap(0, 'n', '<leader>QQ', ':lua = print("hello world")<CR>', { noremap = true, silent = true })
-    --     end,
-    --   })
-    -- end,
   },
 
   {
