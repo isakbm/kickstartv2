@@ -916,79 +916,79 @@ require('lazy').setup({
     config = function()
       require('diffview').setup()
 
-      -- vim.keymap.set('n', '<leader>gl', function()
-      --   -- whenever we enter a flog buffer we want to register
-      --   -- this autocommand ONCE, it in turn registers the esc esc
-      --   -- key binding on the buffer in it such that it's easy to
-      --   -- leave flog
-      --   vim.api.nvim_create_autocmd({ 'BufEnter' }, {
-      --     callback = function(ctx)
-      --       -- this helps us catch any bugs, if we see this in the fidget history
-      --       -- then we know that we did not deregister the autocommand correctly, the use of once should make this automatic
-      --       require('fidget').notify('flog - buf enter', '@comment.error', { annote = 'FLOG' })
-      --       esc_esc_once_buf(ctx.buf)
-      --     end,
-      --     once = true,
-      --   })
-      --   vim.cmd [[:Flog -all -max-count=999999 -date=relative]]
-      --   vim.fn.timer_start(60, function()
-      --     vim.fn.search 'HEAD ->'
-      --     vim.api.nvim_feedkeys('zz', 'n', false)
-      --
-      --     local buf = vim.api.nvim_get_current_buf()
-      --
-      --     pcall(vim.keymap.del, { 'n', 'i' }, '<CR>', { buffer = buf })
-      --
-      --     ---@param line string
-      --     ---@return string
-      --     local get_commit = function(line)
-      --       return line:match '%[(%x+)%]'
-      --     end
-      --
-      --     -- show diff for commit under cursor
-      --     vim.keymap.set('n', '<CR>', function()
-      --       local lnr = vim.api.nvim_win_get_cursor(0)[1]
-      --       local line = vim.api.nvim_buf_get_lines(0, lnr - 1, lnr, false)[1]
-      --       local commit = get_commit(line)
-      --       vim.cmd(':DiffviewOpen ' .. commit .. '^!')
-      --     end, { buffer = buf, desc = 'Show diff for commit' })
-      --
-      --     -- show diff for selected range of commits
-      --     vim.keymap.set('v', '<CR>', function()
-      --       -- NOTE: that for some reason we need to hit esc and wait a bit in order
-      --       --       for the visual selection range to update
-      --       vim.api.nvim_input '<Esc>'
-      --       vim.fn.timer_start(50, function()
-      --         -- get start end commit hashes
-      --         local ab = {}
-      --         for _, mark in pairs { "'<", "'>" } do
-      --           local lnr = vim.fn.getpos(mark)[2]
-      --           local line = vim.api.nvim_buf_get_lines(0, lnr - 1, lnr, false)[1]
-      --           ab[#ab + 1] = get_commit(line)
-      --         end
-      --
-      --         if not ab[1] or not ab[2] then
-      --           print 'invalid range'
-      --           return
-      --         end
-      --
-      --         if ab[1] == ab[2] then
-      --           print 'start and end ar the same'
-      --           return
-      --         end
-      --
-      --         vim.cmd(':DiffviewOpen ' .. ab[2] .. '^..' .. ab[1])
-      --       end)
-      --     end, { buffer = buf, desc = 'Show diff for range' })
-      --
-      --     vim.api.nvim_create_autocmd('User', {
-      --       pattern = 'FugitiveChanged',
-      --       callback = function()
-      --         pcall(vim.cmd.normal, '<Plug>(FlogUpdate)')
-      --       end,
-      --     })
-      --   end)
-      -- end, { desc = '[G]it [L]og' })
+      vim.keymap.set('n', '<leader>Gl', function()
+        -- whenever we enter a flog buffer we want to register
+        -- this autocommand ONCE, it in turn registers the esc esc
+        -- key binding on the buffer in it such that it's easy to
+        -- leave flog
+        vim.api.nvim_create_autocmd({ 'BufEnter' }, {
+          callback = function(ctx)
+            -- this helps us catch any bugs, if we see this in the fidget history
+            -- then we know that we did not deregister the autocommand correctly, the use of once should make this automatic
+            require('fidget').notify('flog - buf enter', '@comment.error', { annote = 'FLOG' })
+            esc_esc_once_buf(ctx.buf)
+          end,
+          once = true,
+        })
+        vim.cmd [[:Flog -all -max-count=999999 -date=relative]]
+        vim.fn.timer_start(60, function()
+          vim.fn.search 'HEAD ->'
+          vim.api.nvim_feedkeys('zz', 'n', false)
+
+          local buf = vim.api.nvim_get_current_buf()
+
+          pcall(vim.keymap.del, { 'n', 'i' }, '<CR>', { buffer = buf })
+
+          ---@param line string
+          ---@return string
+          local get_commit = function(line)
+            return line:match '%[(%x+)%]'
+          end
+
+          -- show diff for commit under cursor
+          vim.keymap.set('n', '<CR>', function()
+            local lnr = vim.api.nvim_win_get_cursor(0)[1]
+            local line = vim.api.nvim_buf_get_lines(0, lnr - 1, lnr, false)[1]
+            local commit = get_commit(line)
+            vim.cmd(':DiffviewOpen ' .. commit .. '^!')
+          end, { buffer = buf, desc = 'Show diff for commit' })
+
+          -- show diff for selected range of commits
+          vim.keymap.set('v', '<CR>', function()
+            -- NOTE: that for some reason we need to hit esc and wait a bit in order
+            --       for the visual selection range to update
+            vim.api.nvim_input '<Esc>'
+            vim.fn.timer_start(50, function()
+              -- get start end commit hashes
+              local ab = {}
+              for _, mark in pairs { "'<", "'>" } do
+                local lnr = vim.fn.getpos(mark)[2]
+                local line = vim.api.nvim_buf_get_lines(0, lnr - 1, lnr, false)[1]
+                ab[#ab + 1] = get_commit(line)
+              end
+
+              if not ab[1] or not ab[2] then
+                print 'invalid range'
+                return
+              end
+
+              if ab[1] == ab[2] then
+                print 'start and end ar the same'
+                return
+              end
+
+              vim.cmd(':DiffviewOpen ' .. ab[2] .. '^..' .. ab[1])
+            end)
+          end, { buffer = buf, desc = 'Show diff for range' })
+
+          vim.api.nvim_create_autocmd('User', {
+            pattern = 'FugitiveChanged',
+            callback = function()
+              pcall(vim.cmd.normal, '<Plug>(FlogUpdate)')
+            end,
+          })
+        end)
+      end, { desc = '[G]it [L]og' })
       -- vim.keymap.set('n', '<leader>gl', ':Flog -format=%ar%x20[%h]%x20%d%x20%an <cr>', { desc = '[G]it [L]og' })
       vim.keymap.set('n', '<leader>gs', ':Git<cr>', { desc = '[G]it [S]tatus', silent = true })
       vim.api.nvim_create_autocmd({ 'BufEnter' }, {
