@@ -655,7 +655,6 @@ require('lazy').setup({
   {
     'gitgraph.nvim',
     dev = true, -- lazy then knows to look in my dev place see h: lazy.nvim-configuration
-    ---@type I.GGConfig
     opts = {
       symbols = {
         merge_commit = 'M',
@@ -674,6 +673,7 @@ require('lazy').setup({
           print('selected range:', from.hash, to.hash)
         end,
       },
+      log_level = vim.log.levels.INFO,
     },
     keys = {
       {
@@ -686,40 +686,14 @@ require('lazy').setup({
       {
         '<leader>gt',
         function()
-          -- require('gitgraph').test()
-
-          local buf = vim.api.nvim_create_buf(false, true)
-          vim.api.nvim_win_set_buf(0, buf)
-
-          local test = require('gitgraph').test
-          local lines, failure = test()
-
-          vim.api.nvim_buf_set_lines(buf, 0, #lines, false, lines)
-
-          local cursor_line = #lines
-          vim.api.nvim_win_set_cursor(0, { cursor_line, 0 })
-
-          -- FIXME:
-          vim.api.nvim_buf_set_option(buf, 'modifiable', false)
+          require('gitgraph').test()
         end,
         desc = 'GitGraph - Draw',
       },
       {
         '<leader>gR',
         function()
-          local buf = vim.api.nvim_create_buf(false, true)
-          vim.api.nvim_win_set_buf(0, buf)
-
-          local random = require('gitgraph').random
-          local lines = random()
-
-          vim.api.nvim_buf_set_lines(buf, 0, #lines, false, lines)
-
-          local cursor_line = 1
-          vim.api.nvim_win_set_cursor(0, { cursor_line, 0 })
-
-          -- FIXME:
-          vim.api.nvim_buf_set_option(buf, 'modifiable', false)
+          require('gitgraph').random()
         end,
         desc = 'random gitgraph',
       },
@@ -1467,17 +1441,49 @@ require('lazy').setup({
           -- cmd = {...},
           -- filetypes { ...},
           -- capabilities = {},
+          on_attach = function(client, buf)
+            local function custom_diagnostics_handler(_, result, ctx, config)
+              if not result then
+                return
+              end
+
+              -- Iterate through all diagnostics reported by lua_ls
+              for i, diagnostic in ipairs(result.diagnostics) do
+                if diagnostic.source == 'Lua Diagnostics.' then
+                  -- If the diagnostic is for an unused variable
+                  if diagnostic.code == 'unused-local' then
+                    -- Extract the name of the variable from the diagnostic message
+                    local var_name = string.match(diagnostic.message, '`(.*)`')
+                    if var_name and string.sub(var_name, 1, 1) == '_' then
+                      -- If the variable name starts with '_', remove the diagnostic
+                      result.diagnostics[i] = nil
+                    end
+                  end
+                end
+              end
+
+              -- Call the original handler with the filtered diagnostics
+              vim.lsp.handlers['textDocument/publishDiagnostics'](_, result, ctx, config)
+            end
+
+            client.handlers['textDocument/publishDiagnostics'] = custom_diagnostics_handler
+          end,
           settings = {
             Lua = {
               completion = {
                 callSnippet = 'Replace',
               },
               workspace = {
-                -- checkThirdParty = 'Disable',
-                checkThirdParty = false, -- for some reason this works better ^ ^
+                checkThirdParty = false,
               },
               -- You can toggle below to ignore Lua_LS's noisy `missing-fields` warnings
               -- diagnostics = { disable = { 'missing-fields' } },
+              diagnostics = {
+                globals = { 'vim' },
+              },
+              telemetry = {
+                enable = false,
+              },
             },
           },
         },
