@@ -1556,7 +1556,11 @@ require('lazy').setup({
         -- Conform can also run multiple formatters sequentially
         python = { 'isort', 'black' },
         json = { 'jq' },
-        --
+
+        xml = { 'xmllint' }, -- dont bother trying to use something from Mason ... install this debian package instead
+        svg = { 'xmllint' }, -- dont bother trying to use something from Mason ... install this debian package instead
+
+        --sudo apt-get install libxml2-utils
         -- You can use a sub-list to tell conform to run *until* a formatter
         -- is found.
         -- TODO: actually configure to use prettier for javascript + typescript
