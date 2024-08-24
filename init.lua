@@ -309,119 +309,24 @@ vim.keymap.set('n', '<C-f>', '<NOP>')
 vim.keymap.set('n', '<C-j>', ':m+1<cr>', { desc = 'swap line with line below' }) -- vscode <alt> + <up>
 vim.keymap.set('n', '<C-k>', ':m-2<cr>', { desc = 'swap line with line above' }) -- vscode <alt> + <down>
 
+-- NOTE: this overrides the default shift + r "aka R" replace ... but I don't find that useful
+--       instead this is quite useful, I often find myself wanting to replace the remaining text on the
+--       line with what I have in my copy buffer or whatever it's called, so something I just yanked or deleted
+--
+--       so imagine you are at the colon ":" in this line of code
+--
+--           foo: Vector2[];
+--           bar: float;
+--
+--       you want to copy Vector2[]; and replace float; with that ... :)
+--
+vim.keymap.set('n', 'R', 'PlD', { desc = 'replace rest of line with yanked' }) -- vscode <alt> + <down>
+
+vim.keymap.set('n', '<C-k>', ':m-2<cr>', { desc = 'swap line with line above' }) -- vscode <alt> + <down>
+
 -- NOTE: Jump between tabs using 'Alt + number'
 for i = 1, 9 do
   vim.keymap.set('n', '<M-' .. i .. '>', i .. 'gt', { desc = '[T]ab ' .. i })
-end
-
----creates an ansi iterator that is only
----meant to be used with `got log --graph` output
----@param content string
----@return function -> AnsiBlock?
-local function ansi_iter(content)
-  -- FIXME: there is a bug in the following kinds of lines
-  --
-  -- * [33m35b0b1e7[m [34m(2 days ago)[m [m[33m ([m[1;31morigin/_fix-furn-rep[m[33m, [m[1;32m_fix-furn-rep[m[33m)[m[m
-  --
-  -- NOTE: that in the above line we have nested ANI escape on the branch list `HEAD ->`
-  --       and so on is wrapped inside an [m ( .... ) [m
-  --
-  --       this outer wrap seems to have no impact on our styling for git log ...
-  --       could do a cheap workaround, alternatvely try handling nested codes
-  --       by storing a code list ...
-
-  local pattern = '\27%[[%d;]*m'
-  ---@type integer?
-  local loc = 1
-  ---@type integer?
-  local a_s = nil
-  ---@type integer?
-  local a_e = nil
-  ---@type integer?
-  local b_s = nil
-  ---@type integer?
-  local b_e = nil
-  ---@type "searching" | "processing" | "finished"
-  local state = 'searching'
-  ---@type string?
-  local code = nil
-
-  ---@class AnsiBlock
-  ---@field a_s integer
-  ---@field a_e integer
-  ---@field b_s integer
-  ---@field b_e integer
-  ---@field inner string
-
-  ---@return (AnsiBlock | string)?
-  local function consumer()
-    if state == 'searching' then
-      a_s, a_e = content:find(pattern, loc)
-
-      if a_s and a_e then
-        local ansic = content:sub(a_s, a_e)
-        if ansic:find ';' then -- NOTE: we do this because we're lazy
-          code = ansic:gmatch '[^%d]([%d]*)m'()
-        else
-          code = ansic:gmatch '%[([%d]*)m'()
-        end
-      else
-        code = nil
-      end
-
-      assert(loc)
-      local e = nil
-      if a_s then
-        e = a_s - 1
-      end
-      local regular = content:sub(loc, e)
-      if code == '' then
-        state = 'searching'
-        loc = a_e + 1
-        -- NOTE: this is kind of a hack
-        return {
-          a_s = a_s,
-          a_e = a_e,
-          b_s = 0,
-          b_e = 0,
-          inner = '',
-          code = 31,
-        }
-      elseif a_s then
-        assert(a_e)
-        state = 'processing'
-        loc = a_e + 1
-      else
-        state = 'finished'
-        loc = nil
-      end
-      if regular ~= '' then
-        return regular
-      else
-        return consumer()
-      end
-    elseif state == 'processing' then
-      b_s, b_e = content:find(pattern, loc)
-      assert(b_s)
-      assert(b_e)
-      state = 'searching'
-      loc = b_e + 1
-      return {
-        a_s = a_s,
-        a_e = a_e,
-        b_s = b_s,
-        b_e = b_e,
-        inner = content:sub(a_e + 1, b_s - 1),
-        code = code,
-      }
-    elseif state == 'finished' then
-      return nil
-    end
-  end
-
-  return consumer
-
-  -- print(a_s, a_e, ' -> ', b_s, b_e, ' : ', content)
 end
 
 -- NOTE: this brings you into block visual select mode ... on windows it's Ctrl + Q, and on Linux Ctrl + V ... cool to have something OS independent :)
