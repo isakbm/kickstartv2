@@ -571,11 +571,13 @@ require('lazy').setup({
       },
       hooks = {
         on_select_commit = function(commit)
-          print('selected commit:', commit.hash)
+          -- print('selected commit:', commit.hash)
           vim.cmd(':DiffviewOpen ' .. commit.hash .. '^!')
         end,
         on_select_range_commit = function(from, to)
-          print('selected range:', from.hash, to.hash)
+          -- print('selected range:', from.hash, to.hash)
+          -- vim.notify('DiffviewOpen ' .. from.hash .. '~1..' .. to.hash)
+          vim.cmd(':DiffviewOpen ' .. from.hash .. '~1..' .. to.hash)
         end,
       },
       log_level = vim.log.levels.INFO,
@@ -1447,6 +1449,10 @@ require('lazy').setup({
     opts = {
       notify_on_error = false,
       format_on_save = function(bufnr)
+        if vim.g.disable_conform or vim.b[bufnr].disable_conform then
+          return
+        end
+
         -- Disable "format_on_save lsp_fallback" for languages that don't
         -- have a well standardized coding style. You can add additional
         -- languages here or re-enable it for the disabled ones.
@@ -1475,6 +1481,12 @@ require('lazy').setup({
         typescriptreact = { 'prettier' },
       },
     },
+    init = function()
+      vim.keymap.set('n', '<leader>tc', function()
+        local bufnr = vim.api.nvim_get_current_buf()
+        vim.b[bufnr].disable_conform = not vim.b[bufnr].disable_conform
+      end, { desc = 'toggle conform.nvim' })
+    end,
   },
 
   { -- Autocompletion
