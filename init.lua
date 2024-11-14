@@ -69,88 +69,30 @@
 
  NOTE: F A Q
 
+    Q: how can I open a url
+    A: gx
+
     Q: how do I swap lines
-    A: Atl + j / k  when in normal mode
+    A: Ctrl + j / k  when in normal mode
 
     Q: how do I do something like Ctrl + backspace when in insert mode
     A: Ctrl + w
-
-    Q: how do I get back to where I was in the file when I closed it
-    A: `"    when in normal mode thanks to marks
 
     Q: how do I see my current changes in a nice way
     A1: <leader>dt    <- diff this buffer (includes unsaved change) !!!
     A2: <leader>gd    <- entire workspace (does not include unsaved changes) !!!
 
-    Q: how do I see my carrot changes relative to some older commit
-    A: <leader>gl  and then hover some older commit and press ','
-
     Q: how do I see changes intoruded by a single commit?
-    A: <leader>gl  and then hover some commit and press ';'
+    A: <leader>gl   place cursor on a commit and hit <enter>
 
     Q: how do I see changes introduced by a range of commits, like diff a..b
-    A: <leader>gl  put cursor on b hit enter place cursor on a hit -
-
-    Q: can I mark places to go to somehow?
-    A: use vim marks, see h: marks.nvim and h: mark. also there's a plugin I've added
-       that shows you in the signs column where your jumps are,
-       not that mark signs take precedence over gitsigns ...
-
-       - dm<space> -> delete all marks
-       - dmx -> delete mark x
-       - mx -> create mark x
+    A: <leader>gl   visual selection and then hit <enter>
 
   TODO:
 
-    >> for the new git graph plugin
-
-       - indicate the active HEAD -> by
-         changing the symbol used for the commit "dot"
-
-       - add separateors between branch_names and tags, specifically "|"
-
-    >> The nice <leader>rn widget to do refactored renamings has an issue where
+    >> the nice <leader>rn widget to do refactored renamings has an issue where
        seemingly dependent on the cursor position, the rename will silently fail
        or succeed, is easiest to reproduce for single character variable renamings
-
-    >> There is literally a bug in flog so we'll be thinking about
-       making a port of gitamine to nvim somehow, to see the bug
-       look at commit 7422ae7f in laiout-core, note how this commit
-       looks like its done directly on dev/master, but in reality
-       it is not, in reality it is done in a feature branch and merged
-       in, showcasing a nice semi-linear history, see below ascii portion
-       from regular git log graph
-
-            │ │ ⭘ 0aa3d0d4 (3 months ago)
-            │ │/    remove control flow
-            │/│     -> Ivan Karpov
-            │ │
-            ⭘ │   db9993c8 (3 weeks ago) (tag: v1.1.28, origin/master)
-            │\ \    Merge branch 'show_more_errors' into 'dev'
-            │ │/    -> Arkadiusz Zylkowski
-            │/│
-            │ │
-      :NOTE │ ⭘ 7422ae7f (3 weeks ago) 
-            │/    Show more errors to the user.
-            │     -> Arkadiusz Zylkowski
-            │
-            ⭘   47229305 (3 weeks ago) (tag: v1.1.27)
-            │\    Merge branch 'fix_zone_assignment_for_small_floorplans' into 'dev'
-            │ │   -> Arkadiusz Zylkowski
-            │ │
-
-
-       meanwhile in flog it looks like this
-
-
-            │ │ • 3 months ago [0aa3d0d4] {Ivan Karpov} remove control flow
-            ├─┊─╯
-            • │ 3 weeks ago [db9993c8] {Arkadiusz Zylkowski} (tag: v1.1.28, origin/master) Merge branch 'show_more_errors' into 'dev'
-            ├─┤
-      :NOTE │ 3 weeks ago [7422ae7f] {Arkadiusz Zylkowski} Show more errors to the user.
-            ├─╯
-            • 3 weeks ago [47229305] {Arkadiusz Zylkowski} (tag: v1.1.27) Merge branch 'fix_zone_assignment_for_small_floorplans' into 'dev'
-            ├─╮
 
     >> disable or remap the cO in diffview, scary that it would pick
        resolutions for all conflicts and at the same time is nearly
@@ -168,63 +110,22 @@
        2. find a list of commands like a bunch of rows with COPY < ...> 
        3. move your cursor up and down to above and below rows ...
 
-    >> flog kinda sucks ... and gv.vim also kinda sucks, looks like we're close
-       with our poc of just using git log --graph with some options
-        ... we tried just using some plugin to parse the ansi escape codes
-         .... that performed REALLY POORLY
-         .. I think we can make something fast and good with just using
-            some regex or pattern matching to 
-            map the ansi colors to our highlights... we could even just
-            use our own system instead of parsing the ansi codes, like we could
-            have a system like {{cyan:stuff}} which would mean that stuff should be colored
-            cyan ... genius
-
-    >> make a real time color theme adjuster
-       - should have a nice ui that you can open in a split view to the side
-       - the UI should have a big rectangle with color pixels that you can select by navigating with h j k l
-       - you select which color you are modifying, there are only a small handful of colors as defined and registered
-         near mini.colors setup
-
-    >> using `<leader>gs` to get the :Git (git status using fugitive)
-       behaves in a very annoying way. If you try to stage things
-       within it you're going to get interrogated. Right now you can avoid
-       this by staging things in Diffview. So the task is to find a way
-       to avoid this annoyance, would be nice if staging things from :Git
-       did not open up an entire interrogation session about which hunks you want
-       etc ... currently this behavior seems hard to reproduce o.O
-
-    >> unify the way completion info and hover info style docstrings
-
-    >> `export class Foo` in typescript, then `class` is not getting highlighted
-        correctly, it should be some keyword in language, but instead it's highlighted
-        as being part of the definition of the custom type ...
-
-    >> popup window with a tip like
-
-        `cob` will `check out branch` under cursor when in git graph view
-
     >> popup window reminindg you to stretch and drink water
 
     >> popup window with fun animation when you are waiting for something perhaps you pushed code
        or perhaps you are compiling
 
-    >> Make it possible to exit out of git status window with ESC ESC 
-
-    >> Add a little toolbox window that you can open at any time
+    >> add a little toolbox window that you can open at any time
        Make it searchable.
        Have tool slike `to uppercase` `to hex` etc etc :D
 
-    >> Find a way to jump to a web URL without using mouse  
-
     >> find better way of typoing [ ] and { } on a norwegian keyboard?
 
-    >> Get a nice way to jump to parent scopes locally. Currently
+    >> get a nice way to jump to parent scopes locally. Currently
        we can do something like this with treesitter-context, but
        that jumps to the context that is 'off screen' try '[c'
 
-    >> when doing an action using `fugitive` like `:Git checkout -b foo`
-       it would be ideal if any open `flog` buffer would update so
-       that we can see the effect the command had on the graph!
+    >> auto update the git graph
 
     >> find out how to quickly switch to previous buffer
 
@@ -244,7 +145,7 @@
        plugins is not a tracked code file ...
 
     >> find a way to do grep search over subset of files
-    
+
     >> I REALLY need a way to quickly see the changes in the buffer that
        have not been saved to file
 
@@ -300,7 +201,9 @@ WIN_BORDER = { '╭', '─', '╮', '│', '╯', '─', '╰', '│' }
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 vim.keymap.set('n', '<C-f>', '<NOP>')
 
--- NOTE: swap lines like in vscode
+-- NOTE: like * but doesn't move you around
+vim.keymap.set('n', '*', '/<C-R><C-W><cr>N', { desc = 'highlight all occurrences of current word' })
+
 --
 --   we've bound <M-*> so the `Alt` or `Modifier` key, however, see :h :map-alt and you'll notice that
 --   nvim is not able to distinguish between `Esc` and `Alt` if key press is fast enough, we'll just live
@@ -324,10 +227,7 @@ vim.keymap.set('n', 'R', 'PlD', { desc = 'replace rest of line with yanked' }) -
 
 vim.keymap.set('n', '<C-k>', ':m-2<cr>', { desc = 'swap line with line above' }) -- vscode <alt> + <down>
 
--- NOTE: Jump between tabs using 'Alt + number'
-for i = 1, 9 do
-  vim.keymap.set('n', '<M-' .. i .. '>', i .. 'gt', { desc = '[T]ab ' .. i })
-end
+vim.keymap.set('n', '<leader>N', ':set number!<cr>:set relativenumber!<cr>', { desc = 'toggle line numbering' })
 
 -- NOTE: this brings you into block visual select mode ... on windows it's Ctrl + Q, and on Linux Ctrl + V ... cool to have something OS independent :)
 --
@@ -620,16 +520,6 @@ require('lazy').setup({
     end,
   },
 
-  {
-    'ggandor/leap.nvim',
-    config = function()
-      local leap = require 'leap'
-      leap.opts.labels = 'sfnjklhodweimbuyvrgtaqpcxzSFNJKLHODWEIMBUYVRGTAQPCXZ'
-      leap.opts.safe_labels = ''
-      vim.keymap.set({ 'n', 'x', 'o' }, 'L', '<Plug>(leap)', { desc = '[L]eap' })
-    end,
-  },
-
   -- NOTE: Plugins can also be added by using a table,
   -- with the first argument being the link and the following
   -- keys can be used to configure plugin behavior/loading/etc.
@@ -793,7 +683,7 @@ require('lazy').setup({
         -- You can pass additional configuration to telescope to change theme, layout, etc.
         builtin.current_buffer_fuzzy_find(require('telescope.themes').get_dropdown {
           winblend = 10,
-          previewer = false,
+          -- previewer = false,
         })
       end, { desc = '[/] Fuzzily search in current buffer' })
 
@@ -1290,7 +1180,7 @@ require('lazy').setup({
           -- useful to tell whether or not we are still loading workspace
           vim.lsp.handlers['textDocument/publishDiagnostics'] = function(err, res, ctx)
             local uri = res.uri
-            require('fidget').notify('-> ', '@comment.error', { key = 'diagnostic', annote = uri })
+            -- require('fidget').notify('-> ', '@comment.error', { key = 'diagnostic', annote = uri })
             vim.lsp.diagnostic.on_publish_diagnostics(err, res, ctx)
           end
 
@@ -1321,8 +1211,6 @@ require('lazy').setup({
       --  - settings (table): Override the default settings passed when initializing the server.
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
-        -- clangd = {},
-        -- gopls = {},
         pyright = {},
         rust_analyzer = {
           settings = {
@@ -1342,34 +1230,29 @@ require('lazy').setup({
         --    https://github.com/pmizio/typescript-tools.nvim
         --
         -- But for many setups, the LSP (`tsserver`) will work just fine
+        lemminx = {},
         tsserver = {},
-        --
+        prismals = {},
         lua_ls = {
-          -- cmd = {...},
-          -- filetypes { ...},
-          -- capabilities = {},
           on_attach = function(client, buf)
             local function custom_diagnostics_handler(_, result, ctx, config)
               if not result then
                 return
               end
 
-              -- Iterate through all diagnostics reported by lua_ls
+              -- custom snippet to ignore unused vars that start with underscore
               for i, diagnostic in ipairs(result.diagnostics) do
                 if diagnostic.source == 'Lua Diagnostics.' then
-                  -- If the diagnostic is for an unused variable
                   if diagnostic.code == 'unused-local' then
-                    -- Extract the name of the variable from the diagnostic message
                     local var_name = string.match(diagnostic.message, '`(.*)`')
                     if var_name and string.sub(var_name, 1, 1) == '_' then
-                      -- If the variable name starts with '_', remove the diagnostic
                       result.diagnostics[i] = nil
                     end
                   end
                 end
               end
 
-              -- Call the original handler with the filtered diagnostics
+              -- call the original handler with the filtered diagnostics
               vim.lsp.handlers['textDocument/publishDiagnostics'](_, result, ctx, config)
             end
 
@@ -1436,7 +1319,6 @@ require('lazy').setup({
             -- by the server configuration above. Useful when disabling
             -- certain features of an LSP (for example, turning off formatting for tsserver)
             server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
-
             require('lspconfig')[server_name].setup(server)
           end,
         },
@@ -1468,14 +1350,11 @@ require('lazy').setup({
         python = { 'isort', 'black' },
         json = { 'jq' },
 
-        xml = { 'xmllint' }, -- dont bother trying to use something from Mason ... install this debian package instead
-        svg = { 'xmllint' }, -- dont bother trying to use something from Mason ... install this debian package instead
+        -- you can use this debian package instead of lemminx if you run into trouble
+        -- xml = { 'xmllint' },
+        -- svg = { 'xmllint' },
 
-        --sudo apt-get install libxml2-utils
-        -- You can use a sub-list to tell conform to run *until* a formatter
-        -- is found.
-        -- TODO: actually configure to use prettier for javascript + typescript
-        -- javascript = { { "prettierd", "prettier" } },
+        -- You can use a sub-list to tell conform to run *until* a formatter is found.
         javascript = { 'prettier' },
         typescript = { 'prettier' },
         typescriptreact = { 'prettier' },
@@ -1603,18 +1482,10 @@ require('lazy').setup({
     event = 'VimEnter',
     dependencies = { 'nvim-lua/plenary.nvim' },
     opts = function(opts)
-      local keywords = {
-        -- NOTE: lowercase keywords will also match full uppercase
-        fixme = { color = 'error' },
-        fix = { color = 'error' },
-        todo = { color = 'info' },
-        -- NOTE: only matches uppercase
-        NOTE = { color = 'hint' },
-      }
-
-      for word, _ in pairs(keywords) do
-        -- this ensure that lowercase will also match uppercase keyword
-        keywords[word].alt = { string.upper(word) }
+      -- NOTE: lowercase keywords will also match full uppercase
+      local keywords = {}
+      for _, word in ipairs { 'fixme', 'fix', 'todo', 'warn', 'NOTE' } do
+        keywords[word] = { alt = { string.upper(word) } }
       end
       return vim.tbl_extend('force', opts, {
         signs = false,
@@ -1807,7 +1678,6 @@ require('lazy').setup({
             'TelescopeTitle',
             'TodoBgTODO',
             'TodoBgNOTE',
-            'CursorLineNr',
             'GitSignsAdd',
             'flogRefHead',
             '@lsp.type.namespace',
@@ -1822,18 +1692,28 @@ require('lazy').setup({
             '@lsp.type.lifetime',
             '@lsp.typemod.keyword.async',
             '@lsp.typemod.operator.controlFlow',
+            'DiffviewFilePanelTitle',
           }, { fg = c.pink })
 
           set_hl({
             'Comment',
             'LeapBackdrop',
-            'LineNr',
           }, { fg = c.gray })
 
+          set_hl({ 'LineNr' }, { fg = c.gray3 })
+          set_hl({ 'CursorLineNr' }, { fg = c.pear2 })
+
+          set_hl({ 'CursorLine' }, { bg = c.gray4 })
+
           set_hl({
+            'TodoBgWARN',
             'TodoBgFIX',
             'TodoBgFIXME',
           }, { fg = c.pink2 })
+
+          set_hl({
+            'TodoBgWARN',
+          }, { fg = c.sand })
 
           set_hl('Special', { fg = c.orange })
 
@@ -1867,8 +1747,8 @@ require('lazy').setup({
           }, { bg = '#003530' })
 
           set_hl('DiffText', { bg = '#004040' })
-          set_hl('DiffDelete', { fg = '#F00000' })
-          set_hl('DiffviewDiffDeleteDim', { fg = '#F00000' })
+          set_hl('DiffDelete', { fg = c.pink2 })
+          set_hl('DiffviewDiffDeleteDim', { fg = c.pink })
 
           set_hl({
             'MiniStatuslineBranch',
@@ -2019,7 +1899,7 @@ require('lazy').setup({
             -- set active window to the red channel
             vim.api.nvim_set_current_win(rgb_wins[1])
           end)
-        end)
+        end, { desc = 'color picker' })
 
         update_highlights(c)
       end
@@ -2074,12 +1954,21 @@ require('lazy').setup({
               -- do we have any unsaved buffers?
               local bufs = vim.api.nvim_list_bufs()
               local workspace_hl = 'MiniStatuslineWorkspace'
+              local unsaved_bufs = false
               for _, buf in pairs(bufs) do
                 local unsaved = vim.api.nvim_get_option_value('modified', { buf = buf })
                 if unsaved then
                   workspace_hl = 'MiniStatuslineWorkspaceUnsaved'
+                  unsaved_bufs = true
                   break
                 end
+              end
+              if vim.fn.reg_recording() ~= '' then
+                vim.api.nvim_set_hl(0, 'CursorLine', { bg = '#443a00' })
+              elseif unsaved_bufs then
+                vim.api.nvim_set_hl(0, 'CursorLine', { bg = '#230000' })
+              else
+                vim.api.nvim_set_hl(0, 'CursorLine', { bg = '#002211' })
               end
 
               local fileinfo = MiniStatusline.section_fileinfo { trunc_width = 120 }
