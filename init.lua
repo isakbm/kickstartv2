@@ -90,6 +90,12 @@
 
   TODO:
 
+    >> eslint is weird, if you add it with Mason it'll start automatically even though
+       you dont configure it with lspconfig etc. you can find it running with htop -F esli
+
+       furthermore, if you have eslint installed it will break our custom <leader>rn
+       refactoring command.
+
     >> the nice <leader>rn widget to do refactored renamings has an issue where
        seemingly dependent on the cursor position, the rename will silently fail
        or succeed, is easiest to reproduce for single character variable renamings
