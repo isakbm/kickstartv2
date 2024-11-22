@@ -1237,6 +1237,7 @@ require('lazy').setup({
         --
         -- But for many setups, the LSP (`tsserver`) will work just fine
         lemminx = {},
+        jdtls = {},
         tsserver = {},
         prismals = {},
         lua_ls = {
@@ -2113,6 +2114,48 @@ require('lazy').setup({
       --   TODO: - Incremental selection: Included, see `:help nvim-treesitter-incremental-selection-mod`
       --   TODO: - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
       --
+    end,
+  },
+
+  {
+    'mfussenegger/nvim-lint',
+    opts = {
+      linters_by_ft = {
+        typescript = { 'eslint' },
+        javascript = { 'eslint' },
+        typescriptreact = { 'eslint' },
+      },
+    },
+    config = function(_, opts)
+      require('lint').linters_by_ft = {
+        typescript = { 'eslint' },
+        javascript = { 'eslint' },
+        typescriptreact = { 'eslint' },
+      }
+
+      vim.keymap.set('n', '<leader>L', function()
+        local lint = require 'lint'
+
+        vim.notify('Running ESLint...', vim.log.levels.INFO, { title = 'ESLint' })
+        -- lint.try_lint 'eslint'
+        lint.try_lint()
+
+        -- Helper function to wait for linting to complete
+        local function wait_for_linting(callback)
+          local function check()
+            if next(lint.get_running()) == nil then
+              callback()
+            else
+              vim.defer_fn(check, 100)
+            end
+          end
+          check()
+        end
+
+        wait_for_linting(function()
+          vim.notify('... finished ESLint', vim.log.levels.INFO, { title = 'ESLint' })
+        end)
+      end, { desc = 'lint this buffer' })
     end,
   },
 
