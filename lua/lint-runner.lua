@@ -2,9 +2,7 @@
 ---@field name string
 ---@field cmd string
 ---@field args string[]
----@field res_to_diagnostics fun(res: string, set_file_diagnostics: fun(file: string, diagnostics: vim.Diagnostic[]), on_err: fun(msg: string))
-
-local linter_ns = vim.api.nvim_create_namespace 'linter-runner'
+---@field res_to_diagnostics fun(res: string): vim.Diagnostic[]
 
 ---@type table<string, boolean>
 local running_linters = {}
@@ -33,6 +31,8 @@ return {
       return
     end
 
+    local linter_ns = vim.api.nvim_create_namespace('linter-runner-' .. linter.name)
+
     running_linters[linter.name] = true
 
     local uv = vim.loop
@@ -58,21 +58,25 @@ return {
         chunks[#chunks + 1] = data
       else
         -- stdout stream ended
-        local res = table.concat(chunks, '')
-        linter.res_to_diagnostics(res, function(file, diagnostics)
-          p_handle.message = 'Updating diagnostics ...'
-          local buf = vim.fn.bufnr(file, true)
-          vim.fn.bufload(buf)
-          vim.diagnostic.set(linter_ns, buf, diagnostics, { severity_sort = true })
-        end, function(msg)
-          p_handle.message = 'Error: ' .. msg
-        end)
+        vim.schedule(function()
+          local res = table.concat(chunks, '')
+          local diagnostics = linter.res_to_diagnostics(res)
 
-        running_linters[linter.name] = false
-        p_handle:finish()
-        if on_complete then
-          vim.schedule(on_complete)
-        end
+          for file, file_diagnostics in pairs(diagnostics) do
+            local buf = vim.fn.bufnr(file, true)
+            vim.fn.bufload(buf)
+            for _, diagnostic in pairs(file_diagnostics) do
+              diagnostic.message = '[' .. linter.name .. '] ' .. diagnostic.message
+            end
+            vim.diagnostic.set(linter_ns, buf, file_diagnostics, { severity_sort = true })
+          end
+
+          p_handle:finish()
+          running_linters[linter.name] = nil
+          if on_complete then
+            on_complete()
+          end
+        end)
       end
     end)
 

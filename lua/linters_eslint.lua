@@ -20,20 +20,20 @@ return {
   cmd = 'npx',
   args = { 'eslint', '--format', 'json', 'src', 'lib' },
 
-  res_to_diagnostics = function(res, set_file_diagnostics, on_err)
+  res_to_diagnostics = function(res)
     ---@type boolean, EslintEntry[]
     local ok, json = pcall(vim.json.decode, res, { luanil = { object = true, array = true } })
     if not ok then
-      vim.schedule(function()
-        on_err 'json parse'
-      end)
-      return
+      return {}
     end
 
     local eslint_severities = {
       vim.diagnostic.severity.WARN,
       vim.diagnostic.severity.ERROR,
     }
+
+    ---@type table<string, vim.Diagnostic[]>
+    local file_diagnostics = {}
 
     for _, k in ipairs(json) do
       if k.errorCount > 0 then
@@ -52,11 +52,10 @@ return {
           }
           diagnostics[#diagnostics + 1] = diagnostic
         end
-
-        vim.schedule(function()
-          set_file_diagnostics(k.filePath, diagnostics)
-        end)
+        file_diagnostics[k.filePath] = diagnostics
       end
     end
+
+    return file_diagnostics
   end,
 }

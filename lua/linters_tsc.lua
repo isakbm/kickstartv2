@@ -4,7 +4,7 @@ return {
   cmd = 'npx',
   args = { 'tsc', '--noEmit', 'true', '--pretty', 'false' },
 
-  res_to_diagnostics = function(res, set_file_diagnostics, _on_err)
+  res_to_diagnostics = function(res)
     ---@type table<string, vim.Diagnostic[]>
     local f_diagnostics = {}
 
@@ -25,10 +25,6 @@ return {
       }
     end
 
-    for file, diagnostics in pairs(f_diagnostics) do
-      vim.schedule(function()
-        set_file_diagnostics(file, diagnostics)
-      end)
-    end
+    return f_diagnostics
   end,
 }

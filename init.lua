@@ -382,13 +382,17 @@ vim.keymap.set('n', '<leader>WL', function()
   local function decrement()
     ctr = ctr - 1
     if ctr == 0 then
-      require('telescope.builtin').diagnostics()
+      -- require('telescope.builtin').diagnostics()
+      vim.diagnostic.setqflist()
+      vim.cmd 'copen'
     end
   end
 
   runner.run_linter(tsc, decrement)
   runner.run_linter(eslint, decrement)
 end, { desc = 'workspace lint' })
+vim.keymap.set('n', ']n', ':cnext<CR>', { noremap = true, silent = true })
+vim.keymap.set('n', '[n', ':cprev<CR>', { noremap = true, silent = true })
 
 --=========================== PLUGIN KEYMAPS =============================
 --
