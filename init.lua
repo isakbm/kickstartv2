@@ -90,10 +90,6 @@
 
   TODO:
 
-    >> the nice <leader>rn widget to do refactored renamings has an issue where
-       seemingly dependent on the cursor position, the rename will silently fail
-       or succeed, is easiest to reproduce for single character variable renamings
-
     >> disable or remap the cO in diffview, scary that it would pick
        resolutions for all conflicts and at the same time is nearly
        identical to resolving a single conflcit with co
@@ -164,7 +160,7 @@ vim.g.have_nerd_font = true -- Set to true if you have a Nerd Font installed
 -- Remove this option if you want your OS clipboard to remain independent.
 vim.opt.clipboard = 'unnamedplus' --  See `:help 'clipboard'`
 vim.opt.updatetime = 250 -- Decrease update time
-vim.opt.timeoutlen = 300 -- Decrease mapped sequence wait time : Displays which-key popup sooner
+vim.opt.timeoutlen = 1000 -- Decrease mapped sequence wait time
 vim.opt.number = true
 vim.opt.relativenumber = true
 vim.opt.termguicolors = true -- yes use tempr gui colors
@@ -199,12 +195,14 @@ WIN_BORDER = { '╭', '─', '╮', '│', '╯', '─', '╰', '│' }
 
 -- NOTE: hide higlights after hitting <Esc>
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
-vim.keymap.set('n', '<C-f>', '<NOP>')
+
+-- NOTE: disabling some imo useless default keybindings
+vim.keymap.set('n', '<C-f>', '<NOP>', { desc = 'disable windowfull scroll down' })
+vim.keymap.set('n', '<C-b>', '<NOP>', { desc = 'disable windowfull scroll up' })
 
 -- NOTE: like * but doesn't move you around
 vim.keymap.set('n', '*', '/<C-R><C-W><cr>N', { desc = 'highlight all occurrences of current word' })
 
---
 --   we've bound <M-*> so the `Alt` or `Modifier` key, however, see :h :map-alt and you'll notice that
 --   nvim is not able to distinguish between `Esc` and `Alt` if key press is fast enough, we'll just live
 --   with this, it rarely causes issues, but if you press `Esc` + j  or `Esc + k` very quickly while
@@ -495,8 +493,10 @@ require('lazy').setup({
   },
 
   {
+    -- yay my own gitgraph plugin :)
+    -- NOTE: `dev = true` => lazy then knows to look in my dev place see h: lazy.nvim-configuration
     'gitgraph.nvim',
-    dev = true, -- lazy then knows to look in my dev place see h: lazy.nvim-configuration
+    dev = true,
     opts = {
       symbols = {
         merge_commit = 'M',
@@ -508,12 +508,9 @@ require('lazy').setup({
       },
       hooks = {
         on_select_commit = function(commit)
-          -- print('selected commit:', commit.hash)
           vim.cmd(':DiffviewOpen ' .. commit.hash .. '^!')
         end,
         on_select_range_commit = function(from, to)
-          -- print('selected range:', from.hash, to.hash)
-          -- vim.notify('DiffviewOpen ' .. from.hash .. '~1..' .. to.hash)
           vim.cmd(':DiffviewOpen ' .. from.hash .. '~1..' .. to.hash)
         end,
       },
@@ -557,80 +554,14 @@ require('lazy').setup({
     end,
   },
 
-  -- NOTE: Plugins can also be added by using a table,
-  -- with the first argument being the link and the following
-  -- keys can be used to configure plugin behavior/loading/etc.
-  --
-  -- Use `opts = {}` to force a plugin to be loaded.
-  --
-  --  This is equivalent to:
-  --    require('Comment').setup({})
-
-  -- "gc" to comment visual regions/lines
-  { 'numToStr/Comment.nvim', opts = {} },
+  {
+    -- NOTE: allows to toggle comments ?
+    'numToStr/Comment.nvim',
+    opts = {},
+  },
 
   {
-    'folke/trouble.nvim',
-    dependencies = { 'nvim-tree/nvim-web-devicons' },
-    opts = {
-      -- your configuration comes here
-      -- or leave it empty to use the default settings
-      -- refer to the configuration section below
-    },
-    init = function()
-      vim.keymap.set('n', '<leader>n', ':Trouble diagnostics next <cr>')
-    end,
-    -- config = function(opts)
-    -- require('trouble').setup(opts)
-    -- vim.keymap.set('n', '<leader>n', function()
-    -- require('trouble').next { skip_groups = true, jump = true }
-    -- end, { desc = 'goto next trouble' })
-    -- end,
-  },
-
-  -- NOTE: Plugins can also be configured to run lua code when they are loaded.
-  --
-  -- This is often very useful to both group configuration, as well as handle
-  -- lazy loading plugins that don't need to be loaded immediately at startup.
-  --
-  -- For example, in the following configuration, we use:
-  --  event = 'VimEnter'
-  --
-  -- which loads which-key before all the UI elements are loaded. Events can be
-  -- normal autocommands events (`:help autocmd-events`).
-  --
-  -- Then, because we use the `config` key, the configuration only runs
-  -- after the plugin has been loaded:
-  --  config = function() ... end
-
-  { -- Useful plugin to show you pending keybinds.
-    'isakbm/which-key.nvim',
-    event = 'VimEnter', -- Sets the loading event to 'VimEnter'
-    enabled = vim.g.enable_whichkey, -- To allow easy toggling of this above
-    config = function() -- This is the function that runs, AFTER loading
-      require('which-key').setup { window = { border = WIN_BORDER } }
-
-      -- Document existing key chains
-      require('which-key').register {
-        ['<leader>c'] = { name = '[C]ode', _ = 'which_key_ignore' },
-        ['<leader>d'] = { name = '[D]ocument', _ = 'which_key_ignore' },
-        ['<leader>r'] = { name = '[R]ename', _ = 'which_key_ignore' },
-        ['<leader>s'] = { name = '[S]earch', _ = 'which_key_ignore' },
-        ['<leader>w'] = { name = '[W]orkspace', _ = 'which_key_ignore' },
-        ['<leader>t'] = { name = '[T]ab', _ = 'which_key_ignore' },
-        ['<leader>g'] = { name = '[G]it', _ = 'which_key_ignore' },
-      }
-    end,
-  },
-
-  -- NOTE: Plugins can specify dependencies.
-  --
-  -- The dependencies are proper plugin specifications as well - anything
-  -- you do for a plugin at the top level, you can do for a dependency.
-  --
-  -- Use the `dependencies` key to specify the dependencies of a particular plugin
-
-  { -- Fuzzy Finder (files, lsp, etc)
+    -- NOTE: very nice search util
     'nvim-telescope/telescope.nvim',
     event = 'VimEnter',
     branch = '0.1.x',
