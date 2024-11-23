@@ -7,12 +7,26 @@
 ---@type table<string, boolean>
 local running_linters = {}
 
+---@type table<integer, boolean>
+local active_diagnostic_ns = {}
+
 return {
 
-  get_running = function()
-    return running_linters
+  --- clears the diagnostics associated with the linters
+  clear_diagnostics = function()
+    for ns, _ in pairs(active_diagnostic_ns) do
+      vim.diagnostic.reset(ns)
+      active_diagnostic_ns[ns] = nil
+    end
   end,
 
+  --- get list of namespaces
+  ---@return integer[]
+  get_namespaces = function()
+    return vim.tbl_keys(active_diagnostic_ns)
+  end,
+
+  --- run the specified linter accross the entire workspace
   ---@param linter LinterShim
   ---@param on_complete? fun()
   run_linter = function(linter, on_complete)
@@ -32,6 +46,7 @@ return {
     end
 
     local linter_ns = vim.api.nvim_create_namespace('linter-runner-' .. linter.name)
+    active_diagnostic_ns[linter_ns] = true
 
     running_linters[linter.name] = true
 

@@ -372,25 +372,38 @@ vim.api.nvim_create_autocmd('BufWinEnter', {
 
 -- My dumb custom workspac linting thing
 -- NOTE: currently only set up for tsc + eslint in a node.js project
-vim.keymap.set('n', '<leader>WL', function()
+vim.api.nvim_create_user_command('Lint', function()
   local runner = require 'lint-runner'
 
-  -- run tsc and eslint in parallel and wait on them
+  -- run tsc and eslint in parallel
   local tsc = require 'linters_tsc'
   local eslint = require 'linters_eslint'
-  local ctr = 2
-  local function decrement()
-    ctr = ctr - 1
-    if ctr == 0 then
-      -- require('telescope.builtin').diagnostics()
-      vim.diagnostic.setqflist()
-      vim.cmd 'copen'
-    end
-  end
-
-  runner.run_linter(tsc, decrement)
-  runner.run_linter(eslint, decrement)
+  runner.run_linter(tsc)
+  runner.run_linter(eslint)
 end, { desc = 'workspace lint' })
+
+vim.api.nvim_create_user_command('LintClear', function()
+  local runner = require 'lint-runner'
+  runner.clear_diagnostics()
+end, { desc = 'clear workspace lint' })
+
+vim.keymap.set('n', '<leader>F', function()
+  local runner = require 'lint-runner'
+
+  local namespaces = runner.get_namespaces()
+
+  local pos = vim.api.nvim_win_get_cursor(0)
+  local lnum = pos[1] - 1
+
+  for _, namespace in ipairs(namespaces) do
+    local rem_diagnostics = vim.tbl_filter(function(e)
+      return e.lnum ~= lnum
+    end, vim.diagnostic.get(0, { namespace = namespace }))
+    vim.diagnostic.reset(namespace, 0)
+    vim.diagnostic.set(namespace, 0, rem_diagnostics)
+  end
+end, { desc = '[lint] mark as fixed' })
+
 vim.keymap.set('n', ']n', ':cnext<CR>', { noremap = true, silent = true })
 vim.keymap.set('n', '[n', ':cprev<CR>', { noremap = true, silent = true })
 
