@@ -90,8 +90,6 @@
 
   TODO:
 
-    >> add typescript compilation stuff to the linting
-
     >> the nice <leader>rn widget to do refactored renamings has an issue where
        seemingly dependent on the cursor position, the rename will silently fail
        or succeed, is easiest to reproduce for single character variable renamings
@@ -1102,15 +1100,25 @@ require('lazy').setup({
           -- Rename the variable under your cursor
           --  Most Language Servers support renaming across files, etc.
           map('<leader>rn', function()
-            local res = vim.lsp.buf_request_sync(0, 'textDocument/hover', vim.lsp.util.make_position_params(), 200)[1]
-            if res and not res.error and res.result and res.result.range then
+            local cursor_pos = vim.api.nvim_win_get_cursor(0)
+
+            local hover_res = vim.lsp.buf_request_sync(0, 'textDocument/hover', vim.lsp.util.make_position_params(), 200)
+
+            if not hover_res then
+              return
+            end
+
+            local hover = hover_res[1]
+
+            if hover and not hover.error and hover.result and hover.result.range then
               --- @class I.Loc
               --- @field character integer
               --- @field line integer
 
               local file_buf = vim.api.nvim_get_current_buf()
-              local s = res.result.range['start'] --- @type I.Loc
-              local e = res.result.range['end'] --- @type I.Loc
+
+              local s = hover.result.range['start'] --- @type I.Loc
+              local e = hover.result.range['end'] --- @type I.Loc
               local old_name = vim.api.nvim_buf_get_text(0, s.line, s.character, e.line, e.character, {})[1]
 
               local row = vim.fn.winline()
@@ -1141,10 +1149,23 @@ require('lazy').setup({
                   print 'cannot name to empty string'
                   return
                 end
+
+                -- custom handler to avoid race conditions, we want to do some extra
+                -- pos renaming logic, like going back to normal mode, and positioning
+                -- the cursor where it was
+                local original_handler = vim.lsp.handlers['textDocument/rename']
+                vim.lsp.handlers['textDocument/rename'] = function(err, result, ctx, config)
+                  if original_handler then
+                    original_handler(err, result, ctx, config)
+                  end
+                  if not err and result then
+                    vim.cmd.stopi()
+                    cursor_pos[2] = cursor_pos[2] + 1
+                    vim.api.nvim_win_set_cursor(0, cursor_pos)
+                  end
+                  vim.lsp.handlers['textDocument/rename'] = original_handler
+                end
                 vim.lsp.buf.rename(new_name, { bufnr = file_buf })
-                vim.fn.timer_start(60, function()
-                  vim.cmd.stopi()
-                end)
               end, { buffer = buf })
             end
           end, '[R]e[n]ame')
