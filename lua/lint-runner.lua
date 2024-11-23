@@ -31,9 +31,6 @@ return {
       stdio = { nil, stdout, stderr },
     }, function(code, signal)
       -- on exit
-      if code then
-        p_handle.message = '!!Crashed!!'
-      end
     end)
 
     uv.read_start(stdout, function(err, data)

@@ -372,8 +372,11 @@ vim.api.nvim_create_autocmd('BufWinEnter', {
 
 -- My dumb custom workspac linting thing
 vim.keymap.set('n', '<leader>WL', function()
-  local linter = require 'linters_eslint'
-  require('lint-runner').run_linter(linter)
+  local eslint = require 'linters_eslint'
+  require('lint-runner').run_linter(eslint)
+
+  local tsc = require 'linters_tsc'
+  require('lint-runner').run_linter(tsc)
 end, { desc = 'workspace lint' })
 
 --=========================== PLUGIN KEYMAPS =============================
@@ -2117,12 +2120,6 @@ require('lazy').setup({
       --   TODO: - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
       --
     end,
-  },
-
-  {
-    -- TODO: remove me later, this is just to check out tsc ...
-    'dmmulroy/tsc.nvim',
-    config = function() end,
   },
 
   -- The following two comments only work if you have downloaded the kickstart repo, not just copy pasted the
