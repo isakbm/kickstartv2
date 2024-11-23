@@ -6,10 +6,18 @@
 
 local linter_ns = vim.api.nvim_create_namespace 'linter-runner'
 
+---@type table<string, boolean>
+local running_linters = {}
+
 return {
 
+  get_running = function()
+    return running_linters
+  end,
+
   ---@param linter LinterShim
-  run_linter = function(linter)
+  ---@param on_complete? fun()
+  run_linter = function(linter, on_complete)
     local progress = require 'fidget.progress'
 
     local p_handle = progress.handle.create {
@@ -17,6 +25,15 @@ return {
       message = 'Launching ...',
       lsp_client = { name = linter.name },
     }
+
+    -- NOTE: dont run linter if already running
+    if running_linters[linter.name] then
+      p_handle.message = linter.name .. ' is already running'
+      p_handle:cancel()
+      return
+    end
+
+    running_linters[linter.name] = true
 
     local uv = vim.loop
 
@@ -51,7 +68,11 @@ return {
           p_handle.message = 'Error: ' .. msg
         end)
 
+        running_linters[linter.name] = false
         p_handle:finish()
+        if on_complete then
+          vim.schedule(on_complete)
+        end
       end
     end)
 

@@ -371,12 +371,23 @@ vim.api.nvim_create_autocmd('BufWinEnter', {
 })
 
 -- My dumb custom workspac linting thing
+-- NOTE: currently only set up for tsc + eslint in a node.js project
 vim.keymap.set('n', '<leader>WL', function()
-  local eslint = require 'linters_eslint'
-  require('lint-runner').run_linter(eslint)
+  local runner = require 'lint-runner'
 
+  -- run tsc and eslint in parallel and wait on them
   local tsc = require 'linters_tsc'
-  require('lint-runner').run_linter(tsc)
+  local eslint = require 'linters_eslint'
+  local ctr = 2
+  local function decrement()
+    ctr = ctr - 1
+    if ctr == 0 then
+      require('telescope.builtin').diagnostics()
+    end
+  end
+
+  runner.run_linter(tsc, decrement)
+  runner.run_linter(eslint, decrement)
 end, { desc = 'workspace lint' })
 
 --=========================== PLUGIN KEYMAPS =============================
