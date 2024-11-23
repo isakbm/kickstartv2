@@ -2156,6 +2156,129 @@ require('lazy').setup({
           vim.notify('... finished ESLint', vim.log.levels.INFO, { title = 'ESLint' })
         end)
       end, { desc = 'lint this buffer' })
+
+      local test_ns = vim.api.nvim_create_namespace 'test-dia'
+
+      vim.keymap.set('n', '<leader>WL', function()
+        --- BEGIN
+
+        local uv = vim.loop
+
+        local chunks = {}
+        local err_chunks = {}
+
+        ---@param file_path string
+        ---@param diagnostics vim.Diagnostic[]
+        local function add_diagnostics_to_file(file_path, diagnostics)
+          -- Create or get a hidden buffer for the file
+          local buf = vim.fn.bufnr(file_path, true) -- true ensures a buffer is created if it doesn't exist
+
+          -- Load the buffer into memory to ensure contents are available
+          if not vim.api.nvim_buf_is_loaded(buf) then
+            vim.fn.bufload(buf)
+          end
+
+          -- Set diagnostics for the buffer
+          vim.diagnostic.set(test_ns, buf, diagnostics, { severity_sort = true })
+        end
+
+        local severities = {
+          vim.diagnostic.severity.WARN,
+          vim.diagnostic.severity.ERROR,
+        }
+
+        -- local stdin = uv.new_pipe()
+        local stdout = uv.new_pipe()
+        local stderr = uv.new_pipe()
+
+        -- print('stdin', stdin)
+        print('stdout', stdout)
+        print('stderr', stderr)
+
+        local handle, pid = uv.spawn('npx', {
+          -- args = { 'eslint', '--format', 'json', '.' },
+          args = { 'eslint', '--format', 'json', 'src', 'lib' }, -- NOTE: we set to src and lib because that is what NEXT does by default
+          -- args = { 'next', 'lint', '--format', 'json', '--quiet' },
+          -- stdio = { stdin, stdout, stderr },
+          stdio = { nil, stdout, stderr },
+        }, function(code, signal) -- on exit
+          print('exit code', code)
+          print('exit signal', signal)
+        end)
+
+        print('process opened', handle, pid)
+
+        uv.read_start(stdout, function(err, data)
+          assert(not err, err)
+          if data then
+            -- there is more data on stdout stream
+            chunks[#chunks + 1] = data
+          else
+            -- stdout stream ended
+            local res = table.concat(chunks, '')
+            print('RES: ' .. vim.inspect(res))
+
+            local decode_opts = { luanil = { object = true, array = true } }
+            ---@class EslintMessage
+            ---@field column integer
+            ---@field line integer
+            ---@field endColumn integer
+            ---@field endLine integer
+            ---@field severity integer
+            ---@field message string
+            ---@field ruleId string
+
+            ---@class EslintEntry
+            ---@field errorCount integer
+            ---@field filePath string
+            ---@field messages EslintMessage[]
+
+            ---@type boolean, EslintEntry[]
+            local ok, json = pcall(vim.json.decode, res, decode_opts)
+            if not ok then
+              print 'failed to lint with eslint'
+            end
+
+            for _, k in ipairs(json) do
+              if k.errorCount > 0 then
+                print 'GOT ESLINT RES'
+                local diagnostics = {}
+                for _, msg in ipairs(k.messages) do
+                  ---@type vim.Diagnostic
+                  local diagnostic = {
+                    lnum = msg.line and (msg.line - 1) or 0,
+                    end_lnum = msg.endLine and (msg.endLine - 1) or nil,
+                    col = msg.column and (msg.column - 1) or 0,
+                    end_col = msg.endColumn and (msg.endColumn - 1) or nil,
+                    message = msg.message,
+                    code = msg.ruleId,
+                    severity = severities[msg.severity],
+                    source = 'eslint',
+                  }
+                  diagnostics[#diagnostics + 1] = diagnostic
+                end
+
+                vim.schedule(function()
+                  add_diagnostics_to_file(k.filePath, diagnostics)
+                end)
+              end
+            end
+          end
+        end)
+
+        uv.read_start(stderr, function(err, data)
+          assert(not err, err)
+          if data then
+            print('stderr chunk', stderr, data)
+            err_chunks[#err_chunks + 1] = data
+          else
+            local res = table.concat(err_chunks, '')
+            print('ERR RES: ' .. vim.inspect(res))
+            -- end of stream
+            print('stderr end', stderr)
+          end
+        end)
+      end, { desc = 'workspace lint' })
     end,
   },
 
