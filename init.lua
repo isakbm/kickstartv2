@@ -132,14 +132,6 @@
        something. vim only knows that the fil has not chnaged if you
        literally go back with undo ... can this be changed in a setting?
 
-    >> its nice that our statusline says what type of lsp mode we're in
-       and what branch we're on etc, however, when using plugins that
-       launch other tabs or buffers like `flog` for the git log or
-       `:Git` for git status, we see that this information is no longer
-       in the statusline, because the statusline is looking at metadata
-       regarding the current active buffer, which in the case of those
-       plugins is not a tracked code file ...
-
     >> find a way to do grep search over subset of files
 
     >> I REALLY need a way to quickly see the changes in the buffer that
@@ -671,114 +663,6 @@ require('lazy').setup({
     end,
   },
 
-  -- NOTE: Git plugins ...
-  {
-    'rbong/vim-flog',
-    dependencies = {
-      'tpope/vim-fugitive',
-      'sindrets/diffview.nvim',
-    },
-    config = function()
-      require('diffview').setup()
-
-      vim.keymap.set('n', '<leader>Gl', function()
-        -- whenever we enter a flog buffer we want to register
-        -- this autocommand ONCE, it in turn registers the esc esc
-        -- key binding on the buffer in it such that it's easy to
-        -- leave flog
-        vim.api.nvim_create_autocmd({ 'BufEnter' }, {
-          callback = function(ctx)
-            -- this helps us catch any bugs, if we see this in the fidget history
-            -- then we know that we did not deregister the autocommand correctly, the use of once should make this automatic
-            require('fidget').notify('flog - buf enter', '@comment.error', { annote = 'FLOG' })
-            esc_esc_once_buf(ctx.buf)
-          end,
-          once = true,
-        })
-        vim.cmd [[:Flog -all -max-count=999999 -date=relative]]
-        vim.fn.timer_start(60, function()
-          vim.fn.search 'HEAD ->'
-          vim.api.nvim_feedkeys('zz', 'n', false)
-
-          local buf = vim.api.nvim_get_current_buf()
-
-          pcall(vim.keymap.del, { 'n', 'i' }, '<CR>', { buffer = buf })
-
-          ---@param line string
-          ---@return string
-          local get_commit = function(line)
-            return line:match '%[(%x+)%]'
-          end
-
-          -- show diff for commit under cursor
-          vim.keymap.set('n', '<CR>', function()
-            local lnr = vim.api.nvim_win_get_cursor(0)[1]
-            local line = vim.api.nvim_buf_get_lines(0, lnr - 1, lnr, false)[1]
-            local commit = get_commit(line)
-            vim.cmd(':DiffviewOpen ' .. commit .. '^!')
-          end, { buffer = buf, desc = 'Show diff for commit' })
-
-          -- show diff for selected range of commits
-          vim.keymap.set('v', '<CR>', function()
-            -- NOTE: that for some reason we need to hit esc and wait a bit in order
-            --       for the visual selection range to update
-            vim.api.nvim_input '<Esc>'
-            vim.fn.timer_start(50, function()
-              -- get start end commit hashes
-              local ab = {}
-              for _, mark in pairs { "'<", "'>" } do
-                local lnr = vim.fn.getpos(mark)[2]
-                local line = vim.api.nvim_buf_get_lines(0, lnr - 1, lnr, false)[1]
-                ab[#ab + 1] = get_commit(line)
-              end
-
-              if not ab[1] or not ab[2] then
-                print 'invalid range'
-                return
-              end
-
-              if ab[1] == ab[2] then
-                print 'start and end ar the same'
-                return
-              end
-
-              vim.cmd(':DiffviewOpen ' .. ab[2] .. '^..' .. ab[1])
-            end)
-          end, { buffer = buf, desc = 'Show diff for range' })
-
-          vim.api.nvim_create_autocmd('User', {
-            pattern = 'FugitiveChanged',
-            callback = function()
-              pcall(vim.cmd.normal, '<Plug>(FlogUpdate)')
-            end,
-          })
-        end)
-      end, { desc = '[G]it [L]og' })
-      -- vim.keymap.set('n', '<leader>gl', ':Flog -format=%ar%x20[%h]%x20%d%x20%an <cr>', { desc = '[G]it [L]og' })
-      vim.keymap.set('n', '<leader>gs', ':Git<cr>', { desc = '[G]it [S]tatus', silent = true })
-      vim.api.nvim_create_autocmd({ 'BufEnter' }, {
-        pattern = 'fugitive:/*',
-        callback = function(ctx)
-          vim.keymap.set('n', '<Esc><Esc>', ':q<cr>', { buffer = ctx.buf, silent = true })
-        end,
-      })
-
-      -- get the commit under the cursor
-      --- @return boolean, string asdfasdf
-      local function flogCommitUnderCursor()
-        return pcall(vim.fn['flog#Format'], '%H')
-      end
-
-      -- NOTE: opens up diffview relative to commit under cursor
-      vim.keymap.set('n', ',', function()
-        local ok, commit = flogCommitUnderCursor()
-        if ok then
-          return ':DiffviewOpen ' .. commit .. '<cr>'
-        end
-      end, { expr = true, desc = 'display changes of HEAD relative to commit under cursor' })
-    end,
-  },
-
   {
     'lewis6991/gitsigns.nvim',
     opts = {
@@ -946,6 +830,11 @@ require('lazy').setup({
     end,
   },
 
+  {
+    -- :Git command shim
+    'tpope/vim-fugitive',
+  },
+
   { -- LSP Configuration & Plugins
     'neovim/nvim-lspconfig',
 
@@ -1105,35 +994,6 @@ require('lazy').setup({
           -- or a suggestion from your LSP for this to activate.
           local code_action_desc = '[C]ode [A]ction'
           map('<leader>ca', vim.lsp.buf.code_action, code_action_desc)
-          -- NOTE: the bellow auto command works around certain other plugins overwriting it
-          vim.api.nvim_create_autocmd('WinEnter', {
-            callback = function(e)
-              if e.buf ~= event.buf then
-                return
-              end
-
-              local kmaps = vim.api.nvim_buf_get_keymap(event.buf, 'n')
-
-              ---@type boolean
-              local diff = vim.api.nvim_get_option_value('diff', { win = 0 })
-              if diff then
-                return
-              end
-
-              local missing = true
-              for _, k in pairs(kmaps) do
-                if k.lhs == ' ca' and k.desc == code_action_desc then
-                  missing = false
-                  break
-                end
-              end
-
-              if missing then
-                map('<leader>ca', vim.lsp.buf.code_action, '[C]ode [A]ction')
-              end
-            end,
-            buffer = event.buf,
-          })
 
           -- Opens a popup that displays documentation about the word under your cursor
           --  See `:help K` for why this keymap
@@ -1143,43 +1003,9 @@ require('lazy').setup({
           --  For example, in C this would take you to the header
           map('gD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
 
-          -- The following two autocommands are used to highlight references of the
-          -- word under your cursor when your cursor rests there for a little while.
-          --    See `:help CursorHold` for information about when this is executed
-          --
-          -- When you move your cursor, the highlights will be cleared (the second autocommand).
-          local client = vim.lsp.get_client_by_id(event.data.client_id)
-          if client and client.server_capabilities then
-            -- client.server_capabilities.semanticTokensProvider = nil
-          end
-
-          -- if client and client.server_capabilities.documentHighlightProvider then
-          --   vim.api.nvim_create_autocmd({ 'CursorHold' }, {
-          --     buffer = event.buf,
-          --     callback = vim.lsp.buf.document_highlight,
-          --   })
-          --
-          --   vim.api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI', 'BufLeave' }, {
-          --     buffer = event.buf,
-          --     callback = function()
-          --       vim.lsp.buf.clear_references()
-          --     end,
-          --   })
-          -- end
-
-          -- wraps normal diagnostics callback so we can get some extra information
-          -- useful to tell whether or not we are still loading workspace
-          vim.lsp.handlers['textDocument/publishDiagnostics'] = function(err, res, ctx)
-            local uri = res.uri
-            -- require('fidget').notify('-> ', '@comment.error', { key = 'diagnostic', annote = uri })
-            vim.lsp.diagnostic.on_publish_diagnostics(err, res, ctx)
-          end
-
-          -- Lets give the hover information stuff a bit more style
+          -- NOTE: Lets give the hover information stuff a bit more style
           vim.lsp.handlers['textDocument/hover'] = vim.lsp.with(vim.lsp.handlers.hover, {
-            -- Use a sharp border with `FloatBorder` highlights
             border = WIN_BORDER,
-            -- add the title in hover float window
             title = ' hover ',
           })
         end,
@@ -1226,30 +1052,30 @@ require('lazy').setup({
         tsserver = {},
         prismals = {},
         lua_ls = {
-          on_attach = function(client, buf)
-            local function custom_diagnostics_handler(_, result, ctx, config)
-              if not result then
-                return
-              end
-
-              -- custom snippet to ignore unused vars that start with underscore
-              for i, diagnostic in ipairs(result.diagnostics) do
-                if diagnostic.source == 'Lua Diagnostics.' then
-                  if diagnostic.code == 'unused-local' then
-                    local var_name = string.match(diagnostic.message, '`(.*)`')
-                    if var_name and string.sub(var_name, 1, 1) == '_' then
-                      result.diagnostics[i] = nil
-                    end
-                  end
-                end
-              end
-
-              -- call the original handler with the filtered diagnostics
-              vim.lsp.handlers['textDocument/publishDiagnostics'](_, result, ctx, config)
-            end
-
-            client.handlers['textDocument/publishDiagnostics'] = custom_diagnostics_handler
-          end,
+          -- on_attach = function(client, buf)
+          --   local function custom_diagnostics_handler(_, result, ctx, config)
+          --     if not result then
+          --       return
+          --     end
+          --
+          --     -- custom snippet to ignore unused vars that start with underscore
+          --     for i, diagnostic in ipairs(result.diagnostics) do
+          --       if diagnostic.source == 'Lua Diagnostics.' then
+          --         if diagnostic.code == 'unused-local' then
+          --           local var_name = string.match(diagnostic.message, '`(.*)`')
+          --           if var_name and string.sub(var_name, 1, 1) == '_' then
+          --             result.diagnostics[i] = nil
+          --           end
+          --         end
+          --       end
+          --     end
+          --
+          --     -- call the original handler with the filtered diagnostics
+          --     vim.lsp.handlers['textDocument/publishDiagnostics'](_, result, ctx, config)
+          --   end
+          --
+          --   client.handlers['textDocument/publishDiagnostics'] = custom_diagnostics_handler
+          -- end,
           settings = {
             Lua = {
               completion = {
@@ -1671,7 +1497,6 @@ require('lazy').setup({
             'TodoBgTODO',
             'TodoBgNOTE',
             'GitSignsAdd',
-            'flogRefHead',
             '@lsp.type.namespace',
             '@module',
           }, { fg = c.pear })
@@ -1708,17 +1533,6 @@ require('lazy').setup({
           }, { fg = c.sand })
 
           set_hl('Special', { fg = c.orange })
-
-          set_hl('flogBranch0', { fg = '#458588' })
-          set_hl('flogBranch1', { fg = '#458588' })
-          set_hl('flogBranch2', { fg = '#689d6a' })
-          set_hl('flogBranch3', { fg = '#b16286' })
-          set_hl('flogBranch4', { fg = '#d79921' })
-          set_hl('flogBranch5', { fg = '#98971a' })
-          set_hl('flogBranch6', { fg = '#E7545E' })
-          set_hl('flogBranch7', { fg = '#ad6639' })
-          set_hl('flogBranch8', { fg = '#b53a35' })
-          set_hl('flogBranch9', { fg = '#d5651c' })
 
           set_hl('GitGraphBranch1', { fg = c.blue3 })
           set_hl('GitGraphBranch2', { fg = c.pink })
