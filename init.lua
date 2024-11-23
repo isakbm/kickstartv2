@@ -429,25 +429,6 @@ if not vim.loop.fs_stat(lazypath) then
 end ---@diagnostic disable-next-line: undefined-field
 vim.opt.rtp:prepend(lazypath)
 
--- takes buffer number and removes the ESC ESC local keybinding
---- @param buf integer
-local function cancel_esc_esc_once_buf(buf)
-  pcall(vim.keymap.del, 'n', '<Esc><Esc>', { buffer = buf })
-end
-
--- any parent tab page, useful for handy closeing of plugins that
--- spawn their own tabpages
---- @param buf integer
-local function esc_esc_once_buf(buf)
-  vim.keymap.set('n', '<Esc><Esc>', function()
-    vim.cmd ':tabc'
-    cancel_esc_esc_once_buf(buf)
-  end, { buffer = buf })
-  -- NOTE: we also need to register an autocommand that will clear the above keymap
-  --       if the buffer is leaving the window it was in
-  --       :
-end
-
 -- returns true if buffer is trivial
 --- @param buf integer -- 0 is current buffer
 --- @return boolean
@@ -739,26 +720,11 @@ require('lazy').setup({
 
   {
     'sindrets/diffview.nvim',
-    dependencies = {
-      'nvim-web-devicons',
-    },
+    dependencies = { 'nvim-web-devicons' },
     opts = {
-      -- enhanced_diff_hl = true,
       hooks = {
-        view_leave = function()
-          local buf = vim.api.nvim_get_current_buf()
-          -- print('leaving view: buf =', buf)
-          cancel_esc_esc_once_buf(buf)
-        end,
-        view_enter = function()
-          local buf = vim.api.nvim_get_current_buf()
-          -- print('entering view: buf =', buf)
-          esc_esc_once_buf(buf)
-        end,
-        diff_buf_read = function(buf)
-          -- print('diffview read buf: ', buf)
+        diff_buf_read = function()
           vim.opt_local.cursorline = false
-          esc_esc_once_buf(buf)
         end,
         view_opened = function()
           -- print 'opening view'
@@ -1052,30 +1018,6 @@ require('lazy').setup({
         tsserver = {},
         prismals = {},
         lua_ls = {
-          -- on_attach = function(client, buf)
-          --   local function custom_diagnostics_handler(_, result, ctx, config)
-          --     if not result then
-          --       return
-          --     end
-          --
-          --     -- custom snippet to ignore unused vars that start with underscore
-          --     for i, diagnostic in ipairs(result.diagnostics) do
-          --       if diagnostic.source == 'Lua Diagnostics.' then
-          --         if diagnostic.code == 'unused-local' then
-          --           local var_name = string.match(diagnostic.message, '`(.*)`')
-          --           if var_name and string.sub(var_name, 1, 1) == '_' then
-          --             result.diagnostics[i] = nil
-          --           end
-          --         end
-          --       end
-          --     end
-          --
-          --     -- call the original handler with the filtered diagnostics
-          --     vim.lsp.handlers['textDocument/publishDiagnostics'](_, result, ctx, config)
-          --   end
-          --
-          --   client.handlers['textDocument/publishDiagnostics'] = custom_diagnostics_handler
-          -- end,
           settings = {
             Lua = {
               completion = {
@@ -1084,10 +1026,9 @@ require('lazy').setup({
               workspace = {
                 checkThirdParty = false,
               },
-              -- You can toggle below to ignore Lua_LS's noisy `missing-fields` warnings
-              -- diagnostics = { disable = { 'missing-fields' } },
               diagnostics = {
                 globals = { 'vim' },
+                disable = { 'redefined-local' },
               },
               telemetry = {
                 enable = false,
@@ -1355,7 +1296,7 @@ require('lazy').setup({
             return
           end
 
-          local hl = theme.groups
+          local hl = theme.groups or {}
 
           -- sets several highlight, if any already existed it gets overwritten entirely
           ---@param names string | table<string>
@@ -1657,8 +1598,7 @@ require('lazy').setup({
                   end)
 
                   for _, kv in ipairs(ordered) do
-                    local name, color = kv.name, kv.color
-                    f:write('  ' .. name .. ' = ' .. '"' .. color .. '",\n')
+                    f:write('  ' .. kv.name .. ' = ' .. '"' .. kv.color .. '",\n')
                   end
 
                   f:write '}\nreturn c'
