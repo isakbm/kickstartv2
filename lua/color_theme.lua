@@ -96,7 +96,7 @@ return {
     cset '@lsp.typemod.operator.controlFlow'
     cset 'DiffviewFilePanelTitle'
 
-    cset('Comment', { fg = c.gray })
+    cset('Comment', { fg = c.comment })
     cset 'LeapBackdrop'
 
     cset('LineNr', { fg = c.gray3 })
