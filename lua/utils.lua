@@ -1,4 +1,22 @@
 return {
+
+  -- returns true if buffer is trivial
+  --- @param buf integer -- 0 is current buffer
+  --- @return boolean
+  buf_is_trivial = function(buf)
+    local n = vim.api.nvim_buf_line_count(buf)
+    if n == 0 then
+      return true
+    end
+    if n == 1 then
+      local c = #vim.api.nvim_buf_get_lines(buf, 0, 1, true)[1]
+      if c == 0 then
+        return true
+      end
+    end
+    return false
+  end,
+
   hide_cursor = function()
     vim.cmd 'highlight Cursor blend=100'
     vim.opt.guicursor:append 'a:Cursor/lCursor'

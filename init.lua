@@ -185,6 +185,9 @@ WIN_BORDER = { '╭', '─', '╮', '│', '╯', '─', '╰', '│' }
 vim.keymap.set('n', 'p', '"0p', { desc = 'p paste from register "0' })
 vim.keymap.set('n', 'P', '"0P', { desc = 'P paste from register "0' })
 
+vim.keymap.set('n', '<leader>p', 'p', { desc = 'vanilla p paste' })
+vim.keymap.set('n', '<leader>P', 'P', { desc = 'vanilla P paste' })
+
 -- NOTE: hide higlights after hitting <Esc>
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
@@ -219,144 +222,46 @@ vim.keymap.set('n', '<C-k>', ':m-2<cr>', { desc = 'swap line with line above' })
 
 vim.keymap.set('n', '<leader>N', ':set number!<cr>:set relativenumber!<cr>', { desc = 'toggle line numbering' })
 
+--                                                                                --
+--   here I have some dumb utils that I don't want to pollyte this config with    --
+--                                                                                --
+
+-- checking if you have good smooth color gradients, if you don't, something is wrong with your setup
+require 'check_reds'
+
+-- seeing preview of your colors in realtime
+require 'hex_color_highlights'
+
+-- Alt + j / k now glide you up and down in a nice scrolled way
+require 'glide'
+
+-- starts us off where we left off in buffer
+require 'recall_buf_position'
+
+-- an unorganized place for my utils
+local utils = require 'utils'
+
 -- NOTE: this brings you into block visual select mode ... on windows it's Ctrl + Q, and on Linux Ctrl + V ... cool to have something OS independent :)
 --
 -- Experimental alternative to `Ctrl + V` which is blocked by some terminals
 vim.keymap.set('n', 'VV', '<C-v>')
 
-vim.diagnostic.config {
-  signs = {
-    priority = 100, -- we want high priority, higher than gitsigns and marks
-  },
-}
-
---- @type table<string, string>
-local hlgs = {}
-
-local my_ns = vim.api.nvim_create_namespace 'isaks'
-
---- works by searching for string of the form "#RRGGBB"
---- keeps a list of created highlght groups and reuses
---- them, ... only searches in the current visible part
---- of the buffer, and only upates on changes
-local function hex_color_highlight()
-  local top = vim.fn.line 'w0'
-  local bot = vim.fn.line 'w$'
-
-  local text = vim.api.nvim_buf_get_lines(0, top, bot, true)
-
-  vim.api.nvim_buf_clear_namespace(0, my_ns, 0, -1)
-  vim.api.nvim_win_set_hl_ns(0, my_ns)
-
-  for idx, line in pairs(text) do
-    local offset = 1
-    for m in line:gmatch '["\']#%x%x%x%x%x%x["\']' do
-      local loc = line:find(m, offset, true)
-      offset = loc + 9
-      local row = idx + top
-      local col_start = loc
-      local col_end = offset
-
-      local hlg = false
-      local sm = m:sub(3, 8)
-      for _, c_hlg in pairs(hlgs) do
-        if c_hlg == sm then
-          hlg = true
-          break
-        end
-      end
-
-      if not hlg then
-        vim.api.nvim_set_hl(my_ns, sm, { fg = '#' .. sm })
-        hlgs[#hlgs + 1] = sm
-      end
-
-      if col_start and col_end then
-        vim.api.nvim_buf_add_highlight(0, my_ns, sm, row - 1, col_start - 1, col_end - 1)
-      end
-    end
-  end
-end
-
-vim.api.nvim_create_autocmd({ 'WinEnter', 'WinScrolled' }, {
-  callback = function()
-    hex_color_highlight()
-  end,
-})
-
-vim.api.nvim_create_user_command('CheckReds', function()
-  local height = vim.api.nvim_win_get_height(0)
-  local num_shades = math.max(height - 4, 4)
-  local colors = {}
-  for idx = 0, num_shades do
-    local val = string.format('%02x', (idx * 255) / num_shades)
-    colors[#colors + 1] = '#' .. val .. '0000'
-  end
-  local buf = vim.api.nvim_create_buf(false, true)
-  local win = vim.api.nvim_open_win(buf, false, {
-    relative = 'win',
-    row = 1,
-    col = 3,
-    width = 7,
-    height = #colors,
-    border = WIN_BORDER,
-    style = 'minimal',
-  })
-
-  vim.api.nvim_set_current_win(win)
-  vim.api.nvim_buf_set_lines(0, 0, 2, false, colors)
-  for idx, c in ipairs(colors) do
-    local rgb = string.sub(c, 2)
-    local hl_name = 'ColorCheck-' .. rgb
-    vim.api.nvim_set_hl(0, hl_name, { bg = c, fg = '#000000' })
-    vim.api.nvim_buf_add_highlight(0, 0, hl_name, idx - 1, 0, -1)
-  end
-end, { desc = 'Test your colors' })
-
+--
 -- Diagnostic keymaps
+--
+
+-- we want high priority, higher than gitsigns and marks
+vim.diagnostic.config { signs = { priority = 100 } }
+
 vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, { desc = 'Go to previous [D]iagnostic message' })
 vim.keymap.set('n', ']d', vim.diagnostic.goto_next, { desc = 'Go to next [D]iagnostic message' })
 vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, { desc = 'Show diagnostic [E]rror messages' })
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
 
-do
-  local dt = 10
-  local n = 10
-
-  --- @param dir 'j' | 'k'
-  local function glide(dir)
-    return function()
-      local d = vim.api.nvim_get_mode()
-      for i = 0, n do
-        vim.fn.timer_start(i * dt, function()
-          vim.api.nvim_feedkeys(dir, d.mode, false)
-        end)
-      end
-    end
-  end
-
-  vim.keymap.set({ 'v', 'n' }, '<M-j>', glide 'j')
-  vim.keymap.set({ 'v', 'n' }, '<M-k>', glide 'k')
-end
-
 -- useful for figuring out what higlight groups are relevant for stuff under cursor
 vim.keymap.set('n', '<leader>I', function()
   vim.show_pos()
 end)
-
--- Nice to start off where you left off
-vim.api.nvim_create_autocmd('BufWinEnter', {
-  desc = 'Start off where you left off',
-  group = vim.api.nvim_create_augroup('kickstart-buf-enter', { clear = true }),
-  -- NOTE: this is just the command '"  in lua [[ and ]] are similar to ``` in other languages
-  callback = function()
-    local ok, pos = pcall(vim.api.nvim_buf_get_mark, 0, [["]])
-    if ok and pos[1] > 0 then
-      -- protected mode because sometimes this will fail, for example on NON FILE BUFFERS
-      pcall(vim.api.nvim_win_set_cursor, 0, pos)
-    end
-  end,
-})
 
 -- My dumb custom workspac linting thing
 -- NOTE: currently only set up for tsc + eslint in a node.js project
@@ -428,23 +333,6 @@ if not vim.loop.fs_stat(lazypath) then
   }
 end ---@diagnostic disable-next-line: undefined-field
 vim.opt.rtp:prepend(lazypath)
-
--- returns true if buffer is trivial
---- @param buf integer -- 0 is current buffer
---- @return boolean
-local function buf_is_trivial(buf)
-  local n = vim.api.nvim_buf_line_count(buf)
-  if n == 0 then
-    return true
-  end
-  if n == 1 then
-    local c = #vim.api.nvim_buf_get_lines(buf, 0, 1, true)[1]
-    if c == 0 then
-      return true
-    end
-  end
-  return false
-end
 
 vim.keymap.set('n', '<leader>U', function()
   local code = vim.fn.input 'u:'
@@ -733,7 +621,7 @@ require('lazy').setup({
             local win = wins[3]
 
             local buf = vim.api.nvim_win_get_buf(wins[3])
-            if buf_is_trivial(buf) then
+            if utils.buf_is_trivial(buf) then
               print 'no change'
               vim.cmd [[:DiffviewClose]]
               return
@@ -773,7 +661,7 @@ require('lazy').setup({
               -- NOTE at this point in "time" our current window
               --      is the the active window in the diffview, diffview hooks may impact which window this is
 
-              if buf_is_trivial(0) then
+              if utils.buf_is_trivial(0) then
                 print 'no changes'
                 -- vim.cmd [[:DiffviewClose]]
                 return
@@ -1324,33 +1212,6 @@ require('lazy').setup({
             end
           end
 
-          -- ctx.correlationId,
-
-          -- white_disabled = '#847762',
-          -- set_hl('DiagnosticUnnecessary', { fg = c.white_disabled })
-
-          -- '#ad5353' '#ad7653' '#ad9b53' '#92ad53' '#62ad53' '#53ad6d' '#53ad97' '#53a4ad' '#5373ad' '#7d53ad' '#a353ad'
-          --
-          -- '#005bff' -> '#004fdd' '#004dd7' '#346bce' '#1e6eff' '#2674ff' '#74a5ff' -- dune blue eyes
-          --
-          -- '#00e8ff' -> '#37c5d3' '#008f9d' '#00646e' '#2e909a' '#3aa6b0'
-          --
-          -- '#00ffbb' ->
-          --
-          -- '#ff6400' -> '#a8714d' '#d5651c' '#3d2c21' '#3a1700' '#653e25' '#714a31'    -- dune orange
-          --
-          -- '#ff9f00' ->
-          --
-          -- '#ff1b00' -> '#e26d63'
-          --
-          -- '#C39D5E' '#ad5353' '#845A40' '#ad6639' '#ad7653' '#d79921' '#ad9b53' '#92ad53' '#62ad53' '#53ad6d' '#458588' '#53ad97' '#53a4ad' '#5373ad' '#7d53ad' '#a353ad'
-          --
-          --                               '#914c20'
-          -- let g:terminal_ansi_colors = ['#1c1c1c', '#cc241d', '#98971a', '#d79921', '#458588', '#b16286', '#689d6a',
-          --- '#b53a35' '#ad3e46' '#ad3e7a'
-
-          -- '#487EB5' '#B8BB26' '#D3869B''#E7545E'  '#b8a586'
-
           tweak_hl('Search', { fg = c.teal })
           tweak_hl('IncSearch', { fg = c.sand })
           tweak_hl('DiagnosticUnderlineError', { undercurl = true })
@@ -1749,9 +1610,6 @@ require('lazy').setup({
           },
         }
 
-        -- You can configure sections in the statusline by overriding their
-        -- default behavior. For example, here we set the section for
-        -- cursor location to LINE:COLUMN
         ---@diagnostic disable-next-line: duplicate-set-field
         statusline.section_location = function()
           return '%2l:%-2v'
@@ -1759,10 +1617,6 @@ require('lazy').setup({
 
         -- statusline.section_diff(args)
       end
-
-      -- ... and there is more!
-      --  Check out: https://github.com/echasnovski/mini.nvim
-      --
     end,
   },
   {
