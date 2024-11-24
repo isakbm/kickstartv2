@@ -1331,7 +1331,8 @@ require('lazy').setup({
       ---@diagnostic disable-next-line: missing-fields
       require('nvim-treesitter.configs').setup(opts)
 
-      -- testing treesitter nodes ...
+      -- utility to get us color and information about the
+      -- symbol under the cursor
       vim.keymap.set('n', '<leader>J', function()
         local info = vim.inspect_pos()
         local ts = info.treesitter
@@ -1368,13 +1369,6 @@ require('lazy').setup({
           end
         end
       end)
-
-      -- There are additional nvim-treesitter modules that you can use to interact
-      -- with nvim-treesitter. You should go explore a few and see what interests you:
-      --
-      --   TODO: - Incremental selection: Included, see `:help nvim-treesitter-incremental-selection-mod`
-      --   TODO: - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
-      --
     end,
   },
 
