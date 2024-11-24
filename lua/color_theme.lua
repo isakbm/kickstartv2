@@ -1,4 +1,8 @@
+---@class I.UpdateOpts
+---@field clear boolean?
+
 return {
+
   --- update highlights based on input color palette
   ---@param c table<string, string>
   ---@param theme Colorscheme
