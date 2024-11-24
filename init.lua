@@ -88,17 +88,18 @@
     Q: how do I see changes introduced by a range of commits, like diff a..b
     A: <leader>gl   visual selection and then hit <enter>
 
+    Q: how do I refactor a variable name or function name
+    A: <leader>rn
+
   TODO:
+
+    >> auto update the git graph
+
+    >> we are going to want to find a way to show ONLY unsaved changes
 
     >> disable or remap the cO in diffview, scary that it would pick
        resolutions for all conflicts and at the same time is nearly
        identical to resolving a single conflcit with co
-
-    >> our patch of which-key seems to have a bug
-
-       1. open nvim
-       2. run :checkhealth
-       3. hitting <leader> no longer brings up preview and keybindings fail?
 
     >> strange highlighting on dockerfiles
 
@@ -115,13 +116,11 @@
        Make it searchable.
        Have tool slike `to uppercase` `to hex` etc etc :D
 
-    >> find better way of typoing [ ] and { } on a norwegian keyboard?
+    >> find better way of typing [ ] and { } on a norwegian keyboard?
 
     >> get a nice way to jump to parent scopes locally. Currently
        we can do something like this with treesitter-context, but
        that jumps to the context that is 'off screen' try '[c'
-
-    >> auto update the git graph
 
     >> find out how to quickly switch to previous buffer
 
@@ -133,9 +132,6 @@
        literally go back with undo ... can this be changed in a setting?
 
     >> find a way to do grep search over subset of files
-
-    >> I REALLY need a way to quickly see the changes in the buffer that
-       have not been saved to file
 
 =================================================================--]]
 
@@ -185,6 +181,10 @@ WIN_BORDER = { '╭', '─', '╮', '│', '╯', '─', '╰', '│' }
 
 --=========================== KEYMAPS =============================
 
+-- NOTE: I really displike default behavior of paste, it should use register "0 in my opionion thats what these bindings do
+vim.keymap.set('n', 'p', '"0p', { desc = 'p paste from register "0' })
+vim.keymap.set('n', 'P', '"0P', { desc = 'P paste from register "0' })
+
 -- NOTE: hide higlights after hitting <Esc>
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
@@ -213,7 +213,7 @@ vim.keymap.set('n', '<C-k>', ':m-2<cr>', { desc = 'swap line with line above' })
 --
 --       you want to copy Vector2[]; and replace float; with that ... :)
 --
-vim.keymap.set('n', 'R', 'PlD', { desc = 'replace rest of line with yanked' }) -- vscode <alt> + <down>
+vim.keymap.set('n', 'R', '"0PlD', { desc = 'replace rest of line with yanked' }) -- vscode <alt> + <down>
 
 vim.keymap.set('n', '<C-k>', ':m-2<cr>', { desc = 'swap line with line above' }) -- vscode <alt> + <down>
 
@@ -727,7 +727,6 @@ require('lazy').setup({
           vim.opt_local.cursorline = false
         end,
         view_opened = function()
-          -- print 'opening view'
           vim.fn.timer_start(100, function()
             local tp = vim.api.nvim_get_current_tabpage()
             local wins = vim.api.nvim_tabpage_list_wins(tp)
