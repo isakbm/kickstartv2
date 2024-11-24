@@ -1183,206 +1183,140 @@ require('lazy').setup({
             return
           end
 
-          local hl = theme.groups or {}
+          local cset = (function()
+            ---@type vim.api.keyset.highlight
+            local last_hl = { fg = c.sand }
 
-          -- sets several highlight, if any already existed it gets overwritten entirely
-          ---@param names string | table<string>
-          ---@param data vim.api.keyset.highlight
-          local function set_hl(names, data)
-            if type(names) == 'string' then
-              set_hl({ names }, data)
-              return
+            ---@param name string
+            ---@param hl? vim.api.keyset.highlight
+            ---@param tweak? "tweak"
+            return function(name, hl, tweak)
+              local name = vim.trim(name)
+              local hl_groups = theme.groups or {}
+              if hl then
+                last_hl = hl
+              end
+              if tweak then
+                hl_groups[name] = hl_groups[name] or {}
+                hl_groups[name] = vim.tbl_extend('force', hl_groups[name], last_hl)
+              else
+                hl_groups[name] = last_hl
+              end
             end
-            for _, name in pairs(names) do
-              hl[name] = data
-            end
-          end
+          end)()
 
-          -- tweaks an existing highlight, only adds or merges does not overwrite
-          ---@param names string | table<string>
-          ---@param data vim.api.keyset.highlight
-          local function tweak_hl(names, data)
-            if type(names) == 'string' then
-              tweak_hl({ names }, data)
-              return
-            end
-            for _, name in pairs(names) do
-              hl[name] = hl[name] or {}
-              hl[name] = vim.tbl_extend('force', hl[name], data)
-            end
-          end
+          cset('Search        ', { fg = c.teal }, 'tweak')
+          cset('IncSearch     ', { fg = c.sand }, 'tweak')
+          cset('NormalFloat   ', { fg = c.white, bg = nil })
+          cset('Normal        ', { fg = c.white, bg = c.blackboard })
+          cset 'SignColumn    '
 
-          tweak_hl('Search', { fg = c.teal })
-          tweak_hl('IncSearch', { fg = c.sand })
-          tweak_hl('DiagnosticUnderlineError', { undercurl = true })
+          cset('DiagnosticUnderlineError', { undercurl = true }, 'tweak')
 
-          set_hl('NormalFloat', { fg = c.white, bg = nil })
+          cset('Directory', { fg = c.teal })
+          cset 'Statement'
+          cset 'Function'
+          cset 'Macro'
+          cset '@tag'
+          cset '@function.builtin'
+          cset '@tag.builtin'
+          cset '@lsp.type.formatSpecifier'
 
-          set_hl('Normal', { fg = c.white, bg = c.blackboard })
-          set_hl('SignColumn', hl.Normal)
+          cset('Delimiter', { fg = c.brown })
+          cset 'Keyword'
+          cset 'Repeat'
+          cset 'ColorEditTitle'
+          cset 'Conditional'
+          cset 'Operator'
+          cset 'WinSeparator'
+          cset 'TelescopeBorder'
+          cset '@keyword.type'
+          cset '@tag.delimiter'
+          cset '@constructor.lua'
+          cset 'LeapLabelPrimary'
 
-          -- WIP: ansi stuff :FIXME
-          do
-            set_hl({ 'Yellow' }, { fg = c.sand })
-            set_hl({ 'Blue' }, { fg = c.teal })
-            set_hl({ 'Red' }, { fg = c.pink2 })
-            set_hl({ 'Black' }, { fg = c.white })
-            set_hl({ 'Bright_Black' }, { fg = c.brown })
-            set_hl({ 'Green' }, { fg = c.pear })
-            set_hl({ 'Default', 'White' }, { fg = c.white })
-            set_hl({ 'Magenta' }, { fg = '#ad3e7a' })
-            set_hl({ 'Cyan' }, { fg = c.teal })
+          cset('Type', { fg = c.sand })
+          cset 'Number'
+          cset 'Boolean'
+          cset 'String'
+          cset 'Structure'
+          cset 'GitSignsChange'
+          cset '@constructor'
+          cset 'DiffviewFilePanelPath'
+          cset '@type.builtin'
 
-            set_hl({
-              'Bright_Red',
-              'Bright_Green',
-              'Bright_Yellow',
-              'Bright_Blue',
-              'Bright_Magenta',
-              'Bright_Cyan',
-              'Bright_White',
-            }, { fg = '#FF0000' })
-          end
+          cset('Identifier', { fg = c.white })
+          cset 'Identifier'
+          cset '@markup.raw'
+          cset '@tag.attribute'
+          cset 'markdownBlockQuote'
 
-          set_hl({
-            'Directory',
-            'Statement',
-            'Function',
-            'Macro',
-            '@tag',
-            '@function.builtin',
-            '@tag.builtin',
-            '@lsp.type.formatSpecifier',
-          }, { fg = c.teal })
+          cset('Include', { fg = c.pear })
+          cset 'Label'
+          cset 'Title'
+          cset 'ColorEditTitleActive'
+          cset 'TelescopeTitle'
+          cset 'TodoBgTODO'
+          cset 'TodoBgNOTE'
+          cset 'GitSignsAdd'
+          cset '@lsp.type.namespace'
+          cset '@module'
 
-          set_hl({
-            'Delimiter',
-            'Keyword',
-            'Repeat',
-            'ColorEditTitle',
-            'Conditional',
-            'Operator',
-            'WinSeparator',
-            'TelescopeBorder',
-            '@keyword.type',
-            '@tag.delimiter',
-            '@constructor.lua',
-            'LeapLabelPrimary',
-          }, { fg = c.brown })
+          cset('Constant', { fg = c.pink })
+          cset 'SpecialChar'
+          cset 'GitSignsDelete'
+          cset '@constant.builtin'
+          cset '@lsp.type.lifetime'
+          cset '@lsp.typemod.keyword.async'
+          cset '@lsp.typemod.operator.controlFlow'
+          cset 'DiffviewFilePanelTitle'
 
-          set_hl({
-            'Type',
-            'Number',
-            'Boolean',
-            'String',
-            'Structure',
-            'GitSignsChange',
-            '@constructor',
-            'DiffviewFilePanelPath',
-            '@type.builtin',
-          }, { fg = c.sand })
+          cset('Comment', { fg = c.gray })
+          cset 'LeapBackdrop'
 
-          set_hl({
-            'Identifier',
-            '@markup.raw',
-            '@tag.attribute',
-            'markdownBlockQuote',
-          }, { fg = c.white })
+          cset('LineNr', { fg = c.gray3 })
+          cset('CursorLineNr', { fg = c.pear2 })
 
-          set_hl({
-            'Include',
-            'Label',
-            'Title',
-            'ColorEditTitleActive',
-            'TelescopeTitle',
-            'TodoBgTODO',
-            'TodoBgNOTE',
-            'GitSignsAdd',
-            '@lsp.type.namespace',
-            '@module',
-          }, { fg = c.pear })
+          cset('CursorLine', { bg = c.gray4 })
 
-          set_hl({
-            'Constant',
-            'SpecialChar',
-            'GitSignsDelete',
-            '@constant.builtin',
-            '@lsp.type.lifetime',
-            '@lsp.typemod.keyword.async',
-            '@lsp.typemod.operator.controlFlow',
-            'DiffviewFilePanelTitle',
-          }, { fg = c.pink })
+          cset('TodoBgWARN', { fg = c.pink2 })
+          cset 'TodoBgFIX'
+          cset 'TodoBgFIXME'
 
-          set_hl({
-            'Comment',
-            'LeapBackdrop',
-          }, { fg = c.gray })
+          cset('TodoBgWARN', { fg = c.sand })
 
-          set_hl({ 'LineNr' }, { fg = c.gray3 })
-          set_hl({ 'CursorLineNr' }, { fg = c.pear2 })
+          cset('Special', { fg = c.orange })
 
-          set_hl({ 'CursorLine' }, { bg = c.gray4 })
+          cset('GitGraphBranch1   ', { fg = c.blue3 })
+          cset('GitGraphBranch2   ', { fg = c.pink })
+          cset('GitGraphBranch3   ', { fg = c.sand })
+          cset('GitGraphBranch4   ', { fg = c.pear })
+          cset('GitGraphBranch5   ', { fg = c.orange })
 
-          set_hl({
-            'TodoBgWARN',
-            'TodoBgFIX',
-            'TodoBgFIXME',
-          }, { fg = c.pink2 })
+          cset('GitGraphHash      ', { fg = c.teal })
+          cset('GitGraphTimestamp ', { fg = c.sand })
+          cset('GitGraphAuthor    ', { fg = c.brown })
+          cset('GitGraphBranchName', { fg = c.pear })
+          cset('GitGraphBranchTag ', { fg = c.pink })
+          cset('GitGraphBranchMsg ', { fg = c.gray })
 
-          set_hl({
-            'TodoBgWARN',
-          }, { fg = c.sand })
+          cset('DiffAdd               ', { bg = '#003530' })
+          cset('DiffChange            ', { bg = '#003530' })
+          cset('DiffText              ', { bg = '#004040' })
+          cset('DiffDelete            ', { fg = c.pink2 })
+          cset('DiffviewDiffDeleteDim ', { fg = c.pink })
 
-          set_hl('Special', { fg = c.orange })
+          cset('MiniStatuslineBranch           ', { fg = c.pear, bg = c.gray2 })
+          cset('MiniStatuslineWorkspace        ', { fg = c.pear, bg = c.gray2 })
+          cset('MiniStatuslineWorkspaceUnsaved ', { fg = c.pink2, bg = c.gray2 })
+          cset('MiniStatuslineChanges          ', { fg = c.sand, bg = c.gray2 })
+          cset('MiniStatuslineDiagnostics      ', { fg = c.teal, bg = c.gray2 })
+          cset('MiniStatuslineFileinfo         ', { fg = c.teal, bg = c.gray2 })
+          cset('MiniStatuslineModeNormal       ', { fg = c.gray2, bg = c.sand })
+          cset('MiniStatuslineModeVisual       ', { fg = c.gray2, bg = c.pink })
+          cset('MiniStatuslineModeInsert       ', { fg = c.gray2, bg = c.teal })
 
-          set_hl('GitGraphBranch1', { fg = c.blue3 })
-          set_hl('GitGraphBranch2', { fg = c.pink })
-          set_hl('GitGraphBranch3', { fg = c.sand })
-          set_hl('GitGraphBranch4', { fg = c.pear })
-          set_hl('GitGraphBranch5', { fg = c.orange })
-
-          set_hl('GitGraphHash', { fg = c.teal })
-          set_hl('GitGraphTimestamp', { fg = c.sand })
-          set_hl('GitGraphAuthor', { fg = c.brown })
-          set_hl('GitGraphBranchName', { fg = c.pear })
-          set_hl('GitGraphBranchTag', { fg = c.pink })
-          set_hl('GitGraphBranchMsg', { fg = c.gray })
-
-          set_hl({
-            'DiffAdd',
-            'DiffChange',
-          }, { bg = '#003530' })
-
-          set_hl('DiffText', { bg = '#004040' })
-          set_hl('DiffDelete', { fg = c.pink2 })
-          set_hl('DiffviewDiffDeleteDim', { fg = c.pink })
-
-          set_hl({
-            'MiniStatuslineBranch',
-            'MiniStatuslineWorkspace',
-            'MiniStatuslineWorkspaceUnsaved',
-            'MiniStatuslineChanges',
-            'MiniStatuslineDiagnostics',
-            'MiniStatuslineFileinfo',
-          }, { bg = hl.StatusLineNC.fg })
-
-          tweak_hl('MiniStatuslineBranch', { fg = c.pear })
-          tweak_hl('MiniStatuslineWorkspaceUnsaved', { fg = c.pink2 })
-          tweak_hl('MiniStatuslineChanges', { fg = c.sand })
-          tweak_hl('MiniStatuslineDiagnostics', { fg = c.teal })
-          tweak_hl('MiniStatuslineFileinfo', { fg = c.teal })
-
-          set_hl({
-            'MiniStatuslineModeNormal',
-            'MiniStatuslineModeVisual',
-            'MiniStatuslineModeInsert',
-          }, { fg = hl.StatusLineNC.fg })
-
-          tweak_hl('MiniStatuslineModeNormal', { bg = c.sand })
-          tweak_hl('MiniStatuslineModeVisual', { bg = c.pink })
-          tweak_hl('MiniStatuslineModeInsert', { bg = c.teal })
-
-          set_hl('Visual', { bg = c.pear33 })
+          cset('Visual', { bg = c.pear33 })
 
           ---@diagnostic disable-next-line: undefined-field
           theme:apply(opts)
