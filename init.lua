@@ -616,7 +616,7 @@ require('lazy').setup({
               vim.api.nvim_set_current_win(cwin)
               local n = vim.api.nvim_buf_line_count(buf)
               local pos = vim.g.diffview_cursor_pos
-              if pos[1] <= n then
+              if pos and pos[1] <= n then
                 vim.api.nvim_win_set_cursor(0, pos) -- note that 0 -> current window which is now the diff window after 100 ms
                 vim.api.nvim_feedkeys('zz', 'n', false)
               end
