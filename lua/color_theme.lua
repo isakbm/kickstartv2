@@ -108,6 +108,8 @@ return {
     cset 'TodoBgFIX'
     cset 'TodoBgFIXME'
 
+    cset('TodoBgSTORE', { fg = c.orange })
+
     cset('TodoBgWARN', { fg = c.sand })
 
     cset('Special', { fg = c.orange })

@@ -93,6 +93,12 @@
 
   TODO:
 
+    >> make telescope "sg" remember what you searched for last, or even just keep in memory
+       what you searched for... on the other hand you could just add things to quickfix list?
+
+       if you're really feeling it, implement a global search (gs) search history, so you can search fo searches
+       using telescope ... telescope search search XD
+
     >> auto update the git graph
 
     >> we are going to want to find a way to show ONLY unsaved changes
@@ -180,13 +186,6 @@ vim.opt.tabstop = 2
 WIN_BORDER = { '╭', '─', '╮', '│', '╯', '─', '╰', '│' }
 
 --=========================== KEYMAPS =============================
-
--- NOTE: I really displike default behavior of paste, it should use register "0 in my opionion thats what these bindings do
-vim.keymap.set('n', 'p', '"0p', { desc = 'p paste from register "0' })
-vim.keymap.set('n', 'P', '"0P', { desc = 'P paste from register "0' })
-
-vim.keymap.set('n', '<leader>p', 'p', { desc = 'vanilla p paste' })
-vim.keymap.set('n', '<leader>P', 'P', { desc = 'vanilla P paste' })
 
 -- NOTE: hide higlights after hitting <Esc>
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
@@ -611,75 +610,50 @@ require('lazy').setup({
     dependencies = { 'nvim-web-devicons' },
     opts = {
       hooks = {
-        diff_buf_read = function()
-          vim.opt_local.cursorline = false
-        end,
-        view_opened = function()
-          vim.fn.timer_start(100, function()
-            local tp = vim.api.nvim_get_current_tabpage()
-            local wins = vim.api.nvim_tabpage_list_wins(tp)
-            local win = wins[3]
-
-            local buf = vim.api.nvim_win_get_buf(wins[3])
-            if utils.buf_is_trivial(buf) then
-              print 'no change'
-              vim.cmd [[:DiffviewClose]]
-              return
-            end
-
-            if win then
-              vim.api.nvim_set_current_win(win)
-              vim.api.nvim_win_set_cursor(0, { 1, 0 })
-            end
-          end)
-        end,
-      },
-    },
-    init = function()
-      vim.keymap.set(
-        'n',
-        '<leader>gd',
-        --[[
-             1. open diffview
-             2. turn off any highlighted search matches
-             3. jump two windows (should end us up at current buffer)
-             4. go to last location in buffer ... not we have to do this
-                after a delay ... 100 ms seems to be sufficient, increase
-                if you don't get deisred result
-        --]]
-        --
-        function()
-          -- first we get current cursor location in the file we're in
-          local pos = vim.api.nvim_win_get_cursor(0)
-
-          vim.cmd [[:DiffviewOpen]]
-          vim.fn.timer_start(
-            100, -- delay ms ... increase this if you dont see desired result
-            function()
-              -- this delayed callback is optional
-              -- it effectively goes to where you were in the file
-              -- NOTE at this point in "time" our current window
-              --      is the the active window in the diffview, diffview hooks may impact which window this is
-
-              if utils.buf_is_trivial(0) then
-                print 'no changes'
-                -- vim.cmd [[:DiffviewClose]]
-                return
-              end
-
-              local n = vim.api.nvim_buf_line_count(0)
-
+        diff_buf_win_enter = function(buf, cwin, ctx)
+          if ctx.symbol == 'b' then
+            vim.schedule(function()
+              vim.api.nvim_set_current_win(cwin)
+              local n = vim.api.nvim_buf_line_count(buf)
+              local pos = vim.g.diffview_cursor_pos
               if pos[1] <= n then
                 vim.api.nvim_win_set_cursor(0, pos) -- note that 0 -> current window which is now the diff window after 100 ms
                 vim.api.nvim_feedkeys('zz', 'n', false)
               end
-            end
-          )
+            end)
+          end
         end,
-        {
-          desc = '[G]it [D]iff',
-        }
-      )
+      },
+    },
+    init = function()
+      vim.keymap.set('n', '<leader>gd', function()
+        --- check for local changes using git
+        local function has_local_changes()
+          local handle = io.popen 'git status --porcelain 2>/dev/null'
+          if not handle then
+            return false
+          end
+          local result = handle:read '*a'
+          handle:close()
+          return result ~= ''
+        end
+
+        local changes = has_local_changes()
+        if not changes then
+          print 'no changes'
+          return
+        end
+
+        -- fir check if there's a meaningful dif ... diffview doesn't do that ...
+
+        -- first we get current cursor location in the file we're in
+        -- it is used in the hooks of diffview above so that we can
+        -- go direclty to file and line that we're currently on when executing <leader>gd
+        vim.g.diffview_cursor_pos = vim.api.nvim_win_get_cursor(0)
+        vim.cmd [[:DiffviewOpen]]
+      end, {
+        desc = '[G]it [D]iff',
+      })
     end,
   },
 
@@ -845,8 +819,7 @@ require('lazy').setup({
 
           -- Execute a code action, usually your cursor needs to be on top of an error
           -- or a suggestion from your LSP for this to activate.
-          local code_action_desc = '[C]ode [A]ction'
-          map('<leader>ca', vim.lsp.buf.code_action, code_action_desc)
+          map('<leader>ca', vim.lsp.buf.code_action, '[C]ode [A]ction')
 
           -- Opens a popup that displays documentation about the word under your cursor
           --  See `:help K` for why this keymap
@@ -1130,7 +1103,7 @@ require('lazy').setup({
     opts = function(opts)
       -- NOTE: lowercase keywords will also match full uppercase
       local keywords = {}
-      for _, word in ipairs { 'fixme', 'fix', 'todo', 'warn', 'NOTE' } do
+      for _, word in ipairs { 'stored', 'fixme', 'todo', 'warn', 'NOTE' } do
         keywords[word] = { alt = { string.upper(word) } }
       end
       return vim.tbl_extend('force', opts, {
