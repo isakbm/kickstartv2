@@ -606,15 +606,23 @@ require('lazy').setup({
   },
 
   {
+    -- NOTE: we configure diffivew to not persiste too many diffview tabpages
+    --       we do that with two strategies, youll find those marked with comments
+    --       [strat 1] and [strat 2]
     'sindrets/diffview.nvim',
     dependencies = { 'nvim-web-devicons' },
     opts = {
       hooks = {
+        view_leave = function()
+          -- [strat 1] close tabpage before leaving
+          vim.g.diffview_tp = nil
+          vim.cmd.tabc()
+        end,
         diff_buf_win_enter = function(buf, cwin, ctx)
+          vim.g.diffview_tp = vim.api.nvim_get_current_tabpage()
           if ctx.symbol == 'b' and vim.g.diffview_just_entered then
             vim.g.diffview_just_entered = false
             vim.schedule(function()
-              print 'scheduled diffview enter'
               vim.api.nvim_set_current_win(cwin)
               local n = vim.api.nvim_buf_line_count(buf)
               local pos = vim.g.diffview_cursor_pos
@@ -629,6 +637,17 @@ require('lazy').setup({
     },
     init = function()
       vim.keymap.set('n', '<leader>gd', function()
+        --- [strat 2] if there's already a diffivew tap page then close that first
+        local tp = vim.g.diffview_tp
+        if tp then
+          for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tp)) do
+            if vim.api.nvim_win_is_valid(win) then
+              vim.api.nvim_win_close(win, true)
+            end
+          end
+          vim.g.diffview_tp = nil
+        end
+
         --- check for local changes using git
         local function has_local_changes()
           local handle = io.popen 'git status --porcelain 2>/dev/null'
