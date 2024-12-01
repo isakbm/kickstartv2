@@ -611,8 +611,10 @@ require('lazy').setup({
     opts = {
       hooks = {
         diff_buf_win_enter = function(buf, cwin, ctx)
-          if ctx.symbol == 'b' then
+          if ctx.symbol == 'b' and vim.g.diffview_just_entered then
+            vim.g.diffview_just_entered = false
             vim.schedule(function()
+              print 'scheduled diffview enter'
               vim.api.nvim_set_current_win(cwin)
               local n = vim.api.nvim_buf_line_count(buf)
               local pos = vim.g.diffview_cursor_pos
@@ -650,6 +652,7 @@ require('lazy').setup({
         -- it is used in the hooks of diffview above so that we can
         -- go direclty to file and line that we're currently on when executing <leader>gd
         vim.g.diffview_cursor_pos = vim.api.nvim_win_get_cursor(0)
+        vim.g.diffview_just_entered = true
         vim.cmd [[:DiffviewOpen]]
       end, {
         desc = '[G]it [D]iff',
