@@ -93,6 +93,16 @@
 
   TODO:
 
+    >> add single branch mode for gitgraph, make it easy to select which
+       branch you want to see, consider display a subset of branches, not just ONE
+
+    >> there seems to be an awkward bug with `diffview`
+
+       1. make a modification to a file
+       2. stage it
+       3. make another modification to the same file in the same area
+       4. stage it ...
+
     >> make telescope "sg" remember what you searched for last, or even just keep in memory
        what you searched for... on the other hand you could just add things to quickfix list?
 
@@ -182,6 +192,8 @@ vim.opt.expandtab = true
 vim.opt.shiftwidth = 2
 vim.opt.softtabstop = 2
 vim.opt.tabstop = 2
+
+vim.opt.runtimepath:prepend '/home/isak/.opam/default/share/ocp-indent/vim'
 
 WIN_BORDER = { '╭', '─', '╮', '│', '╯', '─', '╰', '│' }
 
@@ -477,6 +489,7 @@ require('lazy').setup({
             i = { ['<Esc><Esc>'] = require('telescope.actions').close },
             n = { ['<Esc><Esc>'] = require('telescope.actions').close },
           },
+          cache_picker = { num_pickers = 10 },
           file_ignore_patterns = { '.git/' },
         },
         -- pickers = {}
@@ -502,6 +515,7 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
       vim.keymap.set('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
       vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
+      vim.keymap.set('n', '<leader>sp', builtin.pickers, { desc = '[S]earch [P]icker' })
       vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
       vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
       vim.keymap.set('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
@@ -897,6 +911,7 @@ require('lazy').setup({
         -- But for many setups, the LSP (`tsserver`) will work just fine
         lemminx = {},
         jdtls = {},
+        ocamllsp = {},
         tsserver = {},
         prismals = {},
         lua_ls = {
