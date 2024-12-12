@@ -10,6 +10,11 @@ return {
 
     for line in res:gmatch '[^\r\n]+' do
       local filename, lnum, col, code, message = line:match '^(.+)%((%d+),(%d+)%)%s*:%s*(.+):%s*(.+)$'
+
+      if filename == nil then
+        goto continue
+      end
+
       if f_diagnostics[filename] == nil then
         f_diagnostics[filename] = {}
       end
@@ -29,6 +34,8 @@ return {
       --       relevant files and loads them in so that our LSP can indeed find the issues
       --       with them
       f_diagnostics[filename] = {}
+
+      ::continue::
     end
 
     return f_diagnostics
