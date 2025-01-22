@@ -639,7 +639,7 @@ require('lazy').setup({
         view_leave = function()
           -- [strat 1] close tabpage before leaving
           vim.g.diffview_tp = nil
-          vim.cmd.tabc()
+          vim.cmd [[:DiffviewClose]]
         end,
         diff_buf_win_enter = function(buf, cwin, ctx)
           vim.g.diffview_tp = vim.api.nvim_get_current_tabpage()
