@@ -411,6 +411,15 @@ require('lazy').setup({
         desc = 'random gitgraph',
       },
     },
+    init = function()
+      --- update gitgraph whenever we run a fugitive :Git command
+      vim.api.nvim_create_autocmd('User', {
+        pattern = 'FugitiveChanged',
+        callback = function()
+          require('gitgraph').draw({}, { all = true })
+        end,
+      })
+    end,
   },
 
   {
@@ -894,6 +903,9 @@ require('lazy').setup({
         rust_analyzer = {
           settings = {
             ['rust-analyzer'] = {
+              check = {
+                command = 'clippy',
+              },
               diagnostics = {
                 enable = true,
                 experimental = {
