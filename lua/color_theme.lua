@@ -138,14 +138,19 @@ return {
     cset('MiniStatuslineBranch           ', { fg = c.pear, bg = c.gray2 })
     cset('MiniStatuslineWorkspace        ', { fg = c.pear, bg = c.gray2 })
     cset('MiniStatuslineWorkspaceUnsaved ', { fg = c.pink2, bg = c.gray2 })
-    cset('MiniStatuslineChanges          ', { fg = c.sand, bg = c.gray2 })
-    cset('MiniStatuslineDiagnostics      ', { fg = c.teal, bg = c.gray2 })
-    cset('MiniStatuslineFileinfo         ', { fg = c.teal, bg = c.gray2 })
-    cset('MiniStatuslineModeNormal       ', { fg = c.gray2, bg = c.sand })
-    cset('MiniStatuslineModeVisual       ', { fg = c.gray2, bg = c.pink })
-    cset('MiniStatuslineModeInsert       ', { fg = c.gray2, bg = c.teal })
+    cset('MiniStatuslineChanges          ', { fg = c.sand2, bg = c.gray2 })
+    cset('MiniStatuslineDiagnostics      ', { fg = c.teal2, bg = c.gray2 })
+    cset('MiniStatuslineFileinfo         ', { fg = c.teal2, bg = c.gray2 })
+
+    cset('MiniStatuslineFilename', { fg = c.blackboard, bg = c.gray2 })
+    cset('MiniStatuslineFilenameUnsaved', { fg = c.blackboard, bg = c.gray2 })
+
+    cset('MiniStatuslineModeNormal       ', { fg = c.gray2, bg = c.sand2 })
+    cset('MiniStatuslineModeVisual       ', { fg = c.gray2, bg = c.pink3 })
+    cset('MiniStatuslineModeInsert       ', { fg = c.gray2, bg = c.teal2 })
 
     cset('Visual', { bg = c.pear33 })
+    cset('MatchParen', { bg = c.pear33 })
 
     ---@diagnostic disable-next-line: undefined-field
     theme:apply(opts)
