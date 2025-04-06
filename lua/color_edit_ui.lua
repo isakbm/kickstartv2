@@ -1,7 +1,7 @@
 local C = require 'coleur'
 
 return {
-  ---@param on_update fun(colors: table<string, string>)
+  ---@param on_update fun(colors: table<string, table<string, string>>)
   ---@param colorThemeMode "light"|"dark"
   color_edit_ui = function(on_update, colorThemeMode)
     local colors = require 'colors'
@@ -35,8 +35,8 @@ return {
       local color = C.Color:from_hex(colorHex)
 
       local on_update = function()
-        cp[name] = color:to_hex()
-        on_update(cp)
+        colors[colorThemeMode][name] = color:to_hex()
+        on_update(colors)
         -- update_highlights(c, theme, { clear = false })
       end
 

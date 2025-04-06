@@ -325,14 +325,14 @@ local function initColorTheme(mode)
   local color_edit_ui = require('color_edit_ui').color_edit_ui
 
   local on_color_update = function(colors)
-    update_highlights(colors, theme, { clear = false })
+    update_highlights(colors, mode, theme, { clear = false })
   end
 
   vim.keymap.set('n', '<leader>C', function()
     color_edit_ui(on_color_update, mode)
   end, { desc = 'color picker' })
 
-  update_highlights(myColors[mode], theme)
+  update_highlights(myColors, mode, theme)
 end
 
 -- toggle between light and dark modes

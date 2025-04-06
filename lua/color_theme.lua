@@ -4,10 +4,13 @@
 return {
 
   --- update highlights based on input color palette
-  ---@param c table<string, string>
+  ---@param colorPalette table<string, table<string, string>>
+  ---@param mode "light" | "dark"
   ---@param theme Colorscheme
   ---@param opts? I.UpdateOpts
-  update_highlights = function(c, theme, opts)
+  update_highlights = function(colorPalette, mode, theme, opts)
+    local c = colorPalette[mode]
+
     local cset = (function()
       ---@type vim.api.keyset.highlight
       local last_hl = { fg = c.sand }
