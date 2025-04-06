@@ -1,16 +1,17 @@
-local c = require 'colors'
-
 local C = require 'coleur'
-
-local palette = C.Palette:new(c)
 
 return {
   ---@param on_update fun(colors: table<string, string>)
-  color_edit_ui = function(on_update)
+  ---@param colorPalette string
+  color_edit_ui = function(on_update, colorPalette)
+    local cp = require(colorPalette)
+
+    local palette = C.Palette:new(cp)
+
     ---@type string[]
     local color_names = {}
 
-    for name, _ in pairs(c) do
+    for name, _ in pairs(cp) do
       color_names[#color_names + 1] = name
     end
 
@@ -20,11 +21,21 @@ return {
         return item
       end,
     }, function(name)
-      local color = C.Color:from_hex(c[name])
+      if name == nil then
+        return
+      end
+
+      local colorHex = cp[name]
+
+      if colorHex == nil then
+        return
+      end
+
+      local color = C.Color:from_hex(colorHex)
 
       local on_update = function()
-        c[name] = color:to_hex()
-        on_update(c)
+        cp[name] = color:to_hex()
+        on_update(cp)
         -- update_highlights(c, theme, { clear = false })
       end
 
@@ -61,8 +72,12 @@ return {
 
           -- persist the colors
           do
-            local home = os.getenv 'HOME'
-            local file = home .. '/.config/nvim/lua/colors.lua'
+            local file = vim.api.nvim_get_runtime_file('**/' .. colorPalette .. '.*', false)[1]
+
+            if file == nil then
+              return
+            end
+
             local f = io.open(file, 'w')
             if not f then
               return
@@ -72,7 +87,7 @@ return {
 
             -- sort colors by hue
             local ordered = {}
-            for name, color in pairs(c) do
+            for name, color in pairs(cp) do
               ordered[#ordered + 1] = { name = name, color = color }
             end
 

@@ -30,7 +30,7 @@ return {
       end
     end)()
 
-    cset('Search        ', { fg = c.teal }, 'tweak')
+    cset('Search        ', { bg = c.teal, fg = c.pear33 }, 'tweak')
     cset('IncSearch     ', { fg = c.sand }, 'tweak')
     cset('NormalFloat   ', { fg = c.white, bg = nil })
     cset('Normal        ', { fg = c.white, bg = c.blackboard })
@@ -102,7 +102,9 @@ return {
     cset('LineNr', { fg = c.gray3 })
     cset('CursorLineNr', { fg = c.pear2 })
 
-    cset('CursorLine', { bg = c.gray4 })
+    cset('CursorLine', { bg = c.gray5 })
+    cset('FoldColumn', { bg = c.gray5 })
+    cset('Folded', { bg = c.gray5 })
 
     cset('TodoBgWARN', { fg = c.pink2 })
     cset 'TodoBgFIX'
@@ -127,9 +129,9 @@ return {
     cset('GitGraphBranchTag ', { fg = c.pink })
     cset('GitGraphBranchMsg ', { fg = c.gray })
 
-    cset('DiffAdd               ', { bg = '#003530' })
-    cset('DiffChange            ', { bg = '#003530' })
-    cset('DiffText              ', { bg = '#004040' })
+    cset('DiffAdd               ', { bg = c.diffadd })
+    cset('DiffChange            ', { bg = c.diffchange })
+    cset('DiffText              ', { bg = c.difftext })
     cset('DiffDelete            ', { fg = c.pink2 })
     cset('DiffviewDiffDeleteDim ', { fg = c.pink })
 

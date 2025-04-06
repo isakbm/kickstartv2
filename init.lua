@@ -299,7 +299,9 @@ require 'glide'
 -- starts us off where we left off in buffer
 require 'recall_buf_position'
 
-local myColors = require 'colors_light'
+local myColorTheme = 'colors_light' -- just the name of the file, it will find it if require works on it
+
+local myColors = require(myColorTheme)
 
 -- an unorganized place for my utils
 local utils = require 'utils'
@@ -1260,7 +1262,7 @@ require('lazy').setup({
         end
 
         vim.keymap.set('n', '<leader>C', function()
-          color_edit_ui(on_color_update)
+          color_edit_ui(on_color_update, myColorTheme)
         end, { desc = 'color picker' })
 
         update_highlights(myColors, theme)
