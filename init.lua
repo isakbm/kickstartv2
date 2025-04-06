@@ -1284,6 +1284,8 @@ require('lazy').setup({
       do -- Simple and easy statusline.
         local statusline = require 'mini.statusline'
 
+        local c = require 'colors'
+
         -- set use_icons to true if you have a Nerd Font
         statusline.setup {
           use_icons = vim.g.have_nerd_font,
@@ -1326,11 +1328,11 @@ require('lazy').setup({
                 end
               end
               if vim.fn.reg_recording() ~= '' then
-                vim.api.nvim_set_hl(0, 'CursorLine', { bg = '#443a00' })
+                vim.api.nvim_set_hl(0, 'CursorLine', { bg = c.yellow })
               elseif unsaved_bufs then
-                vim.api.nvim_set_hl(0, 'CursorLine', { bg = '#230000' })
+                vim.api.nvim_set_hl(0, 'CursorLine', { bg = c.red })
               else
-                vim.api.nvim_set_hl(0, 'CursorLine', { bg = '#002211' })
+                vim.api.nvim_set_hl(0, 'CursorLine', { bg = c.gray5 })
               end
 
               local fileinfo = MiniStatusline.section_fileinfo { trunc_width = 120 }
