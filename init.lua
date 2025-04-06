@@ -737,6 +737,16 @@ require('lazy').setup({
           return result ~= ''
         end
 
+        --- this print statement is here to debug something that sometimes happens when trying to do <leader>gd
+        ---
+        ---      E5108: Error executing lua: vim/_editor.lua:0: nvim_exec2(): Vim:Not a repo (or any parent), or no supported VCS adapter!
+        ---      stack traceback:
+        ---      [C]: in function 'nvim_exec2'
+        ---      vim/_editor.lua: in function 'cmd'
+        ---      /home/isak/.config/nvim/init.lua:753: in function </home/isak/.config/nvim/init.lua:717>
+
+        print 'about to check for local changes?'
+
         local changes = has_local_changes()
         if not changes then
           print 'no changes'
