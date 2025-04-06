@@ -18,6 +18,8 @@ function Color:new()
   return color
 end
 
+local COLOR_PREVIEW_HL_NAME = 'ColorTheme-Preview'
+
 --- from rgb
 ---@param r number
 ---@param g number
@@ -110,6 +112,18 @@ function Palette:new(colors)
   return palette
 end
 
+-- create the color preview
+---@param color Palette.Color
+---@param row number
+---@param avail_width number
+---@return number[]
+function Palette:new_color_preview(color, row, avail_width)
+  local rgb_win = {}
+  local col = 5 + avail_width / 2
+  rgb_win[#rgb_win + 1] = self.new_floating_preview_win(color, row, col, 12)
+  return rgb_win
+end
+
 -- create the three side by side rgb channel windows
 ---@param color Palette.Color
 ---@param on_update function
@@ -144,6 +158,40 @@ function Palette:new_hsl_win_arr(color, on_update, row, avail_width)
     self.new_floating_chan_win(color, on_update, row, col[2], width, 's', 0, 100, 'hsl'),
     self.new_floating_chan_win(color, on_update, row, col[3], width, 'l', 0, 100, 'hsl'),
   }
+end
+
+---@param color Palette.Color
+---@param row integer
+---@param col integer
+---@param width integer
+---@return integer
+function Palette.new_floating_preview_win(color, row, col, width)
+  assert(row >= 0 and col >= 0, 'bad row or column arg')
+  assert(width > 0, 'bad width')
+
+  local buf = vim.api.nvim_create_buf(false, true)
+  local win_title = ' ' .. 'preview' .. ' '
+  local win = vim.api.nvim_open_win(buf, false, {
+    relative = 'win',
+    row = row,
+    col = col,
+    width = width,
+    height = 1,
+    border = WIN_BORDER,
+    style = 'minimal',
+    title = { { win_title, 'ColorEditTitle' } },
+    title_pos = 'center',
+  })
+
+  vim.api.nvim_buf_set_lines(buf, 0, 2, false, { 'foo bar()' })
+
+  -- color the values
+  local hl_name = COLOR_PREVIEW_HL_NAME
+  local fg = color:to_hex()
+  vim.api.nvim_set_hl(0, hl_name, { fg = fg })
+  vim.api.nvim_buf_add_highlight(buf, 0, hl_name, 0, 0, -1)
+
+  return win
 end
 
 ---@param color Palette.Color
@@ -253,6 +301,13 @@ function Palette.new_floating_chan_win(color, on_update, row, col, width, channe
       end
       color:set(channel, val)
       on_update()
+
+      do
+        -- update the preview
+        local hl_name = COLOR_PREVIEW_HL_NAME
+        local fg = color:to_hex()
+        vim.api.nvim_set_hl(0, hl_name, { fg = fg })
+      end
 
       vim.api.nvim_exec_autocmds('User', { pattern = 'ColorPaletteUpdate', data = { channel = channel } })
       ut.hide_cursor()

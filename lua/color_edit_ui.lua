@@ -37,7 +37,13 @@ return {
       local rgb_wins = palette:new_rgb_win_arr(color, on_update, row, width)
       local hsl_wins = palette:new_hsl_win_arr(color, on_update, row + 5, width)
 
-      local windows = vim.list_extend(vim.deepcopy(rgb_wins), hsl_wins)
+      local preview_wins = palette:new_color_preview(color, row + 10, width)
+
+      ---@type number[]
+      local windows = {}
+      vim.list_extend(windows, rgb_wins)
+      vim.list_extend(windows, hsl_wins)
+      vim.list_extend(windows, preview_wins)
 
       -- closing
       for _, win in pairs(windows) do
