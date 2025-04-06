@@ -299,6 +299,8 @@ require 'glide'
 -- starts us off where we left off in buffer
 require 'recall_buf_position'
 
+local myColors = require 'colors_light'
+
 -- an unorganized place for my utils
 local utils = require 'utils'
 
@@ -1247,8 +1249,6 @@ require('lazy').setup({
         -- everything related to color theme goes here inside this block
         require('mini.colors').setup {}
 
-        local c = require 'colors'
-
         ---@type Colorscheme
         local theme = MiniColors.get_colorscheme 'retrobox'
 
@@ -1263,7 +1263,7 @@ require('lazy').setup({
           color_edit_ui(on_color_update)
         end, { desc = 'color picker' })
 
-        update_highlights(c, theme)
+        update_highlights(myColors, theme)
       end
 
       -- Better Around/Inside textobjects
@@ -1283,8 +1283,6 @@ require('lazy').setup({
 
       do -- Simple and easy statusline.
         local statusline = require 'mini.statusline'
-
-        local c = require 'colors'
 
         -- set use_icons to true if you have a Nerd Font
         statusline.setup {
@@ -1328,11 +1326,11 @@ require('lazy').setup({
                 end
               end
               if vim.fn.reg_recording() ~= '' then
-                vim.api.nvim_set_hl(0, 'CursorLine', { bg = c.yellow })
+                vim.api.nvim_set_hl(0, 'CursorLine', { bg = myColors.yellow })
               elseif unsaved_bufs then
-                vim.api.nvim_set_hl(0, 'CursorLine', { bg = c.red })
+                vim.api.nvim_set_hl(0, 'CursorLine', { bg = myColors.red })
               else
-                vim.api.nvim_set_hl(0, 'CursorLine', { bg = c.gray5 })
+                vim.api.nvim_set_hl(0, 'CursorLine', { bg = myColors.gray5 })
               end
 
               local fileinfo = MiniStatusline.section_fileinfo { trunc_width = 120 }

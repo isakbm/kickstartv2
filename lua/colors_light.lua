@@ -1,0 +1,27 @@
+---@type table<string, string>
+local c = {
+  pink2 = '#E7545E',
+  pink = '#bf6079',
+  teal = '#005f60',
+  gray4 = '#202121',
+  gray2 = '#2a2b2b',
+  gray3 = '#282929',
+  blue3 = '#2cddbb',
+  pear2 = '#217f59',
+  sand = '#559d5e',
+  pear44 = '#2a3028',
+  pear = '#8EC07C',
+  pear4 = '#95ad8c',
+  pear3 = '#a8bda0',
+  pear33 = '#2a3625',
+  yellow = '#443a00',
+  white = '#030201',
+  brown = '#7c5a40',
+  orange = '#ad6639',
+  gray5 = '#f4f4f4',
+  comment = '#c6c6c6',
+  blackboard = '#ffffff',
+  red = '#230000',
+  gray = '#807e7e',
+}
+return c
