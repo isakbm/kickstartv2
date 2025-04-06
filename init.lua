@@ -299,9 +299,9 @@ require 'glide'
 -- starts us off where we left off in buffer
 require 'recall_buf_position'
 
-local myColorTheme = 'colors_light' -- just the name of the file, it will find it if require works on it
-
-local myColors = require(myColorTheme)
+---@type "light" | "dark"
+local colorThemeMode = 'light'
+local myColors = require 'colors'
 
 -- an unorganized place for my utils
 local utils = require 'utils'
@@ -310,6 +310,40 @@ local utils = require 'utils'
 --
 -- Experimental alternative to `Ctrl + V` which is blocked by some terminals
 vim.keymap.set('n', 'VV', '<C-v>')
+
+---@param mode "light" | "dark"
+local function initColorTheme(mode)
+  -- TODO: unfiy with this / take inspiration -> https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
+
+  -- everything related to color theme goes here inside this block
+  require('mini.colors').setup {}
+
+  ---@type Colorscheme
+  local theme = MiniColors.get_colorscheme 'retrobox'
+
+  local update_highlights = require('color_theme').update_highlights
+  local color_edit_ui = require('color_edit_ui').color_edit_ui
+
+  local on_color_update = function(colors)
+    update_highlights(colors, theme, { clear = false })
+  end
+
+  vim.keymap.set('n', '<leader>C', function()
+    color_edit_ui(on_color_update, mode)
+  end, { desc = 'color picker' })
+
+  update_highlights(myColors[mode], theme)
+end
+
+-- toggle between light and dark modes
+vim.keymap.set('n', '<leader>T', function()
+  if colorThemeMode == 'dark' then
+    colorThemeMode = 'light'
+  else
+    colorThemeMode = 'dark'
+  end
+  initColorTheme(colorThemeMode)
+end)
 
 --
 -- Diagnostic keymaps
@@ -1245,28 +1279,7 @@ require('lazy').setup({
     -- Collection of various small independent plugins/modules
     'echasnovski/mini.nvim',
     config = function()
-      do
-        -- TODO: unfiy with this / take inspiration -> https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
-
-        -- everything related to color theme goes here inside this block
-        require('mini.colors').setup {}
-
-        ---@type Colorscheme
-        local theme = MiniColors.get_colorscheme 'retrobox'
-
-        local update_highlights = require('color_theme').update_highlights
-        local color_edit_ui = require('color_edit_ui').color_edit_ui
-
-        local on_color_update = function(colors)
-          update_highlights(colors, theme, { clear = false })
-        end
-
-        vim.keymap.set('n', '<leader>C', function()
-          color_edit_ui(on_color_update, myColorTheme)
-        end, { desc = 'color picker' })
-
-        update_highlights(myColors, theme)
-      end
+      initColorTheme(colorThemeMode)
 
       -- Better Around/Inside textobjects
       --

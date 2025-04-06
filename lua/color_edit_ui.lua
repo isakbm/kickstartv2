@@ -2,9 +2,10 @@ local C = require 'coleur'
 
 return {
   ---@param on_update fun(colors: table<string, string>)
-  ---@param colorPalette string
-  color_edit_ui = function(on_update, colorPalette)
-    local cp = require(colorPalette)
+  ---@param colorThemeMode "light"|"dark"
+  color_edit_ui = function(on_update, colorThemeMode)
+    local colors = require 'colors'
+    local cp = colors[colorThemeMode]
 
     local palette = C.Palette:new(cp)
 
@@ -72,7 +73,7 @@ return {
 
           -- persist the colors
           do
-            local file = vim.api.nvim_get_runtime_file('**/' .. colorPalette .. '.*', false)[1]
+            local file = vim.api.nvim_get_runtime_file('**/colors.lua', false)[1]
 
             if file == nil then
               return
@@ -82,26 +83,31 @@ return {
             if not f then
               return
             end
-            f:write '---@type table<string, string>\n'
-            f:write 'local c = {\n'
 
-            -- sort colors by hue
-            local ordered = {}
-            for name, color in pairs(cp) do
-              ordered[#ordered + 1] = { name = name, color = color }
+            for _, mode in ipairs { 'dark', 'light' } do
+              f:write '---@type table<string, string>\n'
+              f:write('local ' .. mode .. ' = {\n')
+
+              -- sort colors by hue
+              local ordered = {}
+              for name, color in pairs(colors[mode]) do
+                ordered[#ordered + 1] = { name = name, color = color }
+              end
+
+              table.sort(ordered, function(a, b)
+                local ca = C.Color:from_hex(a.color)
+                local cb = C.Color:from_hex(b.color)
+                return ca:get 'h' > cb:get 'h'
+              end)
+
+              for _, kv in ipairs(ordered) do
+                f:write('  ' .. kv.name .. ' = ' .. '"' .. kv.color .. '",\n')
+              end
+
+              f:write '}\n'
             end
 
-            table.sort(ordered, function(a, b)
-              local ca = C.Color:from_hex(a.color)
-              local cb = C.Color:from_hex(b.color)
-              return ca:get 'h' > cb:get 'h'
-            end)
-
-            for _, kv in ipairs(ordered) do
-              f:write('  ' .. kv.name .. ' = ' .. '"' .. kv.color .. '",\n')
-            end
-
-            f:write '}\nreturn c'
+            f:write 'return {dark = dark, light = light}'
             f:close()
           end
         end, { desc = 'Close highlight group editor', buffer = buf })
