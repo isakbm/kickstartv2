@@ -18,7 +18,8 @@ function Color:new()
   return color
 end
 
-local COLOR_PREVIEW_HL_NAME = 'ColorTheme-Preview'
+local COLOR_PREVIEW_HL_NAME_FG = 'ColorTheme-Preview-bg'
+local COLOR_PREVIEW_HL_NAME_BG = 'ColorTheme-Preview-fg'
 
 --- from rgb
 ---@param r number
@@ -176,20 +177,20 @@ function Palette.new_floating_preview_win(color, row, col, width)
     row = row,
     col = col,
     width = width,
-    height = 1,
+    height = 2,
     border = WIN_BORDER,
     style = 'minimal',
     title = { { win_title, 'ColorEditTitle' } },
     title_pos = 'center',
   })
 
-  vim.api.nvim_buf_set_lines(buf, 0, 2, false, { 'foo bar()' })
+  vim.api.nvim_buf_set_lines(buf, 0, 1, false, { 'foo bar()', 'var char' })
 
   -- color the values
-  local hl_name = COLOR_PREVIEW_HL_NAME
-  local fg = color:to_hex()
-  vim.api.nvim_set_hl(0, hl_name, { fg = fg })
-  vim.api.nvim_buf_add_highlight(buf, 0, hl_name, 0, 0, -1)
+  vim.api.nvim_set_hl(0, COLOR_PREVIEW_HL_NAME_FG, { fg = color:to_hex() })
+  vim.api.nvim_set_hl(0, COLOR_PREVIEW_HL_NAME_BG, { bg = color:to_hex() })
+  vim.api.nvim_buf_add_highlight(buf, 0, COLOR_PREVIEW_HL_NAME_FG, 0, 0, -1)
+  vim.api.nvim_buf_add_highlight(buf, 0, COLOR_PREVIEW_HL_NAME_BG, 1, 0, -1)
 
   return win
 end
@@ -304,9 +305,8 @@ function Palette.new_floating_chan_win(color, on_update, row, col, width, channe
 
       do
         -- update the preview
-        local hl_name = COLOR_PREVIEW_HL_NAME
-        local fg = color:to_hex()
-        vim.api.nvim_set_hl(0, hl_name, { fg = fg })
+        vim.api.nvim_set_hl(0, COLOR_PREVIEW_HL_NAME_FG, { fg = color:to_hex() })
+        vim.api.nvim_set_hl(0, COLOR_PREVIEW_HL_NAME_BG, { bg = color:to_hex() })
       end
 
       vim.api.nvim_exec_autocmds('User', { pattern = 'ColorPaletteUpdate', data = { channel = channel } })
