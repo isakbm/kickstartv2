@@ -128,7 +128,7 @@ return {
     cset('GitGraphHash      ', { fg = c.teal })
     cset('GitGraphTimestamp ', { fg = c.sand })
     cset('GitGraphAuthor    ', { fg = c.brown })
-    cset('GitGraphBranchName', { fg = c.pear })
+    cset('GitGraphBranchName', { fg = mode == 'dark' and c.pear or c.pear2 })
     cset('GitGraphBranchTag ', { fg = c.pink })
     cset('GitGraphBranchMsg ', { fg = c.gray })
 
