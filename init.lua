@@ -93,6 +93,13 @@
 
   TODO:
 
+    >> have something like gd (goto definition), but that opens up new buffer for it
+       hint just a combination of Ctrl + w , v and then gd inside that buffer
+
+    >> have something that works like `*` but operates on actual symbol or variable rather
+       that text literal
+
+
     >> add single branch mode for gitgraph, make it easy to select which
        branch you want to see, consider display a subset of branches, not just ONE
 
