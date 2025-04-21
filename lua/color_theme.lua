@@ -79,7 +79,7 @@ return {
     cset '@tag.attribute'
     cset 'markdownBlockQuote'
 
-    cset('Include', { fg = c.pear })
+    cset('Include', { fg = mode == 'dark' and c.pear or c.pear2 })
     cset 'Label'
     cset 'Title'
     cset 'ColorEditTitleActive'
@@ -122,7 +122,7 @@ return {
     cset('GitGraphBranch1   ', { fg = c.blue3 })
     cset('GitGraphBranch2   ', { fg = c.pink })
     cset('GitGraphBranch3   ', { fg = c.sand })
-    cset('GitGraphBranch4   ', { fg = c.pear })
+    cset('GitGraphBranch4   ', { fg = mode == 'dark' and c.pear or c.pear2 })
     cset('GitGraphBranch5   ', { fg = c.orange })
 
     cset('GitGraphHash      ', { fg = c.teal })
