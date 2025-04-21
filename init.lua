@@ -1347,12 +1347,16 @@ require('lazy').setup({
                   break
                 end
               end
-              if vim.fn.reg_recording() ~= '' then
-                vim.api.nvim_set_hl(0, 'CursorLine', { bg = myColors.yellow })
-              elseif unsaved_bufs then
-                vim.api.nvim_set_hl(0, 'CursorLine', { bg = myColors.red })
-              else
-                vim.api.nvim_set_hl(0, 'CursorLine', { bg = myColors.gray5 })
+
+              do
+                local c = colorThemeMode == 'light' and myColors.light or myColors.dark
+                if vim.fn.reg_recording() ~= '' then
+                  vim.api.nvim_set_hl(0, 'CursorLine', { bg = c.yellow })
+                elseif unsaved_bufs then
+                  vim.api.nvim_set_hl(0, 'CursorLine', { bg = c.red })
+                else
+                  vim.api.nvim_set_hl(0, 'CursorLine', { bg = c.gray5 })
+                end
               end
 
               local fileinfo = MiniStatusline.section_fileinfo { trunc_width = 120 }
