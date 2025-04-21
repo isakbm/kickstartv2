@@ -195,6 +195,10 @@ vim.opt.hlsearch = true -- Set highlight on search, but clear on pressing <Esc> 
 
 vim.opt.foldcolumn = 'auto'
 
+-- vim.opt.foldmethod = 'expr'
+-- vim.wo.foldmethod = 'expr'
+-- vim.wo.foldexpr = 'v:lua.vim.treesitter.foldexpr()'
+
 vim.opt.expandtab = true
 vim.opt.shiftwidth = 2
 vim.opt.softtabstop = 2
@@ -1033,7 +1037,7 @@ require('lazy').setup({
         -- But for many setups, the LSP (`tsserver`) will work just fine
         lemminx = {},
         jdtls = {},
-        ocamllsp = {},
+        -- ocamllsp = {},
         tsserver = {},
         prismals = {},
         lua_ls = {
