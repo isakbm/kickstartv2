@@ -244,6 +244,11 @@ vim.keymap.set('n', '<C-k>', ':m-2<cr>', { desc = 'swap line with line above' })
 
 vim.keymap.set('n', '<leader>N', ':set number!<cr>:set relativenumber!<cr>', { desc = 'toggle line numbering' })
 
+vim.keymap.set('n', '<leader>dd', function()
+  vim.cmd 'wincmd v'
+  require('telescope.builtin').lsp_definitions()
+end, { desc = 'open definition in new window' })
+
 -- Fun little utility to places boxes around visually selected lines of text
 vim.keymap.set('v', '<leader>b', function()
   local buf = vim.api.nvim_get_current_buf()
