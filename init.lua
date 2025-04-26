@@ -1350,7 +1350,8 @@ require('lazy').setup({
               local unsaved_bufs = false
               for _, buf in pairs(bufs) do
                 local unsaved = vim.api.nvim_get_option_value('modified', { buf = buf })
-                if unsaved then
+                local bufname = vim.api.nvim_buf_get_name(buf)
+                if unsaved and bufname ~= '' then
                   workspace_hl = 'MiniStatuslineWorkspaceUnsaved'
                   unsaved_bufs = true
                   break
