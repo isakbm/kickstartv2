@@ -218,7 +218,20 @@ vim.keymap.set('n', '<C-f>', '<NOP>', { desc = 'disable windowfull scroll down' 
 vim.keymap.set('n', '<C-b>', '<NOP>', { desc = 'disable windowfull scroll up' })
 
 -- NOTE: like * but doesn't move you around
-vim.keymap.set('n', '*', '/<C-R><C-W><cr>N', { desc = 'highlight all occurrences of current word' })
+vim.keymap.set('n', '*', function()
+  -- NOTE yes this a bit convoluted, but avoids issues with the old way ... the old way would sometimes change
+  --      scroll position of buffer if scrolloff is set
+  --
+  -- OLD WAY
+  --
+  --      vim.keymap.set('n', '*', '/<C-R><C-W><cr>N', { desc = 'highlight all occurrences of current word' })
+  --
+  local word = vim.fn.expand '<cword>'
+  local pattern = [[\C\<]] .. word .. [[\>]] -- NOTE: pattern to match full word only
+  vim.fn.setreg('/', pattern)
+  vim.opt.hlsearch = true
+  vim.fn.searchcount { recompute = 1 }
+end, { desc = 'highlight all occurrences of current word' })
 
 --   we've bound <M-*> so the `Alt` or `Modifier` key, however, see :h :map-alt and you'll notice that
 --   nvim is not able to distinguish between `Esc` and `Alt` if key press is fast enough, we'll just live
