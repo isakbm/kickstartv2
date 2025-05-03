@@ -324,7 +324,7 @@ require 'glide'
 require 'recall_buf_position'
 
 ---@type "light" | "dark"
-local colorThemeMode = 'light'
+local colorThemeMode = 'dark'
 local myColors = require 'colors'
 
 -- an unorganized place for my utils
