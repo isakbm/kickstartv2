@@ -89,16 +89,6 @@
 
   TODO:
 
-    >> both folkes todo comment sucks, as well as mini highpattern, why? because 
-
-        - folke only highlights first occurrence on a line
-        - mini highlights things that are not even comments, so function names etc ... argh
-
-        we can easily make our own, based on perhaps the mini highpatterns one and use treesitter
-        or whatever if we like, but for now we just use mini, since I guess we will not be using
-        FIXME, WARN, TODO; etc as names for functions etc but note how FIXME_foo still says fixme even though
-        it continues with _foo ... open source is just half assed most of the time argh
-
     >> add keymap to quickly go back to state before changes to buffer
        so basically go back to last save state, equivalent to S marker in the undo tree 
 
@@ -535,8 +525,8 @@ require('lazy').setup({
       --- update gitgraph whenever we run a fugitive :Git command
       vim.api.nvim_create_autocmd('User', {
         pattern = 'FugitiveChanged',
-        callback = function() -- WARN: TODO: TODO:
-          -- TODO: FIXME: TODO: TODO: this conflicts with fugitive for merge commits where
+        callback = function() -- WARN: TODO:
+          -- TODO: FIXME: this conflicts with fugitive for merge commits where
           --       fugitive wants to open a buffer where you write commit message etc
           --       ... the issue is then that instead of seeing this buffer gitgraph
           --       replaces the active buffer with itself ... and so we never get to complete
@@ -1240,9 +1230,11 @@ require('lazy').setup({
           hex_color = hipatterns.gen_highlighter.hex_color(),
         }
 
+        local bdrPattern = "[^a-zA-Z0-9'_()-]"
+
         for _, kw in pairs(keywords) do
-          highlighters[kw.key] = { pattern = '%f[%w]()' .. kw.key .. "()%f[%W][^a-zA-Z0-9'()]", group = kw.group }
-          highlighters[kw.key .. '_'] = { pattern = '%f[%w]()' .. kw.key .. '()%f[%W]$', group = kw.group }
+          highlighters[kw.key] = { pattern = bdrPattern .. '%f[%w]()' .. kw.key .. '()%f[%W]' .. bdrPattern, group = kw.group }
+          highlighters[kw.key .. '_'] = { pattern = bdrPattern .. '%f[%w]()' .. kw.key .. '()%f[%W]$', group = kw.group }
         end
 
         hipatterns.setup { highlighters = highlighters }
