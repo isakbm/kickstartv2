@@ -1233,8 +1233,10 @@ require('lazy').setup({
         local bdrPattern = "[^a-zA-Z0-9'_()-]"
 
         for _, kw in pairs(keywords) do
-          highlighters[kw.key] = { pattern = bdrPattern .. '%f[%w]()' .. kw.key .. '()%f[%W]' .. bdrPattern, group = kw.group }
-          highlighters[kw.key .. '_'] = { pattern = bdrPattern .. '%f[%w]()' .. kw.key .. '()%f[%W]$', group = kw.group }
+          for _, key in pairs { kw.key, string.lower(kw.key) } do
+            highlighters[key] = { pattern = bdrPattern .. '%f[%w]()' .. key .. '()%f[%W]' .. bdrPattern, group = kw.group }
+            highlighters[key .. '_'] = { pattern = bdrPattern .. '%f[%w]()' .. key .. '()%f[%W]$', group = kw.group }
+          end
         end
 
         hipatterns.setup { highlighters = highlighters }
