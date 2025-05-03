@@ -606,56 +606,6 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>gr', ':Gitsigns reset_hunk<cr>', { desc = '[G]it [R]eset hunk' })
       vim.keymap.set('n', '<leader>gR', ':Gitsigns reset_buffer<cr>', { desc = '[G]it [R]eset buffer' })
       vim.keymap.set('n', '<leader>gb', ':Gitsigns toggle_current_line_blame<CR>', { desc = '[G]it [B]lame toggle' })
-
-      -- diff this
-      vim.keymap.set('n', '<leader>dt', function()
-        local function close_diffthis()
-          local tabp = vim.api.nvim_get_current_tabpage()
-          for _, win in pairs(vim.api.nvim_tabpage_list_wins(tabp)) do
-            local buf = vim.api.nvim_win_get_buf(win)
-            local buf_name = vim.api.nvim_buf_get_name(buf)
-            pcall(vim.keymap.del, 'n', '<Esc><Esc>', { buffer = 0 })
-            if string.match(buf_name, 'gitsigns:.*git.*') then
-              vim.api.nvim_win_close(win, false)
-            end
-          end
-        end
-        ---@type boolean
-        local diff = vim.api.nvim_get_option_value('diff', { win = 0 })
-        if diff then
-          close_diffthis()
-        else
-          vim.cmd([[:Gitsigns diffthis]])
-          vim.fn.timer_start(50, function()
-            local tabp = vim.api.nvim_get_current_tabpage()
-            for _, win in pairs(vim.api.nvim_tabpage_list_wins(tabp)) do
-              local buf = vim.api.nvim_win_get_buf(win)
-              vim.keymap.set('n', '<Esc><Esc>', close_diffthis, { buffer = buf })
-            end
-            -- NOTE this is a dumb hack to work around an issue that sometimes happens
-            --      ... sometimes the scroll bind comes out of aligment during loading
-            --      buffers. simply going to top of document, then to the bottom, and
-            --      then back to where we were does the trick
-            --
-            --      this is all most likely due to a bug in gitsigns diffview ...
-            --      it seems to only happen near end of buffer, and most likely
-            --      because gitsigns is trying to center text vertically with `zz`
-            --      but a race condition happens ... ... we should consider trying
-            --      to fix this in a fork of gitsigns, and potentially make a pull\
-            --      request if this hunch is true ^
-            do
-              local pos = vim.api.nvim_win_get_cursor(0)
-              vim.fn.timer_start(30, function()
-                vim.cmd([[:0]])
-              end)
-              vim.fn.timer_start(31, function()
-                vim.api.nvim_win_set_cursor(0, pos)
-                vim.api.nvim_feedkeys('zz', 'n', false)
-              end)
-            end
-          end)
-        end
-      end, { desc = '[d]iff [t]his file' })
     end,
   },
 
