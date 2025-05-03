@@ -27,31 +27,35 @@ discotinuous steps and repeats of the same color
 
 > `:InspectTree` 
 
-  ---------------------------------------------------------------
+---------------------------------------------------------------
 
 # Basics Getting Started
 
 > :Tutor
+>
 > :help lua-guide
+>
 > :help
 
-    https://learnxinyminutes.com/docs/lua/
+https://learnxinyminutes.com/docs/lua/
 
->    <leader>sh   and   <leader>sk
+> <leader>sh   and   <leader>sk
 
-  ---------------------------------------------------------------
+---------------------------------------------------------------
 
 # Favorite motions
 
 > :help text-object
 
 > ciw caw cip dap dapu
+>
 > vi] vi} va] va} vap vip
 
 > D C I A O P Y
+>
 > _ 0 $ %
 
-  ---------------------------------------------------------------
+---------------------------------------------------------------
 
 # OS Keys ?
 
@@ -63,7 +67,7 @@ discotinuous steps and repeats of the same color
  >      `
  >      $
 
-  ---------------------------------------------------------------
+---------------------------------------------------------------
 
 # FAQ
 
