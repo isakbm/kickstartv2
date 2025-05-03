@@ -67,9 +67,11 @@ https://learnxinyminutes.com/docs/lua/
 # FAQ
 
 Q: how can I open a url
+
 A: gx
 
 Q: how do I swap lines
+
 A: Ctrl + j / k  when in normal mode
 
 Q: how do I do something like Ctrl + backspace when in insert mode
