@@ -1227,20 +1227,25 @@ require('lazy').setup({
       do
         local hipatterns = require 'mini.hipatterns'
 
-        hipatterns.setup {
-          highlighters = {
-            -- Highlight standalone 'FIXME', 'HACK', 'TODO', 'NOTE'
-            fix = { pattern = '%f[%w]()FIX()%f[%W]', group = 'TodoBgFIXME', condition = false },
-            fixme = { pattern = '%f[%w]()FIXME()%f[%W]', group = 'TodoBgFIXME', condition = false },
-            hack = { pattern = '%f[%w]()HACK()%f[%W]', group = 'TodoBgWARN' },
-            warn = { pattern = '%f[%w]()WARN()%f[%W]', group = 'TodoBgWARN' },
-            todo = { pattern = '%f[%w]()TODO()%f[%W]', group = 'TodoBgTODO' },
-            note = { pattern = '%f[%w]()NOTE()%f[%W]', group = 'TodoBgNote' },
-
-            -- Highlight hex color strings (`#rrggbb`) using that color
-            hex_color = hipatterns.gen_highlighter.hex_color(),
-          },
+        local keywords = {
+          { key = 'FIX', group = 'TodoBgFIXME' },
+          { key = 'FIXME', group = 'TodoBgFIXME' },
+          { key = 'HACK', group = 'TodoBgWARN' },
+          { key = 'WARN', group = 'TodoBgWARN' },
+          { key = 'TODO', group = 'TodoBgTODO' },
+          { key = 'NOTE', group = 'TodoBgNote' },
         }
+
+        local highlighters = {
+          hex_color = hipatterns.gen_highlighter.hex_color(),
+        }
+
+        for _, kw in pairs(keywords) do
+          highlighters[kw.key] = { pattern = '%f[%w]()' .. kw.key .. "()%f[%W][^a-zA-Z0-9'()]", group = kw.group }
+          highlighters[kw.key .. '_'] = { pattern = '%f[%w]()' .. kw.key .. '()%f[%W]$', group = kw.group }
+        end
+
+        hipatterns.setup { highlighters = highlighters }
       end
 
       -- Add/delete/replace surroundings (brackets, quotes, etc.)
