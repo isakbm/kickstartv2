@@ -295,10 +295,6 @@ vim.keymap.set('v', '<leader>b', function()
   vim.api.nvim_buf_set_lines(buf, start_line - 1, end_line, false, boxed_lines)
 end)
 
---                                                                                --
---   here I have some dumb utils that I don't want to pollyte this config with    --
---                                                                                --
-
 -- checking if you have good smooth color gradients, if you don't, something is wrong with your setup
 require 'check_reds'
 
@@ -311,9 +307,6 @@ require 'recall_buf_position'
 ---@type "light" | "dark"
 local colorThemeMode = 'dark'
 local myColors = require 'colors'
-
--- an unorganized place for my utils
-local utils = require 'utils'
 
 -- NOTE: this brings you into block visual select mode ... on windows it's Ctrl + Q, and on Linux Ctrl + V ... cool to have something OS independent :)
 --
