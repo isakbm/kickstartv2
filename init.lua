@@ -100,27 +100,32 @@ WIN_BORDER = { '╭', '─', '╮', '│', '╯', '─', '╰', '│' }
 
 --=========================== KEYMAPS =============================
 
+--- yeah baby
+local KEY = vim.keymap.set
+local CMD = vim.api.nvim_create_user_command
+local AUTO = vim.api.nvim_create_autocmd
+
 -- go back to last save state, you still keep history, and can redo if you want, neat
-vim.keymap.set('n', 'U', '<cmd>earlier 1f<cr>', { desc = 'undo all the way to previous (earlier) save' })
+KEY('n', 'U', '<cmd>earlier 1f<cr>', { desc = 'undo all the way to previous (earlier) save' })
 -- go forward to last save state, you still keep history, and can redo if you want, neat
-vim.keymap.set('n', 'W', '<cmd>later 1f<cr>', { desc = 'redo all the way to later save' })
+KEY('n', 'W', '<cmd>later 1f<cr>', { desc = 'redo all the way to later save' })
 
 -- hide higlights after hitting <Esc>
-vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
+KEY('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
 -- disabling some imo useless default keybindings
-vim.keymap.set('n', '<C-f>', '<NOP>', { desc = 'disable windowfull scroll down' })
-vim.keymap.set('n', '<C-b>', '<NOP>', { desc = 'disable windowfull scroll up' })
+KEY('n', '<C-f>', '<NOP>', { desc = 'disable windowfull scroll down' })
+KEY('n', '<C-b>', '<NOP>', { desc = 'disable windowfull scroll up' })
 
 -- like * but doesn't move you around
-vim.keymap.set('n', '*', require('nice_star'), { desc = 'highlight all occurrences of current word' })
+KEY('n', '*', require('nice_star'), { desc = 'highlight all occurrences of current word' })
 
 --   we've bound <M-*> so the `Alt` or `Modifier` key, however, see :h :map-alt and you'll notice that
 --   nvim is not able to distinguish between `Esc` and `Alt` if key press is fast enough, we'll just live
 --   with this, it rarely causes issues, but if you press `Esc` + j  or `Esc + k` very quickly while
 --   in normal mode, you'll also trigger the below keymaps.
-vim.keymap.set('n', '<C-j>', ':m+1<cr>', { desc = 'swap line with line below' }) -- vscode <alt> + <up>
-vim.keymap.set('n', '<C-k>', ':m-2<cr>', { desc = 'swap line with line above' }) -- vscode <alt> + <down>
+KEY('n', '<C-j>', ':m+1<cr>', { desc = 'swap line with line below' }) -- vscode <alt> + <up>
+KEY('n', '<C-k>', ':m-2<cr>', { desc = 'swap line with line above' }) -- vscode <alt> + <down>
 
 -- NOTE: this overrides the default shift + r "aka R" replace ... but I don't find that useful
 --       instead this is quite useful, I often find myself wanting to replace the remaining text on the
@@ -133,26 +138,27 @@ vim.keymap.set('n', '<C-k>', ':m-2<cr>', { desc = 'swap line with line above' })
 --
 --       you want to copy Vector2[]; and replace float; with that ... :)
 --
-vim.keymap.set('n', 'R', '"0PlD', { desc = 'replace rest of line with yanked' }) -- vscode <alt> + <down>
+KEY('n', 'R', '"0PlD', { desc = 'replace rest of line with yanked' }) -- vscode <alt> + <down>
 
-vim.keymap.set('n', '<C-k>', ':m-2<cr>', { desc = 'swap line with line above' }) -- vscode <alt> + <down>
+KEY('n', '<C-k>', ':m-2<cr>', { desc = 'swap line with line above' }) -- vscode <alt> + <down>
 
-vim.keymap.set('n', '<leader>N', ':set number!<cr>:set relativenumber!<cr>', { desc = 'toggle line numbering' })
+KEY('n', '<leader>N', ':set number!<cr>:set relativenumber!<cr>', { desc = 'toggle line numbering' })
 
-vim.keymap.set('n', '<leader>dd', function()
+KEY('n', '<leader>J', require('color_inspect'), { desc = 'Inspect Color Under Cursor' })
+
+KEY('v', '<leader>b', require('boxes'), { desc = 'draw nice box ... lol' })
+
+KEY('n', '<leader>dd', function()
   vim.cmd('wincmd v')
   require('telescope.builtin').lsp_definitions()
 end, { desc = 'open definition in new window' })
-
--- Fun little utility to places boxes around visually selected lines of text
-vim.keymap.set('v', '<leader>b', require('boxes'))
 
 -- checking if you have good smooth color gradients, if you don't, something is wrong with your setup
 require('check_reds')
 
 -- Alt + j / k now glide you up and down in a nice scrolled way
-vim.keymap.set({ 'v', 'n' }, '<M-j>', require('glide')('j'), { desc = 'glide in the j direction' })
-vim.keymap.set({ 'v', 'n' }, '<M-k>', require('glide')('k'), { desc = 'glide in the k direction' })
+KEY({ 'v', 'n' }, '<M-j>', require('glide')('j'), { desc = 'glide in the j direction' })
+KEY({ 'v', 'n' }, '<M-k>', require('glide')('k'), { desc = 'glide in the k direction' })
 
 -- starts us off where we left off in buffer
 require('recall_buf_position')
@@ -163,7 +169,7 @@ local myColors = require('colors')
 
 -- This brings you into block visual select mode ... on windows it's Ctrl + Q, and on Linux Ctrl + V ... cool to have something OS independent :)
 -- Experimental alternative to `Ctrl + V` which is blocked by some terminals
-vim.keymap.set('n', 'VV', '<C-v>')
+KEY('n', 'VV', '<C-v>')
 
 ---@param mode "light" | "dark"
 local function initColorTheme(mode)
@@ -175,19 +181,15 @@ local function initColorTheme(mode)
   local update_highlights = require('color_theme').update_highlights
   local color_edit_ui = require('color_edit_ui').color_edit_ui
 
-  local on_color_update = function(colors)
-    update_highlights(colors, mode, theme, { clear = false })
-  end
+  local on_color_update = function(colors) update_highlights(colors, mode, theme, { clear = false }) end
 
-  vim.keymap.set('n', '<leader>C', function()
-    color_edit_ui(on_color_update, mode)
-  end, { desc = 'color picker' })
+  KEY('n', '<leader>C', function() color_edit_ui(on_color_update, mode) end, { desc = 'color picker' })
 
   update_highlights(myColors, mode, theme)
 end
 
 -- toggle between light and dark modes
-vim.keymap.set('n', '<leader>T', function()
+KEY('n', '<leader>T', function()
   if colorThemeMode == 'dark' then
     colorThemeMode = 'light'
   else
@@ -203,74 +205,30 @@ end)
 -- we want high priority, higher than gitsigns and marks
 vim.diagnostic.config({ signs = { priority = 100 } })
 
-vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, { desc = 'Go to previous [D]iagnostic message' })
-vim.keymap.set('n', ']d', vim.diagnostic.goto_next, { desc = 'Go to next [D]iagnostic message' })
-vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float, { desc = 'Show diagnostic [E]rror messages' })
-vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
+KEY('n', '[d', vim.diagnostic.goto_prev, { desc = 'Go to previous [D]iagnostic message' })
+KEY('n', ']d', vim.diagnostic.goto_next, { desc = 'Go to next [D]iagnostic message' })
+KEY('n', '<leader>e', vim.diagnostic.open_float, { desc = 'Show diagnostic [E]rror messages' })
+KEY('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
 
 -- useful for figuring out what higlight groups are relevant for stuff under cursor
-vim.keymap.set('n', '<leader>I', function()
-  vim.show_pos()
-end)
+KEY('n', '<leader>I', function() vim.show_pos() end)
 
--- My dumb custom workspac linting thing
--- NOTE: currently only set up for tsc + eslint in a node.js project
-vim.api.nvim_create_user_command('Lint', function()
-  local runner = require('lint-runner')
+CMD('Lint', require('lint-runner').lint_workspace, { desc = 'workspace lint' })
+CMD('LintClear', require('lint-runner').clear_diagnostics, { desc = 'clear workspace lint' })
 
-  -- run tsc and eslint in parallel
-  local tsc = require('linters_tsc')
-  local eslint = require('linters_eslint')
-  runner.run_linter(tsc)
-  runner.run_linter(eslint)
-end, { desc = 'workspace lint' })
+KEY('n', '<leader>F', require('lint-runner').mark_fixed, { desc = '[lint] mark as fixed' })
 
-vim.api.nvim_create_user_command('LintClear', function()
-  local runner = require('lint-runner')
-  runner.clear_diagnostics()
-end, { desc = 'clear workspace lint' })
+KEY('n', ']n', ':cnext<CR>', { noremap = true, silent = true })
+KEY('n', '[n', ':cprev<CR>', { noremap = true, silent = true })
 
-vim.keymap.set('n', '<leader>F', function()
-  local runner = require('lint-runner')
-
-  local namespaces = runner.get_namespaces()
-
-  local pos = vim.api.nvim_win_get_cursor(0)
-  local lnum = pos[1] - 1
-
-  for _, namespace in ipairs(namespaces) do
-    local rem_diagnostics = vim.tbl_filter(function(e)
-      return e.lnum ~= lnum
-    end, vim.diagnostic.get(0, { namespace = namespace }))
-    vim.diagnostic.reset(namespace, 0)
-    vim.diagnostic.set(namespace, 0, rem_diagnostics)
-  end
-end, { desc = '[lint] mark as fixed' })
-
-vim.keymap.set('n', ']n', ':cnext<CR>', { noremap = true, silent = true })
-vim.keymap.set('n', '[n', ':cprev<CR>', { noremap = true, silent = true })
-
---=========================== PLUGIN KEYMAPS =============================
---
--- we configure plugins here using Lazy, and we define keybindings
--- that rely on them here as well
-
--- NOTE: Highlight when yanking (copying) text
---
---  -> :help lua-guide-autocommands
---  -> :help vim.highlight.on_yank()
-vim.api.nvim_create_autocmd('TextYankPost', {
+-- highlight when yanking
+AUTO('TextYankPost', {
   desc = 'Highlight when yanking (copying) text',
   group = vim.api.nvim_create_augroup('kickstart-highlight-yank', { clear = true }),
-  callback = function()
-    vim.highlight.on_yank()
-  end,
+  callback = function() vim.highlight.on_yank() end,
 })
 
--- [[ Install `lazy.nvim` plugin manager ]]
---    See `:help lazy.nvim.txt` or https://github.com/folke/lazy.nvim for more info
---
---    This bootstraps lazy
+-- bootstrap lazy -_-
 local lazypath = vim.fn.stdpath('data') .. '/lazy/lazy.nvim'
 if not vim.loop.fs_stat(lazypath) then
   vim.fn.system({
@@ -284,7 +242,7 @@ if not vim.loop.fs_stat(lazypath) then
 end ---@diagnostic disable-next-line: undefined-field
 vim.opt.rtp:prepend(lazypath)
 
-vim.keymap.set('n', '<leader>U', function()
+KEY('n', '<leader>U', function()
   local code = vim.fn.input('u:')
   local char = vim.fn.nr2char(code)
   local _, col = unpack(vim.api.nvim_win_get_cursor(0))
@@ -296,9 +254,7 @@ end, { desc = 'insert unicode' })
 require('lazy').setup({
   {
     'mbbill/undotree', -- Nice file change history
-    config = function()
-      vim.keymap.set('n', '<leader>u', ':UndotreeToggle<CR>', { desc = 'Toggle Undotree' })
-    end,
+    config = function() KEY('n', '<leader>u', ':UndotreeToggle<CR>', { desc = 'Toggle Undotree' }) end,
   },
 
   {
@@ -316,45 +272,23 @@ require('lazy').setup({
         fields = { 'hash', 'timestamp', 'author', 'branch_name', 'tag' },
       },
       hooks = {
-        on_select_commit = function(commit)
-          vim.cmd(':DiffviewOpen ' .. commit.hash .. '^!')
-        end,
-        on_select_range_commit = function(from, to)
-          vim.cmd(':DiffviewOpen ' .. from.hash .. '~1..' .. to.hash)
-        end,
+        on_select_commit = function(commit) vim.cmd(':DiffviewOpen ' .. commit.hash .. '^!') end,
+        on_select_range_commit = function(from, to) vim.cmd(':DiffviewOpen ' .. from.hash .. '~1..' .. to.hash) end,
       },
       log_level = vim.log.levels.INFO,
     },
     keys = {
       {
         '<leader>gl',
-        function()
-          require('gitgraph').draw({}, { all = true })
-        end,
+        function() require('gitgraph').draw({}, { all = true }) end,
         desc = 'GitGraph - Draw',
       },
       {
         '<leader>gt',
-        function()
-          require('gitgraph').test()
-        end,
+        function() require('gitgraph').test() end,
         desc = 'GitGraph - Draw',
       },
     },
-    init = function()
-      --- update gitgraph whenever we run a fugitive :Git command
-      vim.api.nvim_create_autocmd('User', {
-        pattern = 'FugitiveChanged',
-        callback = function() -- WARN: TODO:
-          -- TODO: FIXME: this conflicts with fugitive for merge commits where
-          --       fugitive wants to open a buffer where you write commit message etc
-          --       ... the issue is then that instead of seeing this buffer gitgraph
-          --       replaces the active buffer with itself ... and so we never get to complete
-          --       the message ... maybe we can find some workaround ...
-          -- require('gitgraph').draw({}, { all = true })
-        end,
-      })
-    end,
   },
 
   {
@@ -365,13 +299,12 @@ require('lazy').setup({
       display = { 'Classic' },
     },
     init = function()
-      vim.keymap.set('n', '<leader>r', ':SnipRun<CR>', { desc = 'run curr line with sniprun' })
-      vim.keymap.set('v', '<leader>r', ":'<,'>SnipRun<CR>", { desc = 'run curr selection with sniprun' })
+      KEY('n', '<leader>r', ':SnipRun<CR>', { desc = 'run curr line with sniprun' })
+      KEY('v', '<leader>r', ":'<,'>SnipRun<CR>", { desc = 'run curr selection with sniprun' })
     end,
   },
 
   {
-    -- NOTE: very nice search util
     'nvim-telescope/telescope.nvim',
     event = 'VimEnter',
     branch = '0.1.x',
@@ -379,48 +312,18 @@ require('lazy').setup({
       'nvim-lua/plenary.nvim',
       { -- If encountering errors, see telescope-fzf-native README for install instructions
         'nvim-telescope/telescope-fzf-native.nvim',
-
-        -- `build` is used to run some command when the plugin is installed/updated.
-        -- This is only run then, not every time Neovim starts up.
         build = 'make',
-
-        -- `cond` is a condition used to determine whether this plugin should be
-        -- installed and loaded.
-        cond = function()
-          return vim.fn.executable('make') == 1
-        end,
+        cond = function() return vim.fn.executable('make') == 1 end,
       },
       { 'nvim-telescope/telescope-ui-select.nvim' },
-
-      -- Useful for getting pretty icons, but requires a Nerd Font.
       { 'nvim-tree/nvim-web-devicons', enabled = vim.g.have_nerd_font },
     },
     config = function()
-      -- Telescope is a fuzzy finder that comes with a lot of different things that
-      -- it can fuzzy find! It's more than just a "file finder", it can search
-      -- many different aspects of Neovim, your workspace, LSP, and more!
-      --
-      -- The easiest way to use telescope, is to start by doing something like:
-      --  :Telescope help_tags
-      --
-      -- After running this command, a window will open up and you're able to
-      -- type in the prompt window. You'll see a list of help_tags options and
-      -- a corresponding preview of the help.
-      --
       -- Two important keymaps to use while in telescope are:
       --  - Insert mode: <c-/>
       --  - Normal mode: ?
-      --
-      -- This opens a window that shows you all of the keymaps for the current
-      -- telescope picker. This is really useful to discover what Telescope can
-      -- do as well as how to actually do it!
-
-      -- [[ Configure Telescope ]]
       -- See `:help telescope` and `:help telescope.setup()`
       require('telescope').setup({
-        -- You can put your default mappings / updates / etc. in here
-        --  All the info you're looking for is in `:help telescope.setup()`
-        --
         defaults = {
           mappings = {
             -- i = { ['<c-enter>'] = 'to_fuzzy_refine' },
@@ -444,22 +347,20 @@ require('lazy').setup({
 
       -- See `:help telescope.builtin`
       local builtin = require('telescope.builtin')
-      vim.keymap.set('n', '<leader>sh', builtin.help_tags, { desc = '[S]earch [H]elp' })
-      vim.keymap.set('n', '<leader>sk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
-      vim.keymap.set('n', '<leader>sf', function()
-        builtin.find_files({ hidden = true })
-      end, { desc = '[S]earch [F]iles' })
-      vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
-      vim.keymap.set('n', '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
-      vim.keymap.set('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
-      vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
-      vim.keymap.set('n', '<leader>sp', builtin.pickers, { desc = '[S]earch [P]icker' })
-      vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
-      vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
-      vim.keymap.set('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
+      KEY('n', '<leader>sh', builtin.help_tags, { desc = '[S]earch [H]elp' })
+      KEY('n', '<leader>sk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
+      KEY('n', '<leader>sf', function() builtin.find_files({ hidden = true }) end, { desc = '[S]earch [F]iles' })
+      KEY('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
+      KEY('n', '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
+      KEY('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
+      KEY('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
+      KEY('n', '<leader>sp', builtin.pickers, { desc = '[S]earch [P]icker' })
+      KEY('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
+      KEY('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
+      KEY('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
 
       -- Slightly advanced example of overriding default behavior and theme
-      vim.keymap.set('n', '<leader>/', function()
+      KEY('n', '<leader>/', function()
         -- You can pass additional configuration to telescope to change theme, layout, etc.
         builtin.current_buffer_fuzzy_find(require('telescope.themes').get_dropdown({
           winblend = 10,
@@ -469,17 +370,20 @@ require('lazy').setup({
 
       -- Also possible to pass additional configuration options.
       --  See `:help telescope.builtin.live_grep()` for information about particular keys
-      vim.keymap.set('n', '<leader>s/', function()
-        builtin.live_grep({
-          grep_open_files = true,
-          prompt_title = 'Live Grep in Open Files',
-        })
-      end, { desc = '[S]earch [/] in Open Files' })
+      KEY(
+        'n',
+        '<leader>s/',
+        function()
+          builtin.live_grep({
+            grep_open_files = true,
+            prompt_title = 'Live Grep in Open Files',
+          })
+        end,
+        { desc = '[S]earch [/] in Open Files' }
+      )
 
       -- Shortcut for searching your neovim configuration files
-      vim.keymap.set('n', '<leader>sn', function()
-        builtin.find_files({ cwd = vim.fn.stdpath('config') })
-      end, { desc = '[S]earch [N]eovim files' })
+      KEY('n', '<leader>sn', function() builtin.find_files({ cwd = vim.fn.stdpath('config') }) end, { desc = '[S]earch [N]eovim files' })
     end,
   },
 
@@ -499,13 +403,13 @@ require('lazy').setup({
       },
     },
     init = function()
-      vim.keymap.set('n', ']h', ':Gitsigns next_hunk<cr>', { desc = '[G]it [N]ext hunk' })
-      vim.keymap.set('n', '[h', ':Gitsigns prev_hunk<cr>', { desc = '[G]it [P]rev hunk' })
+      KEY('n', ']h', ':Gitsigns next_hunk<cr>', { desc = '[G]it [N]ext hunk' })
+      KEY('n', '[h', ':Gitsigns prev_hunk<cr>', { desc = '[G]it [P]rev hunk' })
 
-      vim.keymap.set('n', '<leader>gp', ':Gitsigns preview_hunk<cr>', { desc = '[G]it [P]review hunk' })
-      vim.keymap.set('n', '<leader>gr', ':Gitsigns reset_hunk<cr>', { desc = '[G]it [R]eset hunk' })
-      vim.keymap.set('n', '<leader>gR', ':Gitsigns reset_buffer<cr>', { desc = '[G]it [R]eset buffer' })
-      vim.keymap.set('n', '<leader>gb', ':Gitsigns toggle_current_line_blame<CR>', { desc = '[G]it [B]lame toggle' })
+      KEY('n', '<leader>gp', ':Gitsigns preview_hunk<cr>', { desc = '[G]it [P]review hunk' })
+      KEY('n', '<leader>gr', ':Gitsigns reset_hunk<cr>', { desc = '[G]it [R]eset hunk' })
+      KEY('n', '<leader>gR', ':Gitsigns reset_buffer<cr>', { desc = '[G]it [R]eset buffer' })
+      KEY('n', '<leader>gb', ':Gitsigns toggle_current_line_blame<CR>', { desc = '[G]it [B]lame toggle' })
     end,
   },
 
@@ -540,14 +444,12 @@ require('lazy').setup({
       },
     },
     init = function()
-      vim.keymap.set('n', '<leader>gd', function()
+      KEY('n', '<leader>gd', function()
         --- [strat 2] if there's already a diffivew tap page then close that first
         local tp = vim.g.diffview_tp
         if tp then
           for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tp)) do
-            if vim.api.nvim_win_is_valid(win) then
-              vim.api.nvim_win_close(win, true)
-            end
+            if vim.api.nvim_win_is_valid(win) then vim.api.nvim_win_close(win, true) end
           end
           vim.g.diffview_tp = nil
         end
@@ -555,9 +457,7 @@ require('lazy').setup({
         --- check for local changes using git
         local function has_local_changes()
           local handle = io.popen('git status --porcelain 2>/dev/null')
-          if not handle then
-            return false
-          end
+          if not handle then return false end
           local result = handle:read('*a')
           handle:close()
           return result ~= ''
@@ -629,7 +529,7 @@ require('lazy').setup({
       -- and elegantly composed help section, `:help lsp-vs-treesitter`
 
       --  This function gets run when an LSP attaches to a particular buffer
-      vim.api.nvim_create_autocmd('LspAttach', {
+      AUTO('LspAttach', {
         group = vim.api.nvim_create_augroup('kickstart-lsp-attach', { clear = true }),
         callback = function(event)
           -- NOTE: Remember that lua is a real programming language, and as such it is possible
@@ -638,9 +538,7 @@ require('lazy').setup({
           --
           -- In this case, we create a function that lets us more easily define mappings specific
           -- for LSP related items. It sets the mode, buffer and description for us each time.
-          local map = function(keys, func, desc)
-            vim.keymap.set('n', keys, func, { buffer = event.buf, desc = 'LSP: ' .. desc })
-          end
+          local map = function(keys, func, desc) KEY('n', keys, func, { buffer = event.buf, desc = 'LSP: ' .. desc }) end
 
           local tele = require('telescope.builtin')
 
@@ -650,9 +548,7 @@ require('lazy').setup({
           map('gd', tele.lsp_definitions, '[G]oto [D]efinition')
 
           -- Find references for the word under your cursor.
-          map('gr', function()
-            tele.lsp_references({ show_line = false })
-          end, '[G]oto [R]eferences')
+          map('gr', function() tele.lsp_references({ show_line = false }) end, '[G]oto [R]eferences')
 
           -- Jump to the implementation of the word under your cursor.
           map('gI', tele.lsp_implementations, '[G]oto [I]mplementation')
@@ -670,9 +566,7 @@ require('lazy').setup({
 
             local hover_res = vim.lsp.buf_request_sync(0, 'textDocument/hover', vim.lsp.util.make_position_params(), 200)
 
-            if not hover_res then
-              return
-            end
+            if not hover_res then return end
 
             local hover = hover_res[1]
 
@@ -703,8 +597,8 @@ require('lazy').setup({
 
               vim.api.nvim_set_current_win(win)
               vim.api.nvim_buf_set_lines(0, 0, 2, false, { old_name })
-              vim.keymap.set({ 'n' }, '<Esc><Esc>', ':q<cr>', { buffer = buf })
-              vim.keymap.set({ 'n', 'i' }, '<cr>', function()
+              KEY({ 'n' }, '<Esc><Esc>', ':q<cr>', { buffer = buf })
+              KEY({ 'n', 'i' }, '<cr>', function()
                 local new_name = vim.api.nvim_buf_get_text(0, 0, 0, 0, 256, {})[1]
                 vim.api.nvim_win_close(win, true)
                 if new_name == old_name then
@@ -721,9 +615,7 @@ require('lazy').setup({
                 -- the cursor where it was
                 local original_handler = vim.lsp.handlers['textDocument/rename']
                 vim.lsp.handlers['textDocument/rename'] = function(err, result, ctx, config)
-                  if original_handler then
-                    original_handler(err, result, ctx, config)
-                  end
+                  if original_handler then original_handler(err, result, ctx, config) end
                   if not err and result then
                     vim.cmd.stopi()
                     cursor_pos[2] = cursor_pos[2] + 1
@@ -873,9 +765,7 @@ require('lazy').setup({
     opts = {
       notify_on_error = false,
       format_on_save = function(bufnr)
-        if vim.g.disable_conform or vim.b[bufnr].disable_conform then
-          return
-        end
+        if vim.g.disable_conform or vim.b[bufnr].disable_conform then return end
 
         -- Disable "format_on_save lsp_fallback" for languages that don't
         -- have a well standardized coding style. You can add additional
@@ -903,7 +793,7 @@ require('lazy').setup({
       },
     },
     init = function()
-      vim.keymap.set('n', '<leader>tc', function()
+      KEY('n', '<leader>tc', function()
         local bufnr = vim.api.nvim_get_current_buf()
         vim.b[bufnr].disable_conform = not vim.b[bufnr].disable_conform
       end, { desc = 'toggle conform.nvim' })
@@ -1027,9 +917,7 @@ require('lazy').setup({
               do
                 if #filename > 24 then
                   local ff = vim.fn.split(filename, '/')
-                  if #ff > 3 then
-                    filename = ff[1] .. '/.../' .. ff[#ff - 1] .. '/' .. ff[#ff]
-                  end
+                  if #ff > 3 then filename = ff[1] .. '/.../' .. ff[#ff - 1] .. '/' .. ff[#ff] end
                 end
 
                 local unsaved = vim.api.nvim_get_option_value('modified', { buf = 0 })
@@ -1098,9 +986,7 @@ require('lazy').setup({
         })
 
         ---@diagnostic disable-next-line: duplicate-set-field
-        statusline.section_location = function()
-          return '%2l:%-2v'
-        end
+        statusline.section_location = function() return '%2l:%-2v' end
 
         -- statusline.section_diff(args)
       end
@@ -1113,9 +999,7 @@ require('lazy').setup({
       separator = '─',
     },
     init = function()
-      vim.keymap.set('n', '[c', function()
-        require('treesitter-context').go_to_context(vim.v.count1)
-      end, { silent = true, desc = 'jump to line of parent context' })
+      KEY('n', '[c', function() require('treesitter-context').go_to_context(vim.v.count1) end, { silent = true, desc = 'jump to line of parent context' })
     end,
   },
 
@@ -1148,57 +1032,10 @@ require('lazy').setup({
     config = function(_, opts)
       ---@diagnostic disable-next-line: missing-fields
       require('nvim-treesitter.configs').setup(opts)
-
-      -- utility to get us color and information about the
-      -- symbol under the cursor
-      vim.keymap.set('n', '<leader>J', function()
-        local info = vim.inspect_pos()
-        local ts = info.treesitter
-        local st = info.semantic_tokens
-
-        local links = {}
-
-        for _, sti in pairs(st) do
-          if sti and sti.opts and sti.opts.hl_group_link then
-            links[#links + 1] = sti.opts.hl_group_link
-          end
-        end
-
-        for _, tsi in pairs(ts) do
-          local link = tsi.hl_group_link
-          if link then
-            links[#links + 1] = link
-          end
-        end
-
-        local node = vim.treesitter.get_node()
-        local nt = '?'
-        if node then
-          nt = node:type()
-        end
-
-        for _, link in ipairs(links) do
-          local hlg = vim.api.nvim_get_hl(0, { name = link })
-          if hlg.fg then
-            local color = string.format('%X', hlg.fg)
-            vim.fn.setreg('c', [["]] .. '#' .. color .. [["]])
-            print('found color:', color, 'from', link, 'for', nt)
-            break
-          end
-        end
-      end)
     end,
   },
-
-  -- TODO:
-  -- require 'kickstart.plugins.debug',  <--- NOTE: could be of interest as examples for debugger ...
-
-  -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
-  --    This is the easiest way to modularize your config.
-  --
-  --  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
-  --    For additional information, see `:help lazy.nvim-lazy.nvim-structuring-your-plugins`
-  -- { import = 'custom.plugins' },
+  -- TODO: could be of interest as examples for debugger ...
+  -- require 'kickstart.plugins.debug',
 }, {
   dev = {
     path = '~/code/nvim-plugins',
@@ -1225,5 +1062,4 @@ require('lazy').setup({
   },
 })
 
--- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
