@@ -551,12 +551,6 @@ require('lazy').setup({
   },
 
   {
-    -- NOTE: allows to toggle comments ?
-    'numToStr/Comment.nvim',
-    opts = {},
-  },
-
-  {
     -- NOTE: very nice search util
     'nvim-telescope/telescope.nvim',
     event = 'VimEnter',
@@ -1309,6 +1303,9 @@ require('lazy').setup({
       --  - yinq - [Y]ank [I]nside [N]ext [']quote
       --  - ci'  - [C]hange [I]nside [']quote
       require('mini.ai').setup { n_lines = 500 }
+
+      -- highlight word under cursor, style with highlight group MiniCursorword
+      require('mini.cursorword').setup {}
 
       -- Add/delete/replace surroundings (brackets, quotes, etc.)
       --
