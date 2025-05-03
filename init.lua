@@ -472,8 +472,6 @@ vim.keymap.set('n', '<leader>U', function()
 end, { desc = 'insert unicode' })
 
 require('lazy').setup({
-  'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
-
   {
     'mbbill/undotree', -- Nice file change history
     config = function()
