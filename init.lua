@@ -8,11 +8,7 @@
 
     NOTE: Keybinding Conflicts
 
-      :checkhealth which-key
       :verbose nmap <the key binding>
-
-      which-key warnings can be safely ignored
-      https://github.com/folke/which-key.nvim/issues/218#issuecomment-2117036351
 
     NOTE: Color issues etc with tmux
 
@@ -163,7 +159,6 @@
 vim.g.mapleader = ' ' -- Set <space> as the leader key
 vim.g.maplocalleader = ' ' --- Set <space> as the local leader key
 vim.g.have_nerd_font = true -- Set to true if you have a Nerd Font installed
--- vim.g.enable_whichkey = false -- Set to true when learning, turn off later for better flow :)
 
 -- NOTE::help option-list
 --
