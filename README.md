@@ -66,25 +66,25 @@ https://learnxinyminutes.com/docs/lua/
 
 # FAQ
 
-    Q: how can I open a url
-    A: gx
+Q: how can I open a url
+A: gx
 
-    Q: how do I swap lines
-    A: Ctrl + j / k  when in normal mode
+Q: how do I swap lines
+A: Ctrl + j / k  when in normal mode
 
-    Q: how do I do something like Ctrl + backspace when in insert mode
-    A: Ctrl + w
+Q: how do I do something like Ctrl + backspace when in insert mode
+A: Ctrl + w
 
-    Q: how do I see my current changes in a nice way
-    A1: <leader>dt    <- diff this buffer (includes unsaved change) !!!
-    A2: <leader>gd    <- entire workspace (does not include unsaved changes) !!!
+Q: how do I see my current changes in a nice way
+A1: <leader>dt    <- diff this buffer (includes unsaved change) !!!
+A2: <leader>gd    <- entire workspace (does not include unsaved changes) !!!
 
-    Q: how do I see changes intoruded by a single commit?
-    A: <leader>gl   place cursor on a commit and hit <enter>
+Q: how do I see changes intoruded by a single commit?
+A: <leader>gl   place cursor on a commit and hit <enter>
 
-    Q: how do I see changes introduced by a range of commits, like diff a..b
-    A: <leader>gl   visual selection and then hit <enter>
+Q: how do I see changes introduced by a range of commits, like diff a..b
+A: <leader>gl   visual selection and then hit <enter>
 
-    Q: how do I refactor a variable name or function name
-    A: <leader>rn
+Q: how do I refactor a variable name or function name
+A: <leader>rn
 
