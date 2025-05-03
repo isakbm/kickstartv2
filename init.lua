@@ -89,6 +89,16 @@
 
   TODO:
 
+    >> both folkes todo comment sucks, as well as mini highpattern, why? because 
+
+        - folke only highlights first occurrence on a line
+        - mini highlights things that are not even comments, so function names etc ... argh
+
+        we can easily make our own, based on perhaps the mini highpatterns one and use treesitter
+        or whatever if we like, but for now we just use mini, since I guess we will not be using
+        FIXME, WARN, TODO; etc as names for functions etc but note how FIXME_foo still says fixme even though
+        it continues with _foo ... open source is just half assed most of the time argh
+
     >> add keymap to quickly go back to state before changes to buffer
        so basically go back to last save state, equivalent to S marker in the undo tree 
 
@@ -317,9 +327,6 @@ end)
 -- checking if you have good smooth color gradients, if you don't, something is wrong with your setup
 require 'check_reds'
 
--- seeing preview of your colors in realtime
-require 'hex_color_highlights'
-
 -- Alt + j / k now glide you up and down in a nice scrolled way
 require 'glide'
 
@@ -528,8 +535,8 @@ require('lazy').setup({
       --- update gitgraph whenever we run a fugitive :Git command
       vim.api.nvim_create_autocmd('User', {
         pattern = 'FugitiveChanged',
-        callback = function()
-          -- TODO: this conflicts with fugitive for merge commits where
+        callback = function() -- WARN: TODO: TODO:
+          -- TODO: FIXME: TODO: TODO: this conflicts with fugitive for merge commits where
           --       fugitive wants to open a buffer where you write commit message etc
           --       ... the issue is then that instead of seeing this buffer gitgraph
           --       replaces the active buffer with itself ... and so we never get to complete
@@ -1201,34 +1208,6 @@ require('lazy').setup({
   },
 
   {
-    -- Highlight todo, notes, etc in comments
-    'folke/todo-comments.nvim',
-    event = 'VimEnter',
-    dependencies = { 'nvim-lua/plenary.nvim' },
-    opts = function(opts)
-      -- NOTE: lowercase keywords will also match full uppercase
-      local keywords = {}
-      for _, word in ipairs { 'stored', 'fixme', 'todo', 'warn', 'NOTE' } do
-        keywords[word] = { alt = { string.upper(word) } }
-      end
-      return vim.tbl_extend('force', opts, {
-        signs = false,
-        highlight = {
-          after = '',
-          pattern = [[.*<(KEYWORDS)\s*(:|\s|$)]],
-          keyword = 'bg',
-        },
-        gui_style = {
-          fg = 'NONE', -- The gui style to use for the fg highlight group.
-          bg = 'NONE', -- The gui style to use for the bg highlight group.
-        },
-        merge_keywords = false,
-        keywords = keywords,
-      })
-    end,
-  },
-
-  {
     -- Collection of various small independent plugins/modules
     'echasnovski/mini.nvim',
     config = function()
@@ -1244,6 +1223,25 @@ require('lazy').setup({
 
       -- highlight word under cursor, style with highlight group MiniCursorword
       require('mini.cursorword').setup {}
+
+      do
+        local hipatterns = require 'mini.hipatterns'
+
+        hipatterns.setup {
+          highlighters = {
+            -- Highlight standalone 'FIXME', 'HACK', 'TODO', 'NOTE'
+            fix = { pattern = '%f[%w]()FIX()%f[%W]', group = 'TodoBgFIXME', condition = false },
+            fixme = { pattern = '%f[%w]()FIXME()%f[%W]', group = 'TodoBgFIXME', condition = false },
+            hack = { pattern = '%f[%w]()HACK()%f[%W]', group = 'TodoBgWARN' },
+            warn = { pattern = '%f[%w]()WARN()%f[%W]', group = 'TodoBgWARN' },
+            todo = { pattern = '%f[%w]()TODO()%f[%W]', group = 'TodoBgTODO' },
+            note = { pattern = '%f[%w]()NOTE()%f[%W]', group = 'TodoBgNote' },
+
+            -- Highlight hex color strings (`#rrggbb`) using that color
+            hex_color = hipatterns.gen_highlighter.hex_color(),
+          },
+        }
+      end
 
       -- Add/delete/replace surroundings (brackets, quotes, etc.)
       --
