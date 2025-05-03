@@ -1,13 +1,16 @@
 # Troubleshooting
 
-> :checkhealth
-> :Lazy
-> :Mason
-> ~/.local/state/nvim/lsp.log
+`:checkhealth`
+
+`:Lazy`
+
+`:Mason`
+
+`~/.local/state/nvim/lsp.log`
 
 ## Keybinding Conflicts
 
-> :verbose nmap <the key binding>
+`:verbose nmap <the key binding>`
 
 ## Color issues etc with tmux
 
@@ -25,23 +28,21 @@ discotinuous steps and repeats of the same color
 
 ## Syntax highlighting, configure using mini.collors
 
-> `:InspectTree` 
-
----------------------------------------------------------------
+`:InspectTree` 
 
 # Basics Getting Started
 
-> :Tutor
->
-> :help lua-guide
->
-> :help
+`:Tutor`
+
+`:help lua-guide`
+
+`:help`
 
 https://learnxinyminutes.com/docs/lua/
 
-> <leader>sh   and   <leader>sk
+`<leader>sh`
 
----------------------------------------------------------------
+`<leader>sk`
 
 # Favorite motions
 
@@ -55,19 +56,13 @@ https://learnxinyminutes.com/docs/lua/
 >
 > _ 0 $ %
 
----------------------------------------------------------------
-
 # OS Keys ?
 
     Map `Capslock` to `<Esc>` in your operating system
 
     Also consider similar mappings of other keys like
 
- >      ~
- >      `
- >      $
-
----------------------------------------------------------------
+```~ ` $```
 
 # FAQ
 
