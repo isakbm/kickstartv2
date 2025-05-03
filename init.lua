@@ -89,15 +89,13 @@
 
   TODO:
 
+    >> auto close diffview on :Git commit ? with :tabclose
+
     >> add keymap to quickly go back to state before changes to buffer
        so basically go back to last save state, equivalent to S marker in the undo tree 
 
     >> have something like gd (goto definition), but that opens up new buffer for it
        hint just a combination of Ctrl + w , v and then gd inside that buffer
-
-    >> have something that works like `*` but operates on actual symbol or variable rather
-       that text literal
-
 
     >> add single branch mode for gitgraph, make it easy to select which
        branch you want to see, consider display a subset of branches, not just ONE
@@ -108,12 +106,6 @@
        2. stage it
        3. make another modification to the same file in the same area
        4. stage it ...
-
-    >> make telescope "sg" remember what you searched for last, or even just keep in memory
-       what you searched for... on the other hand you could just add things to quickfix list?
-
-       if you're really feeling it, implement a global search (gs) search history, so you can search fo searches
-       using telescope ... telescope search search XD
 
     >> auto update the git graph
 
@@ -131,27 +123,15 @@
 
     >> popup window reminindg you to stretch and drink water
 
-    >> popup window with fun animation when you are waiting for something perhaps you pushed code
-       or perhaps you are compiling
-
     >> add a little toolbox window that you can open at any time
        Make it searchable.
        Have tool slike `to uppercase` `to hex` etc etc :D
-
-    >> find better way of typing [ ] and { } on a norwegian keyboard?
 
     >> get a nice way to jump to parent scopes locally. Currently
        we can do something like this with treesitter-context, but
        that jumps to the context that is 'off screen' try '[c'
 
     >> find out how to quickly switch to previous buffer
-
-    >> find out how to close a buffer without using :q
-
-    >> even if contents of file are identical to those when you started
-       vim still thinks your buffer has changes if you added and deleted
-       something. vim only knows that the fil has not chnaged if you
-       literally go back with undo ... can this be changed in a setting?
 
     >> find a way to do grep search over subset of files
 
