@@ -189,7 +189,9 @@ WIN_BORDER = { '╭', '─', '╮', '│', '╯', '─', '╰', '│' }
 --=========================== KEYMAPS =============================
 
 -- go back to last save state, you still keep history, and can redo if you want, neat
-vim.keymap.set('n', 'U', '<cmd>earlier 1f<cr>')
+vim.keymap.set('n', 'U', '<cmd>earlier 1f<cr>', { desc = 'undo all the way to previous (earlier) save' })
+-- go forward to last save state, you still keep history, and can redo if you want, neat
+vim.keymap.set('n', 'W', '<cmd>later 1f<cr>', { desc = 'redo all the way to later save' })
 
 -- NOTE: hide higlights after hitting <Esc>
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
@@ -1167,8 +1169,11 @@ require('lazy').setup({
           ['<C-Space>'] = cmp.mapping.complete {},
         },
         sources = {
+          -- lsp completion
           { name = 'nvim_lsp' },
+          -- completion of function parameters
           { name = 'nvim_lsp_signature_help' },
+          -- completion of file paths
           { name = 'path' },
         },
       }
