@@ -154,7 +154,7 @@ vim.opt.number = true
 vim.opt.relativenumber = true
 vim.opt.termguicolors = true -- yes use tempr gui colors
 vim.opt.wrap = false -- don't wrap lines
-vim.opt.fillchars:append { diff = '' } -- { diff = '/' } -- fillchars for diffview?
+vim.opt.fillchars:append({ diff = '' }) -- { diff = '/' } -- fillchars for diffview?
 vim.opt.mouse = 'a' -- Enable mouse mode, can be useful for resizing splits for example!
 vim.opt.showmode = false -- Don't show the mode, since it's already in status line
 vim.opt.breakindent = true -- Enable break indent
@@ -182,7 +182,7 @@ vim.opt.shiftwidth = 2
 vim.opt.softtabstop = 2
 vim.opt.tabstop = 2
 
-vim.opt.runtimepath:prepend '/home/isak/.opam/default/share/ocp-indent/vim'
+vim.opt.runtimepath:prepend('/home/isak/.opam/default/share/ocp-indent/vim')
 
 WIN_BORDER = { '╭', '─', '╮', '│', '╯', '─', '╰', '│' }
 
@@ -209,11 +209,11 @@ vim.keymap.set('n', '*', function()
   --
   --      vim.keymap.set('n', '*', '/<C-R><C-W><cr>N', { desc = 'highlight all occurrences of current word' })
   --
-  local word = vim.fn.expand '<cword>'
+  local word = vim.fn.expand('<cword>')
   local pattern = [[\C\<]] .. word .. [[\>]] -- NOTE: pattern to match full word only
   vim.fn.setreg('/', pattern)
   vim.opt.hlsearch = true
-  vim.fn.searchcount { recompute = 1 }
+  vim.fn.searchcount({ recompute = 1 })
 end, { desc = 'highlight all occurrences of current word' })
 
 --   we've bound <M-*> so the `Alt` or `Modifier` key, however, see :h :map-alt and you'll notice that
@@ -241,7 +241,7 @@ vim.keymap.set('n', '<C-k>', ':m-2<cr>', { desc = 'swap line with line above' })
 vim.keymap.set('n', '<leader>N', ':set number!<cr>:set relativenumber!<cr>', { desc = 'toggle line numbering' })
 
 vim.keymap.set('n', '<leader>dd', function()
-  vim.cmd 'wincmd v'
+  vim.cmd('wincmd v')
   require('telescope.builtin').lsp_definitions()
 end, { desc = 'open definition in new window' })
 
@@ -249,8 +249,8 @@ end, { desc = 'open definition in new window' })
 vim.keymap.set('v', '<leader>b', function()
   local buf = vim.api.nvim_get_current_buf()
 
-  local _, start_line, _, _ = unpack(vim.fn.getpos 'v')
-  local _, end_line, _, _ = unpack(vim.fn.getpos '.')
+  local _, start_line, _, _ = unpack(vim.fn.getpos('v'))
+  local _, end_line, _, _ = unpack(vim.fn.getpos('.'))
 
   -- handle reversed selection
   if start_line > end_line then
@@ -296,17 +296,17 @@ vim.keymap.set('v', '<leader>b', function()
 end)
 
 -- checking if you have good smooth color gradients, if you don't, something is wrong with your setup
-require 'check_reds'
+require('check_reds')
 
 -- Alt + j / k now glide you up and down in a nice scrolled way
-require 'glide'
+require('glide')
 
 -- starts us off where we left off in buffer
-require 'recall_buf_position'
+require('recall_buf_position')
 
 ---@type "light" | "dark"
 local colorThemeMode = 'dark'
-local myColors = require 'colors'
+local myColors = require('colors')
 
 -- NOTE: this brings you into block visual select mode ... on windows it's Ctrl + Q, and on Linux Ctrl + V ... cool to have something OS independent :)
 --
@@ -318,10 +318,10 @@ local function initColorTheme(mode)
   -- TODO: unfiy with this / take inspiration -> https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
 
   -- everything related to color theme goes here inside this block
-  require('mini.colors').setup {}
+  require('mini.colors').setup({})
 
   ---@type Colorscheme
-  local theme = MiniColors.get_colorscheme 'retrobox'
+  local theme = MiniColors.get_colorscheme('retrobox')
 
   local update_highlights = require('color_theme').update_highlights
   local color_edit_ui = require('color_edit_ui').color_edit_ui
@@ -352,7 +352,7 @@ end)
 --
 
 -- we want high priority, higher than gitsigns and marks
-vim.diagnostic.config { signs = { priority = 100 } }
+vim.diagnostic.config({ signs = { priority = 100 } })
 
 vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, { desc = 'Go to previous [D]iagnostic message' })
 vim.keymap.set('n', ']d', vim.diagnostic.goto_next, { desc = 'Go to next [D]iagnostic message' })
@@ -367,22 +367,22 @@ end)
 -- My dumb custom workspac linting thing
 -- NOTE: currently only set up for tsc + eslint in a node.js project
 vim.api.nvim_create_user_command('Lint', function()
-  local runner = require 'lint-runner'
+  local runner = require('lint-runner')
 
   -- run tsc and eslint in parallel
-  local tsc = require 'linters_tsc'
-  local eslint = require 'linters_eslint'
+  local tsc = require('linters_tsc')
+  local eslint = require('linters_eslint')
   runner.run_linter(tsc)
   runner.run_linter(eslint)
 end, { desc = 'workspace lint' })
 
 vim.api.nvim_create_user_command('LintClear', function()
-  local runner = require 'lint-runner'
+  local runner = require('lint-runner')
   runner.clear_diagnostics()
 end, { desc = 'clear workspace lint' })
 
 vim.keymap.set('n', '<leader>F', function()
-  local runner = require 'lint-runner'
+  local runner = require('lint-runner')
 
   local namespaces = runner.get_namespaces()
 
@@ -422,21 +422,21 @@ vim.api.nvim_create_autocmd('TextYankPost', {
 --    See `:help lazy.nvim.txt` or https://github.com/folke/lazy.nvim for more info
 --
 --    This bootstraps lazy
-local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
+local lazypath = vim.fn.stdpath('data') .. '/lazy/lazy.nvim'
 if not vim.loop.fs_stat(lazypath) then
-  vim.fn.system {
+  vim.fn.system({
     'git',
     'clone',
     '--filter=blob:none',
     '--branch=stable',
     'https://github.com/folke/lazy.nvim.git',
     lazypath,
-  }
+  })
 end ---@diagnostic disable-next-line: undefined-field
 vim.opt.rtp:prepend(lazypath)
 
 vim.keymap.set('n', '<leader>U', function()
-  local code = vim.fn.input 'u:'
+  local code = vim.fn.input('u:')
   local char = vim.fn.nr2char(code)
   local _, col = unpack(vim.api.nvim_win_get_cursor(0))
   local line = vim.api.nvim_get_current_line()
@@ -538,7 +538,7 @@ require('lazy').setup({
         -- `cond` is a condition used to determine whether this plugin should be
         -- installed and loaded.
         cond = function()
-          return vim.fn.executable 'make' == 1
+          return vim.fn.executable('make') == 1
         end,
       },
       { 'nvim-telescope/telescope-ui-select.nvim' },
@@ -568,7 +568,7 @@ require('lazy').setup({
 
       -- [[ Configure Telescope ]]
       -- See `:help telescope` and `:help telescope.setup()`
-      require('telescope').setup {
+      require('telescope').setup({
         -- You can put your default mappings / updates / etc. in here
         --  All the info you're looking for is in `:help telescope.setup()`
         --
@@ -587,18 +587,18 @@ require('lazy').setup({
             require('telescope.themes').get_dropdown(),
           },
         },
-      }
+      })
 
       -- Enable telescope extensions, if they are installed
       pcall(require('telescope').load_extension, 'fzf')
       pcall(require('telescope').load_extension, 'ui-select')
 
       -- See `:help telescope.builtin`
-      local builtin = require 'telescope.builtin'
+      local builtin = require('telescope.builtin')
       vim.keymap.set('n', '<leader>sh', builtin.help_tags, { desc = '[S]earch [H]elp' })
       vim.keymap.set('n', '<leader>sk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
       vim.keymap.set('n', '<leader>sf', function()
-        builtin.find_files { hidden = true }
+        builtin.find_files({ hidden = true })
       end, { desc = '[S]earch [F]iles' })
       vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
       vim.keymap.set('n', '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
@@ -612,24 +612,24 @@ require('lazy').setup({
       -- Slightly advanced example of overriding default behavior and theme
       vim.keymap.set('n', '<leader>/', function()
         -- You can pass additional configuration to telescope to change theme, layout, etc.
-        builtin.current_buffer_fuzzy_find(require('telescope.themes').get_dropdown {
+        builtin.current_buffer_fuzzy_find(require('telescope.themes').get_dropdown({
           winblend = 10,
           -- previewer = false,
-        })
+        }))
       end, { desc = '[/] Fuzzily search in current buffer' })
 
       -- Also possible to pass additional configuration options.
       --  See `:help telescope.builtin.live_grep()` for information about particular keys
       vim.keymap.set('n', '<leader>s/', function()
-        builtin.live_grep {
+        builtin.live_grep({
           grep_open_files = true,
           prompt_title = 'Live Grep in Open Files',
-        }
+        })
       end, { desc = '[S]earch [/] in Open Files' })
 
       -- Shortcut for searching your neovim configuration files
       vim.keymap.set('n', '<leader>sn', function()
-        builtin.find_files { cwd = vim.fn.stdpath 'config' }
+        builtin.find_files({ cwd = vim.fn.stdpath('config') })
       end, { desc = '[S]earch [N]eovim files' })
     end,
   },
@@ -676,7 +676,7 @@ require('lazy').setup({
         if diff then
           close_diffthis()
         else
-          vim.cmd [[:Gitsigns diffthis]]
+          vim.cmd([[:Gitsigns diffthis]])
           vim.fn.timer_start(50, function()
             local tabp = vim.api.nvim_get_current_tabpage()
             for _, win in pairs(vim.api.nvim_tabpage_list_wins(tabp)) do
@@ -697,7 +697,7 @@ require('lazy').setup({
             do
               local pos = vim.api.nvim_win_get_cursor(0)
               vim.fn.timer_start(30, function()
-                vim.cmd [[:0]]
+                vim.cmd([[:0]])
               end)
               vim.fn.timer_start(31, function()
                 vim.api.nvim_win_set_cursor(0, pos)
@@ -721,7 +721,7 @@ require('lazy').setup({
         view_leave = function()
           -- [strat 1] close tabpage before leaving
           vim.g.diffview_tp = nil
-          vim.cmd [[:DiffviewClose]]
+          vim.cmd([[:DiffviewClose]])
         end,
         diff_buf_win_enter = function(buf, cwin, ctx)
           vim.g.diffview_tp = vim.api.nvim_get_current_tabpage()
@@ -755,11 +755,11 @@ require('lazy').setup({
 
         --- check for local changes using git
         local function has_local_changes()
-          local handle = io.popen 'git status --porcelain 2>/dev/null'
+          local handle = io.popen('git status --porcelain 2>/dev/null')
           if not handle then
             return false
           end
-          local result = handle:read '*a'
+          local result = handle:read('*a')
           handle:close()
           return result ~= ''
         end
@@ -772,11 +772,11 @@ require('lazy').setup({
         ---      vim/_editor.lua: in function 'cmd'
         ---      /home/isak/.config/nvim/init.lua:753: in function </home/isak/.config/nvim/init.lua:717>
 
-        print 'about to check for local changes?'
+        print('about to check for local changes?')
 
         local changes = has_local_changes()
         if not changes then
-          print 'no changes'
+          print('no changes')
           return
         end
 
@@ -787,7 +787,7 @@ require('lazy').setup({
         -- go direclty to file and line that we're currently on when executing <leader>gd
         vim.g.diffview_cursor_pos = vim.api.nvim_win_get_cursor(0)
         vim.g.diffview_just_entered = true
-        vim.cmd [[:DiffviewOpen]]
+        vim.cmd([[:DiffviewOpen]])
       end, {
         desc = '[G]it [D]iff',
       })
@@ -859,7 +859,7 @@ require('lazy').setup({
 
           -- Find references for the word under your cursor.
           map('gr', function()
-            require('telescope.builtin').lsp_references { show_line = false }
+            require('telescope.builtin').lsp_references({ show_line = false })
           end, '[G]oto [R]eferences')
 
           -- Jump to the implementation of the word under your cursor.
@@ -925,11 +925,11 @@ require('lazy').setup({
                 local new_name = vim.api.nvim_buf_get_text(0, 0, 0, 0, 256, {})[1]
                 vim.api.nvim_win_close(win, true)
                 if new_name == old_name then
-                  print 'no change'
+                  print('no change')
                   return
                 end
                 if #new_name == 0 then
-                  print 'cannot name to empty string'
+                  print('cannot name to empty string')
                   return
                 end
 
@@ -1044,7 +1044,7 @@ require('lazy').setup({
       --    :Mason
       --
       --  You can press `g?` for help in this menu
-      require('mason').setup {
+      require('mason').setup({
         ui = {
           border = WIN_BORDER,
           icons = {
@@ -1053,7 +1053,7 @@ require('lazy').setup({
             package_uninstalled = '✗',
           },
         },
-      }
+      })
 
       -- You can add other tools here that you want Mason to install
       -- for you, so that they are available from within Neovim.
@@ -1067,9 +1067,9 @@ require('lazy').setup({
         --       3. inside mason/packages/stylua delete or rename stylua to old_stylua, now the stylua you installed will be used instead
         'stylua', -- Used to format lua code
       })
-      require('mason-tool-installer').setup { ensure_installed = ensure_installed }
+      require('mason-tool-installer').setup({ ensure_installed = ensure_installed })
 
-      require('mason-lspconfig').setup {
+      require('mason-lspconfig').setup({
         ensure_installed = { 'tsserver' },
         handlers = {
           function(server_name)
@@ -1081,7 +1081,7 @@ require('lazy').setup({
             require('lspconfig')[server_name].setup(server)
           end,
         },
-      }
+      })
     end,
   },
 
@@ -1140,12 +1140,12 @@ require('lazy').setup({
     },
     config = function()
       -- See `:help cmp`
-      local cmp = require 'cmp'
-      cmp.setup {
+      local cmp = require('cmp')
+      cmp.setup({
         completion = { completeopt = 'menu,menuone,noinsert' },
         -- For an understanding of why these mappings were
         -- chosen, you will need to read `:help ins-completion`
-        mapping = cmp.mapping.preset.insert {
+        mapping = cmp.mapping.preset.insert({
           -- Select the [n]ext item
           ['<C-n>'] = cmp.mapping.select_next_item(),
           -- Select the [p]revious item
@@ -1154,13 +1154,13 @@ require('lazy').setup({
           ['<C-b>'] = cmp.mapping.scroll_docs(-4),
           ['<C-f>'] = cmp.mapping.scroll_docs(4),
 
-          ['<Tab>'] = cmp.mapping.confirm { select = true },
+          ['<Tab>'] = cmp.mapping.confirm({ select = true }),
 
           -- Manually trigger a completion from nvim-cmp.
           --  Generally you don't need this, because nvim-cmp will display
           --  completions whenever it has completion options available.
-          ['<C-Space>'] = cmp.mapping.complete {},
-        },
+          ['<C-Space>'] = cmp.mapping.complete({}),
+        }),
         sources = {
           -- lsp completion
           { name = 'nvim_lsp' },
@@ -1169,7 +1169,7 @@ require('lazy').setup({
           -- completion of file paths
           { name = 'path' },
         },
-      }
+      })
     end,
   },
 
@@ -1185,13 +1185,13 @@ require('lazy').setup({
       --  - va)  - [V]isually select [A]round [)]paren
       --  - yinq - [Y]ank [I]nside [N]ext [']quote
       --  - ci'  - [C]hange [I]nside [']quote
-      require('mini.ai').setup { n_lines = 500 }
+      require('mini.ai').setup({ n_lines = 500 })
 
       -- highlight word under cursor, style with highlight group MiniCursorword
-      require('mini.cursorword').setup {}
+      require('mini.cursorword').setup({})
 
       do
-        local hipatterns = require 'mini.hipatterns'
+        local hipatterns = require('mini.hipatterns')
 
         local keywords = {
           { key = 'FIX', group = 'TodoBgFIXME' },
@@ -1209,13 +1209,13 @@ require('lazy').setup({
         local bdrPattern = "[^a-zA-Z0-9'_()-]"
 
         for _, kw in pairs(keywords) do
-          for _, key in pairs { kw.key, string.lower(kw.key) } do
+          for _, key in pairs({ kw.key, string.lower(kw.key) }) do
             highlighters[key] = { pattern = bdrPattern .. '%f[%w]()' .. key .. '()%f[%W]' .. bdrPattern, group = kw.group }
             highlighters[key .. '_'] = { pattern = bdrPattern .. '%f[%w]()' .. key .. '()%f[%W]$', group = kw.group }
           end
         end
 
-        hipatterns.setup { highlighters = highlighters }
+        hipatterns.setup({ highlighters = highlighters })
       end
 
       -- Add/delete/replace surroundings (brackets, quotes, etc.)
@@ -1226,21 +1226,21 @@ require('lazy').setup({
       require('mini.surround').setup()
 
       do -- Simple and easy statusline.
-        local statusline = require 'mini.statusline'
+        local statusline = require('mini.statusline')
 
         -- set use_icons to true if you have a Nerd Font
-        statusline.setup {
+        statusline.setup({
           use_icons = vim.g.have_nerd_font,
           content = {
             active = function()
-              local mode, mode_hl = MiniStatusline.section_mode { trunc_width = 120 }
-              local git = MiniStatusline.section_git { trunc_width = 40 }
-              local diff = MiniStatusline.section_diff { icon = 'Δ', trunc_width = 75 }
-              local diagnostics = MiniStatusline.section_diagnostics { trunc_width = 75 }
-              local lsp = MiniStatusline.section_lsp { trunc_width = 75 }
+              local mode, mode_hl = MiniStatusline.section_mode({ trunc_width = 120 })
+              local git = MiniStatusline.section_git({ trunc_width = 40 })
+              local diff = MiniStatusline.section_diff({ icon = 'Δ', trunc_width = 75 })
+              local diagnostics = MiniStatusline.section_diagnostics({ trunc_width = 75 })
+              local lsp = MiniStatusline.section_lsp({ trunc_width = 75 })
 
               -- local filename = MiniStatusline.section_filename { trunc_width = 140 }
-              local filename = vim.fn.expand '%f'
+              local filename = vim.fn.expand('%f')
               local filenam_hl = 'MiniStatuslineFilename'
               do
                 if #filename > 24 then
@@ -1282,9 +1282,9 @@ require('lazy').setup({
                 end
               end
 
-              local fileinfo = MiniStatusline.section_fileinfo { trunc_width = 120 }
-              local location = MiniStatusline.section_location { trunc_width = 75 }
-              local search = MiniStatusline.section_searchcount { trunc_width = 75 }
+              local fileinfo = MiniStatusline.section_fileinfo({ trunc_width = 120 })
+              local location = MiniStatusline.section_location({ trunc_width = 75 })
+              local search = MiniStatusline.section_searchcount({ trunc_width = 75 })
 
               -- get root_dir of the lsp client attached to this buffer
               local bufnr = vim.api.nvim_get_current_buf()
@@ -1299,7 +1299,7 @@ require('lazy').setup({
                 end
               end
 
-              return MiniStatusline.combine_groups {
+              return MiniStatusline.combine_groups({
                 { hl = mode_hl, strings = { mode } },
                 { hl = 'MiniStatuslineBranch', strings = { git } },
                 { hl = workspace_hl, strings = { vim.fs.basename(root_dir) } },
@@ -1310,10 +1310,10 @@ require('lazy').setup({
                 '%=', -- End left alignment
                 { hl = 'MiniStatuslineFileinfo', strings = { fileinfo } },
                 { hl = mode_hl, strings = { search, location } },
-              }
+              })
             end,
           },
-        }
+        })
 
         ---@diagnostic disable-next-line: duplicate-set-field
         statusline.section_location = function()
