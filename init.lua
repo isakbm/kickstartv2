@@ -188,6 +188,9 @@ WIN_BORDER = { '╭', '─', '╮', '│', '╯', '─', '╰', '│' }
 
 --=========================== KEYMAPS =============================
 
+-- go back to last save state, you still keep history, and can redo if you want, neat
+vim.keymap.set('n', 'U', '<cmd>earlier 1f<cr>')
+
 -- NOTE: hide higlights after hitting <Esc>
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
@@ -493,13 +496,6 @@ require('lazy').setup({
         end,
         desc = 'GitGraph - Draw',
       },
-      {
-        '<leader>gR',
-        function()
-          require('gitgraph').random()
-        end,
-        desc = 'random gitgraph',
-      },
     },
     init = function()
       --- update gitgraph whenever we run a fugitive :Git command
@@ -661,8 +657,10 @@ require('lazy').setup({
     init = function()
       vim.keymap.set('n', ']h', ':Gitsigns next_hunk<cr>', { desc = '[G]it [N]ext hunk' })
       vim.keymap.set('n', '[h', ':Gitsigns prev_hunk<cr>', { desc = '[G]it [P]rev hunk' })
+
       vim.keymap.set('n', '<leader>gp', ':Gitsigns preview_hunk<cr>', { desc = '[G]it [P]review hunk' })
       vim.keymap.set('n', '<leader>gr', ':Gitsigns reset_hunk<cr>', { desc = '[G]it [R]eset hunk' })
+      vim.keymap.set('n', '<leader>gR', ':Gitsigns reset_buffer<cr>', { desc = '[G]it [R]eset buffer' })
       vim.keymap.set('n', '<leader>gb', ':Gitsigns toggle_current_line_blame<CR>', { desc = '[G]it [B]lame toggle' })
 
       -- diff this
