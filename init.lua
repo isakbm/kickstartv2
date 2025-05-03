@@ -137,13 +137,12 @@
 
 =================================================================--]]
 
--- NOTE: :help localleader
--- testytest
+-- :help localleader
 vim.g.mapleader = ' ' -- Set <space> as the leader key
 vim.g.maplocalleader = ' ' --- Set <space> as the local leader key
 vim.g.have_nerd_font = true -- Set to true if you have a Nerd Font installed
 
--- NOTE::help option-list
+-- :help option-list
 --
 -- Sync clipboard between OS and Neovim.
 -- Remove this option if you want your OS clipboard to remain independent.
@@ -193,14 +192,14 @@ vim.keymap.set('n', 'U', '<cmd>earlier 1f<cr>', { desc = 'undo all the way to pr
 -- go forward to last save state, you still keep history, and can redo if you want, neat
 vim.keymap.set('n', 'W', '<cmd>later 1f<cr>', { desc = 'redo all the way to later save' })
 
--- NOTE: hide higlights after hitting <Esc>
+-- hide higlights after hitting <Esc>
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
--- NOTE: disabling some imo useless default keybindings
+-- disabling some imo useless default keybindings
 vim.keymap.set('n', '<C-f>', '<NOP>', { desc = 'disable windowfull scroll down' })
 vim.keymap.set('n', '<C-b>', '<NOP>', { desc = 'disable windowfull scroll up' })
 
--- NOTE: like * but doesn't move you around
+-- like * but doesn't move you around
 vim.keymap.set('n', '*', function()
   -- NOTE yes this a bit convoluted, but avoids issues with the old way ... the old way would sometimes change
   --      scroll position of buffer if scrolloff is set
@@ -210,7 +209,7 @@ vim.keymap.set('n', '*', function()
   --      vim.keymap.set('n', '*', '/<C-R><C-W><cr>N', { desc = 'highlight all occurrences of current word' })
   --
   local word = vim.fn.expand('<cword>')
-  local pattern = [[\C\<]] .. word .. [[\>]] -- NOTE: pattern to match full word only
+  local pattern = [[\C\<]] .. word .. [[\>]] -- pattern to match full word only
   vim.fn.setreg('/', pattern)
   vim.opt.hlsearch = true
   vim.fn.searchcount({ recompute = 1 })
@@ -308,16 +307,12 @@ require('recall_buf_position')
 local colorThemeMode = 'dark'
 local myColors = require('colors')
 
--- NOTE: this brings you into block visual select mode ... on windows it's Ctrl + Q, and on Linux Ctrl + V ... cool to have something OS independent :)
---
+-- This brings you into block visual select mode ... on windows it's Ctrl + Q, and on Linux Ctrl + V ... cool to have something OS independent :)
 -- Experimental alternative to `Ctrl + V` which is blocked by some terminals
 vim.keymap.set('n', 'VV', '<C-v>')
 
 ---@param mode "light" | "dark"
 local function initColorTheme(mode)
-  -- TODO: unfiy with this / take inspiration -> https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
-
-  -- everything related to color theme goes here inside this block
   require('mini.colors').setup({})
 
   ---@type Colorscheme

@@ -37,70 +37,68 @@ return {
     cset('IncSearch     ', { fg = c.sand }, 'tweak')
     cset('NormalFloat   ', { fg = c.white, bg = nil })
     cset('Normal        ', { fg = c.white, bg = c.blackboard })
-    cset 'SignColumn    '
+    cset('SignColumn    ')
 
     cset('DiagnosticUnderlineError', { undercurl = true }, 'tweak')
 
     cset('Directory', { fg = c.teal })
-    cset 'Statement'
-    cset 'Function'
-    cset 'Macro'
-    cset '@tag'
-    cset '@function.builtin'
-    cset '@tag.builtin'
-    cset '@lsp.type.formatSpecifier'
+    cset('Statement')
+    cset('Function')
+    cset('Macro')
+    cset('@tag')
+    cset('@function.builtin')
+    cset('@tag.builtin')
+    cset('@lsp.type.formatSpecifier')
 
     cset('Delimiter', { fg = c.brown })
-    cset 'Keyword'
-    cset 'Repeat'
-    cset 'ColorEditTitle'
-    cset 'Conditional'
-    cset 'Operator'
-    cset 'WinSeparator'
-    cset 'TelescopeBorder'
-    cset '@keyword.type'
-    cset '@tag.delimiter'
-    cset '@constructor.lua'
-    cset 'LeapLabelPrimary'
+    cset('Keyword')
+    cset('Repeat')
+    cset('ColorEditTitle')
+    cset('Conditional')
+    cset('Operator')
+    cset('WinSeparator')
+    cset('TelescopeBorder')
+    cset('@keyword.type')
+    cset('@tag.delimiter')
+    cset('@constructor.lua')
+    cset('LeapLabelPrimary')
 
     cset('Type', { fg = c.sand })
-    cset 'Number'
-    cset 'Boolean'
-    cset 'String'
-    cset 'Structure'
-    cset 'GitSignsChange'
-    cset '@constructor'
-    cset 'DiffviewFilePanelPath'
-    cset '@type.builtin'
+    cset('Number')
+    cset('Boolean')
+    cset('String')
+    cset('Structure')
+    cset('GitSignsChange')
+    cset('@constructor')
+    cset('DiffviewFilePanelPath')
+    cset('@type.builtin')
 
     cset('Identifier', { fg = c.white })
-    cset 'Identifier'
-    cset '@markup.raw'
-    cset '@tag.attribute'
-    cset 'markdownBlockQuote'
+    cset('Identifier')
+    cset('@markup.raw')
+    cset('@tag.attribute')
+    cset('markdownBlockQuote')
 
     cset('Include', { fg = mode == 'dark' and c.pear or c.pear2 })
-    cset 'Label'
-    cset 'Title'
-    cset 'ColorEditTitleActive'
-    cset 'TelescopeTitle'
-    cset 'TodoBgTODO'
-    cset 'TodoBgNOTE'
-    cset 'GitSignsAdd'
-    cset '@lsp.type.namespace'
-    cset '@module'
+    cset('Label')
+    cset('Title')
+    cset('ColorEditTitleActive')
+    cset('TelescopeTitle')
+    cset('GitSignsAdd')
+    cset('@lsp.type.namespace')
+    cset('@module')
 
     cset('Constant', { fg = c.pink })
-    cset 'SpecialChar'
-    cset 'GitSignsDelete'
-    cset '@constant.builtin'
-    cset '@lsp.type.lifetime'
-    cset '@lsp.typemod.keyword.async'
-    cset '@lsp.typemod.operator.controlFlow'
-    cset 'DiffviewFilePanelTitle'
+    cset('SpecialChar')
+    cset('GitSignsDelete')
+    cset('@constant.builtin')
+    cset('@lsp.type.lifetime')
+    cset('@lsp.typemod.keyword.async')
+    cset('@lsp.typemod.operator.controlFlow')
+    cset('DiffviewFilePanelTitle')
 
     cset('Comment', { fg = c.comment })
-    cset 'LeapBackdrop'
+    cset('LeapBackdrop')
 
     cset('LineNr', { fg = c.gray3 })
     cset('CursorLineNr', { fg = c.pear2 })
@@ -109,13 +107,13 @@ return {
     cset('FoldColumn', { bg = c.gray5 })
     cset('Folded', { bg = c.gray5 })
 
-    cset('TodoBgWARN', { fg = c.pink2 })
-    cset 'TodoBgFIX'
-    cset 'TodoBgFIXME'
-
-    cset('TodoBgSTORE', { fg = c.orange })
-
-    cset('TodoBgWARN', { fg = c.sand })
+    cset('TodoBgTODO', { reverse = true, fg = mode == 'dark' and c.pear or c.pear2 })
+    cset('TodoBgNOTE')
+    cset('TodoBgWARN', { reverse = true, fg = c.pink2 })
+    cset('TodoBgFIX')
+    cset('TodoBgFIXME')
+    cset('TodoBgSTORE', { reverse = true, fg = c.orange })
+    cset('TodoBgWARN', { reverse = true, fg = c.sand })
 
     cset('Special', { fg = c.orange })
 
