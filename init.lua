@@ -102,7 +102,17 @@ local getWorkspaceName = function()
   local workdir = vim.fn.systemlist('git rev-parse --show-toplevel')[1]
   if vim.v.shell_error ~= 0 or not workdir then workdir = vim.fn.getcwd() end
   local workdirBasename = vim.fn.fnamemodify(workdir, ':t')
-  return workdirBasename
+  return workdirBasename, workdir
+end
+
+local isWorkspaceDirty = function()
+  local bufs = vim.api.nvim_list_bufs()
+  for _, buf in pairs(bufs) do
+    local unsaved = vim.api.nvim_get_option_value('modified', { buf = buf })
+    local bufname = vim.api.nvim_buf_get_name(buf)
+    if unsaved and bufname ~= '' then return true end
+  end
+  return false
 end
 
 --=========================== KEYMAPS =============================
@@ -898,54 +908,38 @@ require('lazy').setup({
       do -- Simple and easy statusline.
         local statusline = require('mini.statusline')
 
-        local workspaceName = getWorkspaceName()
+        local workspaceName, workdir = getWorkspaceName()
 
         -- set use_icons to true if you have a Nerd Font
         statusline.setup({
           use_icons = vim.g.have_nerd_font,
           content = {
             active = function()
-              local mode, mode_hl = MiniStatusline.section_mode({ trunc_width = 120 })
+              local _mode, mode_hl = MiniStatusline.section_mode({ trunc_width = 120 })
               local git = MiniStatusline.section_git({ trunc_width = 40 })
-              local diff = MiniStatusline.section_diff({ icon = 'Δ', trunc_width = 75 })
-              local diagnostics = MiniStatusline.section_diagnostics({ trunc_width = 75 })
-              local lsp = MiniStatusline.section_lsp({ trunc_width = 75 })
 
               -- local filename = MiniStatusline.section_filename { trunc_width = 140 }
-              local filename = vim.fn.expand('%f')
+              local filename = vim.fn.expand('%')
               local filenam_hl = 'MiniStatuslineFilename'
+
               do
                 if #filename > 24 then
                   local ff = vim.fn.split(filename, '/')
                   if #ff > 3 then filename = ff[1] .. '/.../' .. ff[#ff - 1] .. '/' .. ff[#ff] end
                 end
-
                 local unsaved = vim.api.nvim_get_option_value('modified', { buf = 0 })
-                if unsaved then
-                  filenam_hl = 'MiniStatuslineFilenameUnsaved'
-                  filename = filename .. ' *'
-                end
+                if unsaved then filenam_hl = 'MiniStatuslineFilenameUnsaved' end
               end
 
               -- do we have any unsaved buffers?
-              local bufs = vim.api.nvim_list_bufs()
-              local workspace_hl = 'MiniStatuslineWorkspace'
-              local unsaved_bufs = false
-              for _, buf in pairs(bufs) do
-                local unsaved = vim.api.nvim_get_option_value('modified', { buf = buf })
-                local bufname = vim.api.nvim_buf_get_name(buf)
-                if unsaved and bufname ~= '' then
-                  workspace_hl = 'MiniStatuslineWorkspaceUnsaved'
-                  unsaved_bufs = true
-                  break
-                end
-              end
+              local workspaceDirty = isWorkspaceDirty()
+              local workspace_hl = workspaceDirty and 'MiniStatuslineWorkspaceUnsaved' or 'MiniStatuslineWorkspace'
 
               do
                 local c = colorThemeMode == 'light' and myColors.light or myColors.dark
                 if vim.fn.reg_recording() ~= '' then
                   vim.api.nvim_set_hl(0, 'CursorLine', { bg = c.yellow })
-                elseif unsaved_bufs then
+                elseif workspaceDirty then
                   vim.api.nvim_set_hl(0, 'CursorLine', { bg = c.red })
                 else
                   vim.api.nvim_set_hl(0, 'CursorLine', { bg = c.gray5 })
@@ -956,36 +950,34 @@ require('lazy').setup({
               local location = MiniStatusline.section_location({ trunc_width = 75 })
               local search = MiniStatusline.section_searchcount({ trunc_width = 75 })
 
-              -- get root_dir of the lsp client attached to this buffer
-              local bufnr = vim.api.nvim_get_current_buf()
-              local clients = vim.lsp.get_clients()
-              local client = nil
-              local root_dir = nil
-              for _, c in pairs(clients) do
-                if c.attached_buffers[bufnr] ~= nil then
-                  client = c
-                  root_dir = client.root_dir
-                  break
-                end
-              end
-
               return MiniStatusline.combine_groups({
-                { hl = 'MiniStatuslineBranch', strings = { workspaceName } },
-                { hl = mode_hl, strings = { mode } },
-                { hl = 'MiniStatuslineBranch', strings = { git } },
-                { hl = workspace_hl, strings = { vim.fs.basename(root_dir) } },
-                { hl = 'MiniStatuslineChanges', strings = { diff } },
-                { hl = 'MiniStatuslineDiagnostics', strings = { diagnostics, lsp } },
+                { hl = workspace_hl, strings = { workspaceName } },
                 '%<', -- Mark general truncate point
-                { hl = filenam_hl, strings = { filename } },
+                { hl = filenam_hl, strings = { filename ~= '' and filename or workdir } },
+                { hl = 'MiniStatuslineBranch', strings = { git } },
                 '%=', -- End left alignment
                 { hl = 'MiniStatuslineFileinfo', strings = { fileinfo } },
                 { hl = mode_hl, strings = { search, location } },
               })
             end,
             inactive = function()
+              local unsaved = vim.api.nvim_get_option_value('modified', { buf = 0 })
+              local filename = vim.fn.expand('%')
+              local workspaceDirty = isWorkspaceDirty()
+              local git = MiniStatusline.section_git({ trunc_width = 40 })
+
               return MiniStatusline.combine_groups({
-                { hl = 'MiniStatuslineBranch', strings = { workspaceName } },
+                {
+                  hl = workspaceDirty and 'MiniStatuslineWorkspaceUnsaved' or 'MiniStatuslineWorkspace',
+                  strings = { workspaceName },
+                },
+                '%<', -- Mark general truncate point
+                {
+                  hl = unsaved and 'MiniStatuslineFilenameUnsaved' or 'MiniStatuslineFilename',
+                  strings = { filename ~= '' and filename or workdir },
+                },
+                { hl = 'MiniStatuslineBranch', strings = { git } },
+                '%=', -- End left alignment
               })
             end,
           },

@@ -21,9 +21,7 @@ return {
       return function(name, hl, tweak)
         local name = vim.trim(name)
         local hl_groups = theme.groups or {}
-        if hl then
-          last_hl = hl
-        end
+        if hl then last_hl = hl end
         if tweak then
           hl_groups[name] = hl_groups[name] or {}
           hl_groups[name] = vim.tbl_extend('force', hl_groups[name], last_hl)
@@ -124,6 +122,7 @@ return {
     cset('GitGraphBranch5   ', { fg = c.orange })
 
     cset('GitGraphHash      ', { fg = c.teal })
+
     cset('GitGraphTimestamp ', { fg = c.sand })
     cset('GitGraphAuthor    ', { fg = c.brown })
     cset('GitGraphBranchName', { fg = mode == 'dark' and c.pear or c.pear2 })
@@ -136,15 +135,15 @@ return {
     cset('DiffDelete            ', { fg = c.pink2 })
     cset('DiffviewDiffDeleteDim ', { fg = c.pink })
 
-    cset('MiniStatuslineBranch           ', { fg = c.pear, bg = c.gray2 })
-    cset('MiniStatuslineWorkspace        ', { fg = c.pear, bg = c.gray2 })
-    cset('MiniStatuslineWorkspaceUnsaved ', { fg = c.pink2, bg = c.gray2 })
+    cset('MiniStatuslineBranch           ', { fg = c.sand, bg = c.gray2 })
+    cset('MiniStatuslineWorkspace        ', { reverse = true, fg = c.pear, bg = c.gray2 })
+    cset('MiniStatuslineWorkspaceUnsaved ', { reverse = true, fg = c.pink2, bg = c.gray2 })
     cset('MiniStatuslineChanges          ', { fg = c.sand2, bg = c.gray2 })
     cset('MiniStatuslineDiagnostics      ', { fg = c.teal2, bg = c.gray2 })
     cset('MiniStatuslineFileinfo         ', { fg = c.teal2, bg = c.gray2 })
 
-    cset('MiniStatuslineFilename', { fg = c.blackboard, bg = c.gray2 })
-    cset('MiniStatuslineFilenameUnsaved', { fg = c.blackboard, bg = c.gray2 })
+    cset('MiniStatuslineFilename', { fg = c.pear, bg = c.gray2 })
+    cset('MiniStatuslineFilenameUnsaved', { fg = c.pink2, bg = c.gray2 })
 
     cset('MiniStatuslineModeNormal       ', { fg = c.gray2, bg = c.sand2 })
     cset('MiniStatuslineModeVisual       ', { fg = c.gray2, bg = c.pink3 })
