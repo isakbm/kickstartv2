@@ -105,27 +105,18 @@ local KEY = vim.keymap.set
 local CMD = vim.api.nvim_create_user_command
 local AUTO = vim.api.nvim_create_autocmd
 
--- go back to last save state, you still keep history, and can redo if you want, neat
 KEY('n', 'U', '<cmd>earlier 1f<cr>', { desc = 'undo all the way to previous (earlier) save' })
--- go forward to last save state, you still keep history, and can redo if you want, neat
 KEY('n', 'W', '<cmd>later 1f<cr>', { desc = 'redo all the way to later save' })
 
--- hide higlights after hitting <Esc>
-KEY('n', '<Esc>', '<cmd>nohlsearch<CR>')
+KEY('n', '<Esc>', '<cmd>nohlsearch<CR>', { desc = 'hide higlights after hitting <Esc>' })
 
--- disabling some imo useless default keybindings
 KEY('n', '<C-f>', '<NOP>', { desc = 'disable windowfull scroll down' })
 KEY('n', '<C-b>', '<NOP>', { desc = 'disable windowfull scroll up' })
 
--- like * but doesn't move you around
-KEY('n', '*', require('nice_star'), { desc = 'highlight all occurrences of current word' })
+KEY('n', '*', require('nice_star'), { desc = 'highlight all occurrences of current word BETTER than default' })
 
---   we've bound <M-*> so the `Alt` or `Modifier` key, however, see :h :map-alt and you'll notice that
---   nvim is not able to distinguish between `Esc` and `Alt` if key press is fast enough, we'll just live
---   with this, it rarely causes issues, but if you press `Esc` + j  or `Esc + k` very quickly while
---   in normal mode, you'll also trigger the below keymaps.
-KEY('n', '<C-j>', ':m+1<cr>', { desc = 'swap line with line below' }) -- vscode <alt> + <up>
-KEY('n', '<C-k>', ':m-2<cr>', { desc = 'swap line with line above' }) -- vscode <alt> + <down>
+KEY('n', '<C-j>', ':m+1<cr>', { desc = 'swap line with line below' })
+KEY('n', '<C-k>', ':m-2<cr>', { desc = 'swap line with line above' })
 
 -- NOTE: this overrides the default shift + r "aka R" replace ... but I don't find that useful
 --       instead this is quite useful, I often find myself wanting to replace the remaining text on the
@@ -1028,7 +1019,30 @@ require('lazy').setup({
           node_decremental = 'grm',
         },
       },
+      textobjects = {
+        move = {
+          enable = true,
+          set_jumps = true, -- whether to set jumps in the jumplist
+          goto_next_start = {
+            [']m'] = '@function.outer',
+            [']]'] = '@class.outer',
+          },
+          goto_next_end = {
+            [']M'] = '@function.outer',
+            [']['] = '@class.outer',
+          },
+          goto_previous_start = {
+            ['[m'] = '@function.outer',
+            ['[['] = '@class.outer',
+          },
+          goto_previous_end = {
+            ['[M'] = '@function.outer',
+            ['[]'] = '@class.outer',
+          },
+        },
+      },
     },
+    dependencies = { 'nvim-treesitter/nvim-treesitter-textobjects' },
     config = function(_, opts)
       ---@diagnostic disable-next-line: missing-fields
       require('nvim-treesitter.configs').setup(opts)
