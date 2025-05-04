@@ -142,6 +142,8 @@ return {
     cset('MiniStatuslineDiagnostics      ', { fg = c.teal2, bg = c.gray2 })
     cset('MiniStatuslineFileinfo         ', { fg = c.teal2, bg = c.gray2 })
 
+    cset('MiniStatuslineLines', { fg = c.gray2, bg = c.teal2 })
+
     cset('MiniStatuslineFilename', { fg = c.pear, bg = c.gray2 })
     cset('MiniStatuslineFilenameUnsaved', { fg = c.pink2, bg = c.gray2 })
 

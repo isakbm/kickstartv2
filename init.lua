@@ -946,7 +946,7 @@ require('lazy').setup({
                 end
               end
 
-              local fileinfo = MiniStatusline.section_fileinfo({ trunc_width = 120 })
+              local fileinfo = MiniStatusline.section_fileinfo({ trunc_width = 2000 })
               local location = MiniStatusline.section_location({ trunc_width = 75 })
               local search = MiniStatusline.section_searchcount({ trunc_width = 75 })
 
@@ -958,6 +958,7 @@ require('lazy').setup({
                 '%=', -- End left alignment
                 { hl = 'MiniStatuslineFileinfo', strings = { fileinfo } },
                 { hl = mode_hl, strings = { search, location } },
+                { hl = 'MiniStatuslineLines', strings = { '%L' } },
               })
             end,
             inactive = function()
