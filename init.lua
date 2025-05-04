@@ -944,9 +944,12 @@ require('lazy').setup({
                 if vim.fn.reg_recording() ~= '' then
                   vim.api.nvim_set_hl(0, 'CursorLine', { bg = c.yellow })
                 elseif workspaceDirty then
-                  vim.api.nvim_set_hl(0, 'CursorLine', { bg = c.red })
+                  -- vim.api.nvim_set_hl(0, 'CursorLine', { bg = c.red })
+                  vim.api.nvim_set_hl(0, 'CursorLine', { bg = colorThemeMode == 'dark' and c.black or c.white })
+                  vim.api.nvim_set_hl(0, 'LineNr', { fg = colorThemeMode == 'dark' and c.pink2 or c.pink2 })
                 else
                   vim.api.nvim_set_hl(0, 'CursorLine', { bg = colorThemeMode == 'dark' and c.black or c.white })
+                  vim.api.nvim_set_hl(0, 'LineNr', { fg = colorThemeMode == 'dark' and c.gray3 or c.comment })
                 end
               end
 
