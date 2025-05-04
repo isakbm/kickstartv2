@@ -2,6 +2,9 @@
 
   TODO:
 
+    >> gitgraph and perhaps other non file buffers should also display the
+       branch name we're on?
+
     >> { } etc will match with real ones, that is, if a comment contains } then it will
        obstruct the pairing of parenthesis etc ... would be amazing if we could fix this
        it becomes obvious when you place cursor on ( ) or you try to jump using %
@@ -870,9 +873,6 @@ require('lazy').setup({
       --  - yinq - [Y]ank [I]nside [N]ext [']quote
       --  - ci'  - [C]hange [I]nside [']quote
       require('mini.ai').setup({ n_lines = 500 })
-
-      -- highlight word under cursor, style with highlight group MiniCursorword
-      require('mini.cursorword').setup({})
 
       do
         local hipatterns = require('mini.hipatterns')
