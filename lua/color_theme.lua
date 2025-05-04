@@ -135,21 +135,25 @@ return {
     cset('DiffDelete            ', { fg = c.pink2 })
     cset('DiffviewDiffDeleteDim ', { fg = c.pink })
 
-    cset('MiniStatuslineBranch           ', { fg = c.sand, bg = c.gray2 })
-    cset('MiniStatuslineWorkspace        ', { reverse = true, fg = c.pear, bg = c.gray2 })
-    cset('MiniStatuslineWorkspaceUnsaved ', { reverse = true, fg = c.pink2, bg = c.gray2 })
-    cset('MiniStatuslineChanges          ', { fg = c.sand2, bg = c.gray2 })
-    cset('MiniStatuslineDiagnostics      ', { fg = c.teal2, bg = c.gray2 })
-    cset('MiniStatuslineFileinfo         ', { fg = c.teal2, bg = c.gray2 })
+    local slbg = mode == 'dark' and c.gray2 or c.black
 
-    cset('MiniStatuslineLines', { fg = c.gray2, bg = c.teal2 })
+    cset('MiniStatuslineBranch           ', { fg = mode == 'dark' and c.sand or c.blackboard, bg = slbg })
+    cset('MiniStatuslineWorkspace        ', { reverse = true, fg = c.pear, bg = slbg })
+    cset('MiniStatuslineWorkspaceUnsaved ', { reverse = true, fg = c.pink2, bg = slbg })
+    cset('MiniStatuslineChanges          ', { fg = c.sand2, bg = slbg })
+    cset('MiniStatuslineDiagnostics      ', { fg = c.teal2, bg = slbg })
+    cset('MiniStatuslineFileinfo         ', { fg = c.teal2, bg = slbg })
+    cset('MiniStatuslineLocation         ', { fg = slbg, bg = c.sand2 })
 
-    cset('MiniStatuslineFilename', { fg = c.pear, bg = c.gray2 })
-    cset('MiniStatuslineFilenameUnsaved', { fg = c.pink2, bg = c.gray2 })
+    cset('MiniStatuslineLines', { fg = slbg, bg = c.teal2 })
+    cset('MiniStatuslineSearch', { fg = slbg, bg = c.teal2 })
 
-    cset('MiniStatuslineModeNormal       ', { fg = c.gray2, bg = c.sand2 })
-    cset('MiniStatuslineModeVisual       ', { fg = c.gray2, bg = c.pink3 })
-    cset('MiniStatuslineModeInsert       ', { fg = c.gray2, bg = c.teal2 })
+    cset('MiniStatuslineFilename', { fg = c.pear, bg = slbg })
+    cset('MiniStatuslineFilenameUnsaved', { fg = c.pink2, bg = slbg })
+
+    cset('MiniStatuslineModeNormal       ', { fg = slbg, bg = c.sand2 })
+    cset('MiniStatuslineModeVisual       ', { fg = slbg, bg = c.pink3 })
+    cset('MiniStatuslineModeInsert       ', { fg = slbg, bg = c.teal2 })
 
     cset('Visual', { bg = c.pear33 })
     cset('MatchParen', { bg = c.pear33 })

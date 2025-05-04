@@ -957,7 +957,8 @@ require('lazy').setup({
                 { hl = 'MiniStatuslineBranch', strings = { git } },
                 '%=', -- End left alignment
                 { hl = 'MiniStatuslineFileinfo', strings = { fileinfo } },
-                { hl = mode_hl, strings = { search, location } },
+                { hl = 'MiniStatuslineSearch', strings = { search } },
+                { hl = 'MiniStatuslineLocation', strings = { location } },
                 { hl = 'MiniStatuslineLines', strings = { '%L' } },
               })
             end,
