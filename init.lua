@@ -80,7 +80,7 @@ vim.opt.breakindent = true -- Enable break indent
 vim.opt.undofile = true -- Save undo history
 vim.opt.ignorecase = true -- case insensitive search
 vim.opt.smartcase = true -- ... actually lets make it sensitive if an upper case is involved
-vim.opt.signcolumn = 'yes' -- Keep signcolumn on by default
+vim.opt.signcolumn = 'yes:1' -- Keep signcolumn on by default
 vim.opt.splitright = true -- Configure how new splits should be opened
 vim.opt.splitbelow = true
 vim.opt.list = true -- Sets how neovim will display certain whitespace in the editor.
@@ -946,7 +946,7 @@ require('lazy').setup({
                 elseif workspaceDirty then
                   vim.api.nvim_set_hl(0, 'CursorLine', { bg = c.red })
                 else
-                  vim.api.nvim_set_hl(0, 'CursorLine', { bg = c.blackboard })
+                  vim.api.nvim_set_hl(0, 'CursorLine', { bg = colorThemeMode == 'dark' and c.black or c.white })
                 end
               end
 

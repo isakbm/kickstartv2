@@ -31,11 +31,15 @@ return {
       end
     end)()
 
-    cset('Search        ', { fg = c.orange2 }, 'tweak')
-    cset('IncSearch     ', { fg = c.orange2 }, 'tweak')
+    cset('Search        ', { reverse = true, fg = c.orange })
+    cset('IncSearch     ', { reverse = true, fg = c.orange })
+    cset('Visual        ', { reverse = true, fg = c.blue3 })
 
     cset('NormalFloat   ', { fg = c.white, bg = nil })
-    cset('Normal        ', { fg = c.white, bg = c.black })
+    cset('Normal        ', {
+      fg = mode == 'dark' and c.white or c.black,
+      bg = mode == 'dark' and c.black or c.white,
+    })
     cset('SignColumn    ')
 
     cset('DiagnosticUnderlineError', { undercurl = true }, 'tweak')
@@ -50,17 +54,20 @@ return {
     cset('@lsp.type.formatSpecifier')
 
     cset('Delimiter', { fg = c.brown })
-    cset('Keyword')
     cset('Repeat')
     cset('ColorEditTitle')
     cset('Conditional')
     cset('Operator')
     cset('WinSeparator')
     cset('TelescopeBorder')
-    cset('@keyword.type')
     cset('@tag.delimiter')
     cset('@constructor.lua')
     cset('LeapLabelPrimary')
+
+    cset('Keyword', { fg = c.brown })
+    cset('@keyword.type')
+
+    cset('@keyword.return', { fg = c.pink2 })
 
     cset('Type', { fg = c.sand })
     cset('Number')
@@ -72,7 +79,7 @@ return {
     cset('DiffviewFilePanelPath')
     cset('@type.builtin')
 
-    cset('Identifier', { fg = c.white })
+    cset('Identifier', { fg = mode == 'dark' and c.white or c.black })
     cset('Identifier')
     cset('@markup.raw')
     cset('@tag.attribute')
@@ -99,10 +106,10 @@ return {
     cset('Comment', { fg = c.comment })
     cset('LeapBackdrop')
 
-    cset('LineNr', { fg = c.gray3 })
+    cset('LineNr', { fg = mode == 'dark' and c.gray3 or c.comment })
 
     cset('CursorLineNr', { fg = c.pear2 })
-    cset('CursorLine', { bg = c.blackboard })
+    cset('CursorLine', { bg = mode == 'dark' and c.black or c.white })
 
     cset('FoldColumn', { bg = c.gray5 })
     cset('Folded', { bg = c.gray5 })
@@ -157,7 +164,6 @@ return {
     cset('MiniStatuslineModeVisual       ', { fg = slbg, bg = c.pink3 })
     cset('MiniStatuslineModeInsert       ', { fg = slbg, bg = c.teal2 })
 
-    cset('Visual', { bg = c.blackboard })
     cset('MatchParen', { bold = true, underline = true, fg = mode == 'dark' and c.pear or c.darkblue })
 
     ---@diagnostic disable-next-line: undefined-field
