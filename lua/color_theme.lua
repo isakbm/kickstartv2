@@ -31,8 +31,9 @@ return {
       end
     end)()
 
-    cset('Search        ', { bg = c.teal, fg = c.pear33 }, 'tweak')
-    cset('IncSearch     ', { fg = c.sand }, 'tweak')
+    cset('Search        ', { fg = c.orange2 }, 'tweak')
+    cset('IncSearch     ', { fg = c.orange2 }, 'tweak')
+
     cset('NormalFloat   ', { fg = c.white, bg = nil })
     cset('Normal        ', { fg = c.white, bg = c.blackboard })
     cset('SignColumn    ')
@@ -99,9 +100,14 @@ return {
     cset('LeapBackdrop')
 
     cset('LineNr', { fg = c.gray3 })
-    cset('CursorLineNr', { fg = c.pear2 })
 
+    cset('CursorLineNr', { fg = c.pear2 })
     cset('CursorLine', { bg = c.gray5 })
+
+    -- cset('Cursor', { fg = '#ff0000', bg = '#0000ff' })
+    -- cset('TermCursor', { fg = '#ff0000', bg = '#0000ff' })
+    -- cset('CursorIM', { fg = '#ff0000', bg = '#0000ff' })
+
     cset('FoldColumn', { bg = c.gray5 })
     cset('Folded', { bg = c.gray5 })
 
