@@ -98,6 +98,13 @@ vim.opt.runtimepath:prepend('/home/isak/.opam/default/share/ocp-indent/vim')
 
 WIN_BORDER = { '╭', '─', '╮', '│', '╯', '─', '╰', '│' }
 
+local getWorkspaceName = function()
+  local workdir = vim.fn.systemlist('git rev-parse --show-toplevel')[1]
+  if vim.v.shell_error ~= 0 or not workdir then workdir = vim.fn.getcwd() end
+  local workdirBasename = vim.fn.fnamemodify(workdir, ':t')
+  return workdirBasename
+end
+
 --=========================== KEYMAPS =============================
 
 --- yeah baby
@@ -891,6 +898,8 @@ require('lazy').setup({
       do -- Simple and easy statusline.
         local statusline = require('mini.statusline')
 
+        local workspaceName = getWorkspaceName()
+
         -- set use_icons to true if you have a Nerd Font
         statusline.setup({
           use_icons = vim.g.have_nerd_font,
@@ -961,6 +970,7 @@ require('lazy').setup({
               end
 
               return MiniStatusline.combine_groups({
+                { hl = 'MiniStatuslineBranch', strings = { workspaceName } },
                 { hl = mode_hl, strings = { mode } },
                 { hl = 'MiniStatuslineBranch', strings = { git } },
                 { hl = workspace_hl, strings = { vim.fs.basename(root_dir) } },
@@ -971,6 +981,11 @@ require('lazy').setup({
                 '%=', -- End left alignment
                 { hl = 'MiniStatuslineFileinfo', strings = { fileinfo } },
                 { hl = mode_hl, strings = { search, location } },
+              })
+            end,
+            inactive = function()
+              return MiniStatusline.combine_groups({
+                { hl = 'MiniStatuslineBranch', strings = { workspaceName } },
               })
             end,
           },
