@@ -2,6 +2,10 @@
 
   TODO:
 
+    >> { } etc will match with real ones, that is, if a comment contains } then it will
+       obstruct the pairing of parenthesis etc ... would be amazing if we could fix this
+       it becomes obvious when you place cursor on ( ) or you try to jump using %
+
     >> auto close diffview on :Git commit ? with :tabclose
 
     >> add keymap to quickly go back to state before changes to buffer
@@ -942,7 +946,7 @@ require('lazy').setup({
                 elseif workspaceDirty then
                   vim.api.nvim_set_hl(0, 'CursorLine', { bg = c.red })
                 else
-                  vim.api.nvim_set_hl(0, 'CursorLine', { bg = c.gray5 })
+                  vim.api.nvim_set_hl(0, 'CursorLine', { bg = c.blackboard })
                 end
               end
 

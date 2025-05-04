@@ -35,7 +35,7 @@ return {
     cset('IncSearch     ', { fg = c.orange2 }, 'tweak')
 
     cset('NormalFloat   ', { fg = c.white, bg = nil })
-    cset('Normal        ', { fg = c.white, bg = c.blackboard })
+    cset('Normal        ', { fg = c.white, bg = c.black })
     cset('SignColumn    ')
 
     cset('DiagnosticUnderlineError', { undercurl = true }, 'tweak')
@@ -102,11 +102,7 @@ return {
     cset('LineNr', { fg = c.gray3 })
 
     cset('CursorLineNr', { fg = c.pear2 })
-    cset('CursorLine', { bg = c.gray5 })
-
-    -- cset('Cursor', { fg = '#ff0000', bg = '#0000ff' })
-    -- cset('TermCursor', { fg = '#ff0000', bg = '#0000ff' })
-    -- cset('CursorIM', { fg = '#ff0000', bg = '#0000ff' })
+    cset('CursorLine', { bg = c.blackboard })
 
     cset('FoldColumn', { bg = c.gray5 })
     cset('Folded', { bg = c.gray5 })
@@ -161,8 +157,8 @@ return {
     cset('MiniStatuslineModeVisual       ', { fg = slbg, bg = c.pink3 })
     cset('MiniStatuslineModeInsert       ', { fg = slbg, bg = c.teal2 })
 
-    cset('Visual', { bg = c.pear33 })
-    cset('MatchParen', { bg = c.pear33 })
+    cset('Visual', { bg = c.blackboard })
+    cset('MatchParen', { bold = true, underline = true, fg = mode == 'dark' and c.pear or c.darkblue })
 
     ---@diagnostic disable-next-line: undefined-field
     theme:apply(opts)
