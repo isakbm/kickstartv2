@@ -67,7 +67,8 @@ return {
     cset('Keyword', { fg = c.brown })
     cset('@keyword.type')
 
-    cset('@keyword.return', { fg = c.pink2 })
+    cset('@keyword.return', { bold = true, fg = c.pink2 })
+    cset('Special', { bold = true, fg = c.pink2 })
 
     cset('Type', { fg = c.sand })
     cset('Number')
@@ -121,8 +122,6 @@ return {
     cset('TodoBgFIXME')
     cset('TodoBgSTORE', { reverse = true, fg = c.orange })
     cset('TodoBgWARN', { reverse = true, fg = c.sand })
-
-    cset('Special', { fg = c.orange })
 
     cset('GitGraphBranch1   ', { fg = c.blue3 })
     cset('GitGraphBranch2   ', { fg = c.pink })

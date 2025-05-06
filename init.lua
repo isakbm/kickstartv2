@@ -122,6 +122,8 @@ local isWorkspaceDirty = function()
   return false
 end
 
+local isBufferDirty = function() return vim.api.nvim_get_option_value('modified', { buf = 0 }) end
+
 --=========================== KEYMAPS =============================
 
 --- yeah baby
@@ -926,29 +928,36 @@ require('lazy').setup({
               local filename = vim.fn.expand('%')
               local filenam_hl = 'MiniStatuslineFilename'
 
+              local fileUnsaved = isBufferDirty()
+
               do
                 if #filename > 24 then
                   local ff = vim.fn.split(filename, '/')
                   if #ff > 3 then filename = ff[1] .. '/.../' .. ff[#ff - 1] .. '/' .. ff[#ff] end
                 end
-                local unsaved = vim.api.nvim_get_option_value('modified', { buf = 0 })
-                if unsaved then filenam_hl = 'MiniStatuslineFilenameUnsaved' end
+                if fileUnsaved then filenam_hl = 'MiniStatuslineFilenameUnsaved' end
               end
 
               -- do we have any unsaved buffers?
               local workspaceDirty = isWorkspaceDirty()
               local workspace_hl = workspaceDirty and 'MiniStatuslineWorkspaceUnsaved' or 'MiniStatuslineWorkspace'
+              local c = colorThemeMode == 'light' and myColors.light or myColors.dark
 
               do
-                local c = colorThemeMode == 'light' and myColors.light or myColors.dark
                 if vim.fn.reg_recording() ~= '' then
                   vim.api.nvim_set_hl(0, 'CursorLine', { bg = c.yellow })
                 elseif workspaceDirty then
                   -- vim.api.nvim_set_hl(0, 'CursorLine', { bg = c.red })
                   vim.api.nvim_set_hl(0, 'CursorLine', { bg = colorThemeMode == 'dark' and c.black or c.white })
-                  vim.api.nvim_set_hl(0, 'LineNr', { fg = colorThemeMode == 'dark' and c.pink2 or c.pink2 })
                 else
                   vim.api.nvim_set_hl(0, 'CursorLine', { bg = colorThemeMode == 'dark' and c.black or c.white })
+                end
+              end
+
+              do
+                if workspaceDirty then
+                  vim.api.nvim_set_hl(0, 'LineNr', { fg = colorThemeMode == 'dark' and c.pink2 or c.pink2 })
+                else
                   vim.api.nvim_set_hl(0, 'LineNr', { fg = colorThemeMode == 'dark' and c.gray3 or c.comment })
                 end
               end
