@@ -76,20 +76,8 @@ return {
             f:write('---@type table<string, string>\n')
             f:write('return {\n')
 
-            -- sort colors by hue
-            local ordered = {}
             for name, color in pairs(colors) do
-              ordered[#ordered + 1] = { name = name, color = color }
-            end
-
-            table.sort(ordered, function(a, b)
-              local ca = C.Color:from_hex(a.color)
-              local cb = C.Color:from_hex(b.color)
-              return ca:get('h') > cb:get('h')
-            end)
-
-            for _, kv in ipairs(ordered) do
-              f:write('  ' .. kv.name .. ' = ' .. '"' .. kv.color .. '",\n')
+              f:write('  ' .. name .. ' = ' .. '"' .. color .. '",\n')
             end
 
             f:write('}\n')
