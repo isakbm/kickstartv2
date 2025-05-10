@@ -1,11 +1,10 @@
-local C = require 'coleur'
+local C = require('coleur')
 
 return {
-  ---@param on_update fun(colors: table<string, table<string, string>>)
-  ---@param colorThemeMode "light"|"dark"
-  color_edit_ui = function(on_update, colorThemeMode)
-    local colors = require 'colors'
-    local cp = colors[colorThemeMode]
+  ---@param on_update fun(colors: table<string>)
+  color_edit_ui = function(on_update)
+    local colors = require('colors')
+    local cp = colors
 
     local palette = C.Palette:new(cp)
 
@@ -18,24 +17,18 @@ return {
 
     vim.ui.select(color_names, {
       prompt = 'color:',
-      format_item = function(item)
-        return item
-      end,
+      format_item = function(item) return item end,
     }, function(name)
-      if name == nil then
-        return
-      end
+      if name == nil then return end
 
       local colorHex = cp[name]
 
-      if colorHex == nil then
-        return
-      end
+      if colorHex == nil then return end
 
       local color = C.Color:from_hex(colorHex)
 
       local on_update = function()
-        colors[colorThemeMode][name] = color:to_hex()
+        colors[name] = color:to_hex()
         on_update(colors)
         -- update_highlights(c, theme, { clear = false })
       end
@@ -75,39 +68,31 @@ return {
           do
             local file = vim.api.nvim_get_runtime_file('**/colors.lua', false)[1]
 
-            if file == nil then
-              return
-            end
+            if file == nil then return end
 
             local f = io.open(file, 'w')
-            if not f then
-              return
+            if not f then return end
+
+            f:write('---@type table<string, string>\n')
+            f:write('return {\n')
+
+            -- sort colors by hue
+            local ordered = {}
+            for name, color in pairs(colors) do
+              ordered[#ordered + 1] = { name = name, color = color }
             end
 
-            for _, mode in ipairs { 'dark', 'light' } do
-              f:write '---@type table<string, string>\n'
-              f:write('local ' .. mode .. ' = {\n')
+            table.sort(ordered, function(a, b)
+              local ca = C.Color:from_hex(a.color)
+              local cb = C.Color:from_hex(b.color)
+              return ca:get('h') > cb:get('h')
+            end)
 
-              -- sort colors by hue
-              local ordered = {}
-              for name, color in pairs(colors[mode]) do
-                ordered[#ordered + 1] = { name = name, color = color }
-              end
-
-              table.sort(ordered, function(a, b)
-                local ca = C.Color:from_hex(a.color)
-                local cb = C.Color:from_hex(b.color)
-                return ca:get 'h' > cb:get 'h'
-              end)
-
-              for _, kv in ipairs(ordered) do
-                f:write('  ' .. kv.name .. ' = ' .. '"' .. kv.color .. '",\n')
-              end
-
-              f:write '}\n'
+            for _, kv in ipairs(ordered) do
+              f:write('  ' .. kv.name .. ' = ' .. '"' .. kv.color .. '",\n')
             end
 
-            f:write 'return {dark = dark, light = light}'
+            f:write('}\n')
             f:close()
           end
         end, { desc = 'Close highlight group editor', buffer = buf })
@@ -120,9 +105,7 @@ return {
           for _, win in ipairs(wins) do
             local buf = vim.api.nvim_win_get_buf(win)
             for j, owin in ipairs(wins) do
-              vim.keymap.set('n', '<M-' .. j .. '>', function()
-                vim.api.nvim_set_current_win(owin)
-              end, { desc = 'Goto channel ' .. j, buffer = buf })
+              vim.keymap.set('n', '<M-' .. j .. '>', function() vim.api.nvim_set_current_win(owin) end, { desc = 'Goto channel ' .. j, buffer = buf })
             end
           end
         end
@@ -138,9 +121,7 @@ return {
         local keymap_jump_win_arrays = function(a, b)
           for _, win in pairs(a) do
             local buf = vim.api.nvim_win_get_buf(win)
-            vim.keymap.set('n', '<Tab>', function()
-              vim.api.nvim_set_current_win(b[1])
-            end, { buffer = buf, desc = 'Jump between RGB <-> HSL' })
+            vim.keymap.set('n', '<Tab>', function() vim.api.nvim_set_current_win(b[1]) end, { buffer = buf, desc = 'Jump between RGB <-> HSL' })
           end
         end
 

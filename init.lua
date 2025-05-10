@@ -200,7 +200,7 @@ local function initColorTheme(mode)
 
   local on_color_update = function(colors) update_highlights(colors, mode, theme, { clear = false }) end
 
-  KEY('n', '<leader>C', function() color_edit_ui(on_color_update, mode) end, { desc = 'color picker' })
+  KEY('n', '<leader>C', function() color_edit_ui(on_color_update) end, { desc = 'color picker' })
 
   update_highlights(myColors, mode, theme)
 end
@@ -921,7 +921,7 @@ require('lazy').setup({
           use_icons = vim.g.have_nerd_font,
           content = {
             active = function()
-              local _mode, mode_hl = MiniStatusline.section_mode({ trunc_width = 120 })
+              -- local _mode, mode_hl = MiniStatusline.section_mode({ trunc_width = 120 })
               local git = MiniStatusline.section_git({ trunc_width = 40 })
 
               -- local filename = MiniStatusline.section_filename { trunc_width = 140 }
@@ -941,7 +941,7 @@ require('lazy').setup({
               -- do we have any unsaved buffers?
               local workspaceDirty = isWorkspaceDirty()
               local workspace_hl = workspaceDirty and 'MiniStatuslineWorkspaceUnsaved' or 'MiniStatuslineWorkspace'
-              local c = colorThemeMode == 'light' and myColors.light or myColors.dark
+              local c = myColors
 
               do
                 if vim.fn.reg_recording() ~= '' then

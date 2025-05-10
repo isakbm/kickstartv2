@@ -4,12 +4,12 @@
 return {
 
   --- update highlights based on input color palette
-  ---@param colorPalette table<string, table<string, string>>
+  ---@param colorPalette table<string, string>
   ---@param mode "light" | "dark"
   ---@param theme Colorscheme
   ---@param opts? I.UpdateOpts
   update_highlights = function(colorPalette, mode, theme, opts)
-    local c = colorPalette[mode]
+    local c = colorPalette
 
     local cset = (function()
       ---@type vim.api.keyset.highlight
@@ -31,9 +31,9 @@ return {
       end
     end)()
 
-    cset('Search        ', { reverse = true, fg = c.orange })
-    cset('IncSearch     ', { reverse = true, fg = c.orange })
-    cset('Visual        ', { reverse = true, fg = c.blue3 })
+    cset('Search        ', { bg = c.orange, fg = c.black })
+    cset('IncSearch     ', { bg = c.orange, fg = c.black })
+    cset('Visual        ', { bg = c.blue3, fg = c.black })
 
     cset('NormalFloat   ', { fg = c.white, bg = nil })
     cset('Normal        ', {
@@ -112,8 +112,8 @@ return {
     cset('CursorLineNr', { fg = c.pear2 })
     cset('CursorLine', { bg = mode == 'dark' and c.black or c.white })
 
-    cset('FoldColumn', { bg = c.gray5 })
-    cset('Folded', { bg = c.gray5 })
+    cset('FoldColumn', { bg = c.black })
+    cset('Folded', { bg = c.black })
 
     cset('TodoBgTODO', { reverse = true, fg = mode == 'dark' and c.pear or c.pear2 })
     cset('TodoBgNOTE')
@@ -148,20 +148,20 @@ return {
     cset('MiniStatuslineBranch           ', { fg = mode == 'dark' and c.sand or c.blackboard, bg = slbg })
     cset('MiniStatuslineWorkspace        ', { reverse = true, fg = c.pear, bg = slbg })
     cset('MiniStatuslineWorkspaceUnsaved ', { reverse = true, fg = c.pink2, bg = slbg })
-    cset('MiniStatuslineChanges          ', { fg = c.sand2, bg = slbg })
-    cset('MiniStatuslineDiagnostics      ', { fg = c.teal2, bg = slbg })
-    cset('MiniStatuslineFileinfo         ', { fg = c.teal2, bg = slbg })
-    cset('MiniStatuslineLocation         ', { fg = slbg, bg = c.sand2 })
+    cset('MiniStatuslineChanges          ', { fg = c.sand, bg = slbg })
+    cset('MiniStatuslineDiagnostics      ', { fg = c.teal, bg = slbg })
+    cset('MiniStatuslineFileinfo         ', { fg = c.teal, bg = slbg })
+    cset('MiniStatuslineLocation         ', { fg = slbg, bg = c.sand })
 
-    cset('MiniStatuslineLines', { fg = slbg, bg = c.teal2 })
-    cset('MiniStatuslineSearch', { fg = slbg, bg = c.teal2 })
+    cset('MiniStatuslineLines', { fg = slbg, bg = c.teal })
+    cset('MiniStatuslineSearch', { fg = slbg, bg = c.teal })
 
     cset('MiniStatuslineFilename', { fg = c.pear, bg = slbg })
     cset('MiniStatuslineFilenameUnsaved', { fg = c.pink2, bg = slbg })
 
-    cset('MiniStatuslineModeNormal       ', { fg = slbg, bg = c.sand2 })
-    cset('MiniStatuslineModeVisual       ', { fg = slbg, bg = c.pink3 })
-    cset('MiniStatuslineModeInsert       ', { fg = slbg, bg = c.teal2 })
+    cset('MiniStatuslineModeNormal       ', { fg = slbg, bg = c.sand })
+    cset('MiniStatuslineModeVisual       ', { fg = slbg, bg = c.pink })
+    cset('MiniStatuslineModeInsert       ', { fg = slbg, bg = c.teal })
 
     cset('MatchParen', { bold = true, underline = true, fg = mode == 'dark' and c.pear or c.darkblue })
 
