@@ -249,29 +249,29 @@ require('lazy').setup({
 
   {
     'rose-pine/neovim',
+    priority = 999,
     name = 'rose-pine',
     config = function()
-      local storeOriginalColors = function()
-        -- used to set line nr color back to what it is normally
-        vim.g.lineNrHlGroup = vim.api.nvim_get_hl(0, { name = 'LineNr' })
-        -- used to set cursor line color back to what it is normally
-        vim.g.cursorLineHlGroup = vim.api.nvim_get_hl(0, { name = 'CursorLine' })
+      local function tweakHighlights()
+        local statusHL = vim.api.nvim_get_hl(0, { name = 'MiniStatuslineDevinfo' })
+        local stringHL = vim.api.nvim_get_hl(0, { name = 'String' })
+        vim.api.nvim_set_hl(0, 'MiniStatuslineBranch', { fg = stringHL.fg, bg = statusHL.bg })
       end
 
-      vim.cmd('colorscheme rose-pine-main')
-      storeOriginalColors()
+      require('rose-pine').setup({
+        dark_variant = 'main',
+        styles = {
+          italic = false,
+        },
+      })
+
+      vim.cmd('colorscheme rose-pine')
+      tweakHighlights()
 
       -- toggle between light and dark modes
       KEY('n', '<leader>T', function()
-        if colorThemeMode == 'dark' then
-          colorThemeMode = 'light'
-          vim.cmd('colorscheme rose-pine-dawn')
-          storeOriginalColors()
-        else
-          colorThemeMode = 'dark'
-          vim.cmd('colorscheme rose-pine-main')
-          storeOriginalColors()
-        end
+        vim.o.background = vim.o.background == 'dark' and 'light' or 'dark'
+        tweakHighlights()
       end, { desc = 'toggle between light and dark modes' })
     end,
   },
@@ -882,12 +882,12 @@ require('lazy').setup({
         local hipatterns = require('mini.hipatterns')
 
         local keywords = {
-          { key = 'FIX', group = '@comment.todo' },
-          { key = 'FIXME', group = '@comment.todo' },
-          { key = 'HACK', group = '@comment.warning' },
-          { key = 'WARN', group = '@comment.warning' },
-          { key = 'TODO', group = '@comment.todo' },
-          { key = 'NOTE', group = '@comment.info' },
+          { key = 'FIX', group = 'MiniHipatternsFixme' },
+          { key = 'FIXME', group = 'MiniHipatternsFixme' },
+          { key = 'HACK', group = 'MiniHipatternsHack' },
+          { key = 'WARN', group = 'MiniHipatternsHack' },
+          { key = 'TODO', group = 'MiniHipatternsTodo' },
+          { key = 'NOTE', group = 'MiniHipatternsNote' },
         }
 
         local highlighters = {
@@ -918,89 +918,55 @@ require('lazy').setup({
 
         local workspaceName, workdir = getWorkspaceName()
 
+        local makeStatusline = function()
+          -- local _mode, mode_hl = MiniStatusline.section_mode({ trunc_width = 120 })
+          local git = MiniStatusline.section_git({ trunc_width = 40 })
+
+          -- local filename = MiniStatusline.section_filename { trunc_width = 140 }
+          local filename = vim.fn.expand('%')
+          local filenam_hl = 'MiniStatuslineModeInsert'
+
+          local fileUnsaved = isBufferDirty()
+
+          do
+            if #filename > 24 then
+              local ff = vim.fn.split(filename, '/')
+              if #ff > 3 then filename = ff[1] .. '/.../' .. ff[#ff - 1] .. '/' .. ff[#ff] end
+            end
+            if fileUnsaved then filenam_hl = 'MiniStatuslineModeCommand' end
+          end
+
+          -- do we have any unsaved buffers?
+          local workspaceDirty = isWorkspaceDirty()
+          local workspace_hl = workspaceDirty and 'MiniStatuslineModeCommand' or 'MiniStatuslineModeInsert'
+
+          local fileinfo = MiniStatusline.section_fileinfo({ trunc_width = 2000 })
+          local location = MiniStatusline.section_location({ trunc_width = 75 })
+          local search = MiniStatusline.section_searchcount({ trunc_width = 75 })
+
+          local saveState = fileUnsaved and { hl = 'MiniStatuslineModeCommand', strings = { '✗' } }
+            or { hl = 'MiniStatuslineModeInsert', strings = { '✓' } }
+
+          return MiniStatusline.combine_groups({
+            saveState,
+            { hl = workspace_hl, strings = { workspaceName } },
+            '%<', -- Mark general truncate point
+            { hl = filenam_hl, strings = { filename ~= '' and filename or workdir } },
+            { hl = 'MiniStatuslineBranch', strings = { git } },
+            '%=', -- End left alignment
+            { hl = 'MiniStatuslineFileinfo', strings = { fileinfo } },
+            { hl = 'MiniStatuslineSearch', strings = { search } },
+            { hl = 'MiniStatuslineLocation', strings = { location } },
+            { hl = 'MiniStatuslineLines', strings = { '%L' } },
+          })
+        end
+
         -- set use_icons to true if you have a Nerd Font
         statusline.setup({
           use_icons = vim.g.have_nerd_font,
           content = {
-            active = function()
-              -- local _mode, mode_hl = MiniStatusline.section_mode({ trunc_width = 120 })
-              local git = MiniStatusline.section_git({ trunc_width = 40 })
-
-              -- local filename = MiniStatusline.section_filename { trunc_width = 140 }
-              local filename = vim.fn.expand('%')
-              local filenam_hl = 'MiniStatuslineFilename'
-
-              local fileUnsaved = isBufferDirty()
-
-              do
-                if #filename > 24 then
-                  local ff = vim.fn.split(filename, '/')
-                  if #ff > 3 then filename = ff[1] .. '/.../' .. ff[#ff - 1] .. '/' .. ff[#ff] end
-                end
-                if fileUnsaved then filenam_hl = 'MiniStatuslineFilenameUnsaved' end
-              end
-
-              -- do we have any unsaved buffers?
-              local workspaceDirty = isWorkspaceDirty()
-              local workspace_hl = workspaceDirty and 'MiniStatuslineWorkspaceUnsaved' or 'MiniStatuslineWorkspace'
-              -- local c = myColors
-
-              do
-                if vim.fn.reg_recording() ~= '' then
-                  vim.api.nvim_set_hl(0, 'CursorLine', { bg = colorThemeMode == 'light' and '#FFFF88' or '#555500' })
-                elseif workspaceDirty then
-                  vim.api.nvim_set_hl(0, 'CursorLine', { bg = colorThemeMode == 'light' and '#FFCCCC' or '#550000' })
-                else
-                  ---@diagnostic disable-next-line
-                  vim.api.nvim_set_hl(0, 'CursorLine', vim.g.cursorLineHlGroup)
-                end
-              end
-
-              do
-                if workspaceDirty then
-                  vim.api.nvim_set_hl(0, 'LineNr', { fg = colorThemeMode == 'light' and '#FF0000' or '#FF0000' })
-                else
-                  ---@diagnostic disable-next-line
-                  vim.api.nvim_set_hl(0, 'LineNr', vim.g.lineNrHlGroup)
-                end
-              end
-
-              local fileinfo = MiniStatusline.section_fileinfo({ trunc_width = 2000 })
-              local location = MiniStatusline.section_location({ trunc_width = 75 })
-              local search = MiniStatusline.section_searchcount({ trunc_width = 75 })
-
-              return MiniStatusline.combine_groups({
-                { hl = workspace_hl, strings = { workspaceName } },
-                '%<', -- Mark general truncate point
-                { hl = filenam_hl, strings = { filename ~= '' and filename or workdir } },
-                { hl = 'MiniStatuslineBranch', strings = { git } },
-                '%=', -- End left alignment
-                { hl = 'MiniStatuslineFileinfo', strings = { fileinfo } },
-                { hl = 'MiniStatuslineSearch', strings = { search } },
-                { hl = 'MiniStatuslineLocation', strings = { location } },
-                { hl = 'MiniStatuslineLines', strings = { '%L' } },
-              })
-            end,
-            inactive = function()
-              local unsaved = vim.api.nvim_get_option_value('modified', { buf = 0 })
-              local filename = vim.fn.expand('%')
-              local workspaceDirty = isWorkspaceDirty()
-              local git = MiniStatusline.section_git({ trunc_width = 40 })
-
-              return MiniStatusline.combine_groups({
-                {
-                  hl = workspaceDirty and 'MiniStatuslineWorkspaceUnsaved' or 'MiniStatuslineWorkspace',
-                  strings = { workspaceName },
-                },
-                '%<', -- Mark general truncate point
-                {
-                  hl = unsaved and 'MiniStatuslineFilenameUnsaved' or 'MiniStatuslineFilename',
-                  strings = { filename ~= '' and filename or workdir },
-                },
-                { hl = 'MiniStatuslineBranch', strings = { git } },
-                '%=', -- End left alignment
-              })
-            end,
+            active = makeStatusline,
+            inactive = makeStatusline,
           },
         })
 
