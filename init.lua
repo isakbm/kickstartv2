@@ -180,10 +180,6 @@ KEY({ 'v', 'n' }, '<M-k>', require('glide')('k'), { desc = 'glide in the k direc
 -- starts us off where we left off in buffer
 require('recall_buf_position')
 
----@type "light" | "dark"
-local colorThemeMode = 'dark'
--- local myColors = require('colors')
-
 -- This brings you into block visual select mode ... on windows it's Ctrl + Q, and on Linux Ctrl + V ... cool to have something OS independent :)
 -- Experimental alternative to `Ctrl + V` which is blocked by some terminals
 KEY('n', 'VV', '<C-v>')
@@ -253,9 +249,32 @@ require('lazy').setup({
     name = 'rose-pine',
     config = function()
       local function tweakHighlights()
-        local statusHL = vim.api.nvim_get_hl(0, { name = 'MiniStatuslineDevinfo' })
-        local stringHL = vim.api.nvim_get_hl(0, { name = 'String' })
-        vim.api.nvim_set_hl(0, 'MiniStatuslineBranch', { fg = stringHL.fg, bg = statusHL.bg })
+        -- local statusHL = vim.api.nvim_get_hl(0, { name = 'MiniStatuslineDevinfo' })
+        -- local stringHL = vim.api.nvim_get_hl(0, { name = 'String' })
+        -- vim.api.nvim_set_hl(0, 'MiniStatuslineBranch', { fg = stringHL.fg, bg = statusHL.bg })
+
+        -- unline MiniStauslineInactive from MiniStatuslineFilename
+        do
+          local g = vim.api.nvim_get_hl(0, { name = 'MiniStatuslineFilename' })
+          ---@diagnostic disable-next-line
+          vim.api.nvim_set_hl(0, 'MiniStatuslineInactive', g)
+        end
+
+        local otherHLG = vim.api.nvim_get_hl(0, { name = '@constructor' })
+
+        do
+          local hlg = vim.api.nvim_get_hl(0, { name = 'MiniStatuslineDevinfo' })
+          hlg.fg = otherHLG.fg --- tonumber('0xFF0000', 16)
+          ---@diagnostic disable-next-line
+          vim.api.nvim_set_hl(0, 'MiniStatuslineDevinfo', hlg)
+        end
+
+        do
+          local hlg = vim.api.nvim_get_hl(0, { name = 'MiniStatuslineFilename' })
+          hlg.fg = otherHLG.fg --- tonumber('0xFF0000', 16)
+          ---@diagnostic disable-next-line
+          vim.api.nvim_set_hl(0, 'MiniStatuslineFilename', hlg)
+        end
       end
 
       require('rose-pine').setup({
@@ -266,6 +285,7 @@ require('lazy').setup({
       })
 
       vim.cmd('colorscheme rose-pine')
+
       tweakHighlights()
 
       -- toggle between light and dark modes
@@ -916,57 +936,100 @@ require('lazy').setup({
       do -- Simple and easy statusline.
         local statusline = require('mini.statusline')
 
-        local workspaceName, workdir = getWorkspaceName()
+        local workspaceName, workdirPath = getWorkspaceName()
 
-        local makeStatusline = function()
-          -- local _mode, mode_hl = MiniStatusline.section_mode({ trunc_width = 120 })
-          local git = MiniStatusline.section_git({ trunc_width = 40 })
+        ---comment
+        ---@param mode "active" | "inactive"
+        ---@return function
+        local makeStatusline = function(mode)
+          return function()
+            -- local _mode, mode_hl = MiniStatusline.section_mode({ trunc_width = 120 })
+            local git = MiniStatusline.section_git({ trunc_width = 40 })
 
-          -- local filename = MiniStatusline.section_filename { trunc_width = 140 }
-          local filename = vim.fn.expand('%')
-          local filenam_hl = 'MiniStatuslineModeInsert'
+            local fileUnsaved = isBufferDirty()
 
-          local fileUnsaved = isBufferDirty()
-
-          do
-            if #filename > 24 then
-              local ff = vim.fn.split(filename, '/')
-              if #ff > 3 then filename = ff[1] .. '/.../' .. ff[#ff - 1] .. '/' .. ff[#ff] end
+            local function dhl(unsaved, group)
+              local hlg = mode == 'active' and group or 'MiniStatuslineInactive'
+              local unsavedHlg = mode == 'active' and 'MiniStatuslineModeCommand' or '@variable.builtin'
+              return unsaved and unsavedHlg or hlg
             end
-            if fileUnsaved then filenam_hl = 'MiniStatuslineModeCommand' end
+
+            local function shortenPath(path)
+              if #path > 24 then
+                local ff = vim.fn.split(path, '/')
+                if #ff > 3 then path = ff[1] .. '/.../' .. ff[#ff - 1] .. '/' .. ff[#ff] end
+              end
+              return path
+            end
+
+            local filename = {
+              hl = dhl(fileUnsaved, 'MiniStatuslineFilename'),
+              strings = { shortenPath(vim.fn.expand('%')) },
+            }
+
+            local workdir = {
+              hl = dhl(fileUnsaved, 'MiniStatuslineFilename'),
+              strings = { workdirPath },
+            }
+
+            local workspace = {
+              hl = dhl(isWorkspaceDirty(), 'MiniStatuslineFileinfo'),
+              strings = { workspaceName },
+            }
+
+            local saveStateIcon = {
+              hl = dhl(fileUnsaved, 'MiniStatuslineFileinfo'),
+              strings = { fileUnsaved and '✗' or '✓' },
+            }
+
+            local branch = {
+              hl = dhl(fileUnsaved, 'MiniStatuslineFileinfo'),
+              strings = { git },
+            }
+
+            local fileInfo = {
+              hl = dhl(fileUnsaved, 'MinistatuslineFileInfo'),
+              strings = { MiniStatusline.section_fileinfo({ trunc_width = 2000 }) },
+            }
+
+            local search = {
+              hl = dhl(fileUnsaved, 'MinistatuslineFileInfo'),
+              strings = {
+                MiniStatusline.section_searchcount({ trunc_width = 75 }),
+              },
+            }
+
+            local location = {
+              hl = dhl(fileUnsaved, 'MinistatuslineFileInfo'),
+              strings = { MiniStatusline.section_location({ trunc_width = 75 }) },
+            }
+
+            local lines = {
+              hl = dhl(fileUnsaved, 'MinistatuslineFileInfo'),
+              strings = { '%L' },
+            }
+
+            return MiniStatusline.combine_groups({
+              saveStateIcon,
+              workspace,
+              '%<', -- Mark general truncate point
+              filename.strings[1] ~= '' and filename or workdir,
+              branch,
+              '%=', -- End left alignment
+              fileInfo,
+              search,
+              location,
+              lines,
+            })
           end
-
-          -- do we have any unsaved buffers?
-          local workspaceDirty = isWorkspaceDirty()
-          local workspace_hl = workspaceDirty and 'MiniStatuslineModeCommand' or 'MiniStatuslineModeInsert'
-
-          local fileinfo = MiniStatusline.section_fileinfo({ trunc_width = 2000 })
-          local location = MiniStatusline.section_location({ trunc_width = 75 })
-          local search = MiniStatusline.section_searchcount({ trunc_width = 75 })
-
-          local saveState = fileUnsaved and { hl = 'MiniStatuslineModeCommand', strings = { '✗' } }
-            or { hl = 'MiniStatuslineModeInsert', strings = { '✓' } }
-
-          return MiniStatusline.combine_groups({
-            saveState,
-            { hl = workspace_hl, strings = { workspaceName } },
-            '%<', -- Mark general truncate point
-            { hl = filenam_hl, strings = { filename ~= '' and filename or workdir } },
-            { hl = 'MiniStatuslineBranch', strings = { git } },
-            '%=', -- End left alignment
-            { hl = 'MiniStatuslineFileinfo', strings = { fileinfo } },
-            { hl = 'MiniStatuslineSearch', strings = { search } },
-            { hl = 'MiniStatuslineLocation', strings = { location } },
-            { hl = 'MiniStatuslineLines', strings = { '%L' } },
-          })
         end
 
         -- set use_icons to true if you have a Nerd Font
         statusline.setup({
           use_icons = vim.g.have_nerd_font,
           content = {
-            active = makeStatusline,
-            inactive = makeStatusline,
+            active = makeStatusline('active'),
+            inactive = makeStatusline('inactive'),
           },
         })
 
