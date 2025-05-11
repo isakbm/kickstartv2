@@ -292,21 +292,45 @@ require('lazy').setup({
         end
       end
 
-      require('rose-pine').setup({
-        dark_variant = 'main',
-        styles = {
-          italic = false,
-        },
-      })
+      ---@param contrast "high" | "normal"
+      local function updateHighlight(contrast)
+        require('rose-pine').setup({
+          dark_variant = 'main',
+          styles = {
+            italic = false,
+          },
+          palette = {
+            main = contrast == 'high' and {
+              base = '#000000',
+              overlay = '#131313',
+              surface = '#151515',
+            },
+            dawn = contrast == 'high' and {
+              base = '#ffffff',
+              overlay = '#fdfded',
+              surface = '#faf4ed',
+            },
+          },
+        })
 
-      vim.cmd('colorscheme rose-pine')
+        vim.cmd('colorscheme rose-pine')
+        tweakHighlights()
+      end
 
-      tweakHighlights()
+      ---@type "high" | "normal"
+      vim.g.contrast = 'normal'
+
+      updateHighlight(vim.g.contrast)
 
       -- toggle between light and dark modes
       KEY('n', '<leader>T', function()
         vim.o.background = vim.o.background == 'dark' and 'light' or 'dark'
-        tweakHighlights()
+        updateHighlight(vim.g.contrast)
+      end, { desc = 'toggle between light and dark modes' })
+
+      KEY('n', '<leader>C', function()
+        vim.g.contrast = vim.g.contrast == 'normal' and 'high' or 'normal'
+        updateHighlight(vim.g.contrast)
       end, { desc = 'toggle between light and dark modes' })
     end,
   },
