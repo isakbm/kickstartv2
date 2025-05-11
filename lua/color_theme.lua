@@ -67,8 +67,8 @@ return {
     cset('Keyword', { fg = c.brown })
     cset('@keyword.type')
 
-    cset('@keyword.return', { bold = true, fg = c.pink2 })
-    cset('Special', { bold = true, fg = c.pink2 })
+    cset('@keyword.return', { bold = true, fg = c.hotpink })
+    cset('Special', { bold = true, fg = c.hotpink })
 
     cset('Type', { fg = c.sand })
     cset('Number')
@@ -117,7 +117,7 @@ return {
 
     cset('TodoBgTODO', { reverse = true, fg = mode == 'dark' and c.pear or c.pear2 })
     cset('TodoBgNOTE')
-    cset('TodoBgWARN', { reverse = true, fg = c.pink2 })
+    cset('TodoBgWARN', { reverse = true, fg = c.hotpink })
     cset('TodoBgFIX')
     cset('TodoBgFIXME')
     cset('TodoBgSTORE', { reverse = true, fg = c.orange })
@@ -140,14 +140,14 @@ return {
     cset('DiffAdd               ', { bg = c.diffadd })
     cset('DiffChange            ', { bg = c.diffchange })
     cset('DiffText              ', { bg = c.difftext })
-    cset('DiffDelete            ', { fg = c.pink2 })
+    cset('DiffDelete            ', { fg = c.hotpink })
     cset('DiffviewDiffDeleteDim ', { fg = c.pink })
 
     local slbg = mode == 'dark' and c.gray2 or c.black
 
     cset('MiniStatuslineBranch           ', { fg = mode == 'dark' and c.sand or c.blackboard, bg = slbg })
     cset('MiniStatuslineWorkspace        ', { reverse = true, fg = c.pear, bg = slbg })
-    cset('MiniStatuslineWorkspaceUnsaved ', { reverse = true, fg = c.pink2, bg = slbg })
+    cset('MiniStatuslineWorkspaceUnsaved ', { reverse = true, fg = c.hotpink, bg = slbg })
     cset('MiniStatuslineChanges          ', { fg = c.sand, bg = slbg })
     cset('MiniStatuslineDiagnostics      ', { fg = c.teal, bg = slbg })
     cset('MiniStatuslineFileinfo         ', { fg = c.teal, bg = slbg })
@@ -157,7 +157,7 @@ return {
     cset('MiniStatuslineSearch', { fg = slbg, bg = c.teal })
 
     cset('MiniStatuslineFilename', { fg = c.pear, bg = slbg })
-    cset('MiniStatuslineFilenameUnsaved', { fg = c.pink2, bg = slbg })
+    cset('MiniStatuslineFilenameUnsaved', { fg = c.hotpink, bg = slbg })
 
     cset('MiniStatuslineModeNormal       ', { fg = slbg, bg = c.sand })
     cset('MiniStatuslineModeVisual       ', { fg = slbg, bg = c.pink })
