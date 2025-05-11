@@ -273,7 +273,7 @@ require('lazy').setup({
           local hlg = vim.api.nvim_get_hl(0, { name = 'MiniStatuslineFilename' })
           hlg.fg = otherHLG.fg --- tonumber('0xFF0000', 16)
           ---@diagnostic disable-next-line
-          vim.api.nvim_set_hl(0, 'MiniStatuslineFilename', hlg)
+          vim.api.nvim_set_hl(2, 'MiniStatuslineFilename', hlg)
         end
       end
 
@@ -936,6 +936,8 @@ require('lazy').setup({
       do -- Simple and easy statusline.
         local statusline = require('mini.statusline')
 
+        -- NOTE this is done outside the callback because it is slow
+        -- WARN ... that means it gets outdated if you switch to a different workspace
         local workspaceName, workdirPath = getWorkspaceName()
 
         ---comment
@@ -947,6 +949,7 @@ require('lazy').setup({
             local git = MiniStatusline.section_git({ trunc_width = 40 })
 
             local fileUnsaved = isBufferDirty()
+            local workspaceDirty = isWorkspaceDirty()
 
             local function dhl(unsaved, group)
               local hlg = mode == 'active' and group or 'MiniStatuslineInactive'
@@ -962,9 +965,9 @@ require('lazy').setup({
               return path
             end
 
-            local filename = {
-              hl = dhl(fileUnsaved, 'MiniStatuslineFilename'),
-              strings = { shortenPath(vim.fn.expand('%')) },
+            local saveStateIcon = {
+              hl = dhl(fileUnsaved or workspaceDirty, 'MiniStatuslineFileinfo'),
+              strings = { fileUnsaved and '✗' or (workspaceDirty and '!' or '✓') },
             }
 
             local workdir = {
@@ -972,14 +975,14 @@ require('lazy').setup({
               strings = { workdirPath },
             }
 
-            local workspace = {
-              hl = dhl(isWorkspaceDirty(), 'MiniStatuslineFileinfo'),
-              strings = { workspaceName },
+            local filename = {
+              hl = dhl(fileUnsaved, 'MiniStatuslineFilename'),
+              strings = { shortenPath(vim.fn.expand('%')) },
             }
 
-            local saveStateIcon = {
-              hl = dhl(fileUnsaved, 'MiniStatuslineFileinfo'),
-              strings = { fileUnsaved and '✗' or '✓' },
+            local workspace = {
+              hl = dhl(workspaceDirty, 'MiniStatuslineFileinfo'),
+              strings = { workspaceName },
             }
 
             local branch = {
