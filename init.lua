@@ -182,38 +182,11 @@ require('recall_buf_position')
 
 ---@type "light" | "dark"
 local colorThemeMode = 'dark'
-local myColors = require('colors')
+-- local myColors = require('colors')
 
 -- This brings you into block visual select mode ... on windows it's Ctrl + Q, and on Linux Ctrl + V ... cool to have something OS independent :)
 -- Experimental alternative to `Ctrl + V` which is blocked by some terminals
 KEY('n', 'VV', '<C-v>')
-
----@param mode "light" | "dark"
-local function initColorTheme(mode)
-  require('mini.colors').setup({})
-
-  ---@type Colorscheme
-  local theme = MiniColors.get_colorscheme('retrobox')
-
-  local update_highlights = require('color_theme').update_highlights
-  local color_edit_ui = require('color_edit_ui').color_edit_ui
-
-  local on_color_update = function(colors) update_highlights(colors, mode, theme, { clear = false }) end
-
-  KEY('n', '<leader>C', function() color_edit_ui(on_color_update) end, { desc = 'color picker' })
-
-  update_highlights(myColors, mode, theme)
-end
-
--- toggle between light and dark modes
-KEY('n', '<leader>T', function()
-  if colorThemeMode == 'dark' then
-    colorThemeMode = 'light'
-  else
-    colorThemeMode = 'dark'
-  end
-  initColorTheme(colorThemeMode)
-end)
 
 --
 -- Diagnostic keymaps
@@ -272,6 +245,35 @@ require('lazy').setup({
   {
     'mbbill/undotree', -- Nice file change history
     config = function() KEY('n', '<leader>u', ':UndotreeToggle<CR>', { desc = 'Toggle Undotree' }) end,
+  },
+
+  {
+    'rose-pine/neovim',
+    name = 'rose-pine',
+    config = function()
+      local storeOriginalColors = function()
+        -- used to set line nr color back to what it is normally
+        vim.g.lineNrHlGroup = vim.api.nvim_get_hl(0, { name = 'LineNr' })
+        -- used to set cursor line color back to what it is normally
+        vim.g.cursorLineHlGroup = vim.api.nvim_get_hl(0, { name = 'CursorLine' })
+      end
+
+      vim.cmd('colorscheme rose-pine-main')
+      storeOriginalColors()
+
+      -- toggle between light and dark modes
+      KEY('n', '<leader>T', function()
+        if colorThemeMode == 'dark' then
+          colorThemeMode = 'light'
+          vim.cmd('colorscheme rose-pine-dawn')
+          storeOriginalColors()
+        else
+          colorThemeMode = 'dark'
+          vim.cmd('colorscheme rose-pine-main')
+          storeOriginalColors()
+        end
+      end, { desc = 'toggle between light and dark modes' })
+    end,
   },
 
   {
@@ -867,7 +869,7 @@ require('lazy').setup({
     -- Collection of various small independent plugins/modules
     'echasnovski/mini.nvim',
     config = function()
-      initColorTheme(colorThemeMode)
+      -- initColorTheme(colorThemeMode)
 
       -- Better Around/Inside textobjects
       --
@@ -880,12 +882,12 @@ require('lazy').setup({
         local hipatterns = require('mini.hipatterns')
 
         local keywords = {
-          { key = 'FIX', group = 'TodoBgFIXME' },
-          { key = 'FIXME', group = 'TodoBgFIXME' },
-          { key = 'HACK', group = 'TodoBgWARN' },
-          { key = 'WARN', group = 'TodoBgWARN' },
-          { key = 'TODO', group = 'TodoBgTODO' },
-          { key = 'NOTE', group = 'TodoBgNote' },
+          { key = 'FIX', group = '@comment.todo' },
+          { key = 'FIXME', group = '@comment.todo' },
+          { key = 'HACK', group = '@comment.warning' },
+          { key = 'WARN', group = '@comment.warning' },
+          { key = 'TODO', group = '@comment.todo' },
+          { key = 'NOTE', group = '@comment.info' },
         }
 
         local highlighters = {
@@ -941,24 +943,25 @@ require('lazy').setup({
               -- do we have any unsaved buffers?
               local workspaceDirty = isWorkspaceDirty()
               local workspace_hl = workspaceDirty and 'MiniStatuslineWorkspaceUnsaved' or 'MiniStatuslineWorkspace'
-              local c = myColors
+              -- local c = myColors
 
               do
                 if vim.fn.reg_recording() ~= '' then
-                  vim.api.nvim_set_hl(0, 'CursorLine', { bg = c.soil })
+                  vim.api.nvim_set_hl(0, 'CursorLine', { bg = colorThemeMode == 'light' and '#FFFF88' or '#555500' })
                 elseif workspaceDirty then
-                  -- vim.api.nvim_set_hl(0, 'CursorLine', { bg = c.red })
-                  vim.api.nvim_set_hl(0, 'CursorLine', { bg = colorThemeMode == 'dark' and c.black or c.white })
+                  vim.api.nvim_set_hl(0, 'CursorLine', { bg = colorThemeMode == 'light' and '#FFCCCC' or '#550000' })
                 else
-                  vim.api.nvim_set_hl(0, 'CursorLine', { bg = colorThemeMode == 'dark' and c.black or c.white })
+                  ---@diagnostic disable-next-line
+                  vim.api.nvim_set_hl(0, 'CursorLine', vim.g.cursorLineHlGroup)
                 end
               end
 
               do
                 if workspaceDirty then
-                  vim.api.nvim_set_hl(0, 'LineNr', { fg = colorThemeMode == 'dark' and c.hotpink or c.hotpink })
+                  vim.api.nvim_set_hl(0, 'LineNr', { fg = colorThemeMode == 'light' and '#FF0000' or '#FF0000' })
                 else
-                  vim.api.nvim_set_hl(0, 'LineNr', { fg = colorThemeMode == 'dark' and c.gray3 or c.comment })
+                  ---@diagnostic disable-next-line
+                  vim.api.nvim_set_hl(0, 'LineNr', vim.g.lineNrHlGroup)
                 end
               end
 

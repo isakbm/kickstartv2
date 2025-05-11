@@ -19,32 +19,33 @@ return {
       ---@param hl? vim.api.keyset.highlight
       ---@param tweak? "tweak"
       return function(name, hl, tweak)
-        local name = vim.trim(name)
-        local hl_groups = theme.groups or {}
-        if hl then last_hl = hl end
-        if tweak then
-          hl_groups[name] = hl_groups[name] or {}
-          hl_groups[name] = vim.tbl_extend('force', hl_groups[name], last_hl)
-        else
-          hl_groups[name] = last_hl
-        end
+        return
+        -- local name = vim.trim(name)
+        -- local hl_groups = theme.groups or {}
+        -- if hl then last_hl = hl end
+        -- if tweak then
+        --   hl_groups[name] = hl_groups[name] or {}
+        --   hl_groups[name] = vim.tbl_extend('force', hl_groups[name], last_hl)
+        -- else
+        --   hl_groups[name] = last_hl
+        -- end
       end
     end)()
 
-    cset('Search        ', { bg = c.orange, fg = c.black })
-    cset('IncSearch     ', { bg = c.orange, fg = c.black })
-    cset('Visual        ', { bg = c.blue3, fg = c.black })
-
-    cset('NormalFloat   ', { fg = c.white, bg = nil })
-    cset('Normal        ', {
-      fg = mode == 'dark' and c.white or c.black,
-      bg = mode == 'dark' and c.black or c.white,
-    })
+    cset('NormalFloat   ', { fg = c.foreground, bg = nil })
+    cset('Normal        ', { fg = c.foreground, bg = c.background })
     cset('SignColumn    ')
+
+    cset('Search        ', { bg = c.orange, fg = c.background })
+    cset('IncSearch     ', { bg = c.orange, fg = c.background })
+    cset('Visual        ', { bg = c.blue3, fg = c.background })
+
+    cset('MatchParen', { bold = true, underline = true, fg = c.pear })
 
     cset('DiagnosticUnderlineError', { undercurl = true }, 'tweak')
 
-    cset('Directory', { fg = c.teal })
+    --- FUNCTION
+    cset('Directory', { fg = c.func })
     cset('Statement')
     cset('Function')
     cset('Macro')
@@ -53,7 +54,8 @@ return {
     cset('@tag.builtin')
     cset('@lsp.type.formatSpecifier')
 
-    cset('Delimiter', { fg = c.brown })
+    --- KEYWORD
+    cset('Delimiter', { fg = c.keyword })
     cset('Repeat')
     cset('ColorEditTitle')
     cset('Conditional')
@@ -63,59 +65,68 @@ return {
     cset('@tag.delimiter')
     cset('@constructor.lua')
     cset('LeapLabelPrimary')
-
-    cset('Keyword', { fg = c.brown })
+    cset('Keyword')
     cset('@keyword.type')
 
-    cset('@keyword.return', { bold = true, fg = c.hotpink })
-    cset('Special', { bold = true, fg = c.hotpink })
+    --- SPECIAL
+    cset('@keyword.return', { bold = true, fg = c.special })
+    cset('Special')
+    cset('@lsp.type.lifetime')
+    cset('@lsp.typemod.keyword.async')
+    cset('@lsp.typemod.operator.controlFlow')
+    cset('SpecialChar')
 
-    cset('Type', { fg = c.sand })
+    --- TYPE
+    cset('Type', { fg = c.type })
     cset('Number')
     cset('Boolean')
     cset('String')
     cset('Structure')
-    cset('GitSignsChange')
     cset('@constructor')
     cset('DiffviewFilePanelPath')
     cset('@type.builtin')
 
-    cset('Identifier', { fg = mode == 'dark' and c.white or c.black })
+    --- CONSTANT
+    cset('Constant', { fg = c.constant })
+    cset('@constant.builtin')
+
+    --- IDENTIFIER
+    cset('Identifier', { fg = c.identifier })
     cset('Identifier')
     cset('@markup.raw')
     cset('@tag.attribute')
     cset('markdownBlockQuote')
 
-    cset('Include', { fg = mode == 'dark' and c.pear or c.pear2 })
-    cset('Label')
+    --- TITLE
+    cset('Label', { fg = c.title })
     cset('Title')
     cset('ColorEditTitleActive')
     cset('TelescopeTitle')
-    cset('GitSignsAdd')
+    cset('DiffviewFilePanelTitle')
+
+    --- NAMESPACE
+    cset('Include', { fg = c.namespace })
     cset('@lsp.type.namespace')
     cset('@module')
 
-    cset('Constant', { fg = c.pink })
-    cset('SpecialChar')
-    cset('GitSignsDelete')
-    cset('@constant.builtin')
-    cset('@lsp.type.lifetime')
-    cset('@lsp.typemod.keyword.async')
-    cset('@lsp.typemod.operator.controlFlow')
-    cset('DiffviewFilePanelTitle')
+    --- GITSIGN
+    cset('GitSignsAdd', { fg = c.gitsignadd })
+    cset('GitSignsDelete', { fg = c.gitsigndelete })
+    cset('GitSignsChange', { fg = c.gitsignchange })
 
+    --- COMMENT
     cset('Comment', { fg = c.comment })
-    cset('LeapBackdrop')
 
-    cset('LineNr', { fg = mode == 'dark' and c.gray3 or c.comment })
+    cset('LineNr', { fg = c.gray3 })
 
     cset('CursorLineNr', { fg = c.pear2 })
-    cset('CursorLine', { bg = mode == 'dark' and c.black or c.white })
+    cset('CursorLine', { bg = c.black })
 
     cset('FoldColumn', { bg = c.black })
     cset('Folded', { bg = c.black })
 
-    cset('TodoBgTODO', { reverse = true, fg = mode == 'dark' and c.pear or c.pear2 })
+    --- TODO
+    cset('TodoBgTODO', { reverse = true, fg = c.pear })
     cset('TodoBgNOTE')
     cset('TodoBgWARN', { reverse = true, fg = c.hotpink })
     cset('TodoBgFIX')
@@ -123,47 +134,44 @@ return {
     cset('TodoBgSTORE', { reverse = true, fg = c.orange })
     cset('TodoBgWARN', { reverse = true, fg = c.sand })
 
+    --- GIT GRAPH
     cset('GitGraphBranch1   ', { fg = c.blue3 })
     cset('GitGraphBranch2   ', { fg = c.pink })
     cset('GitGraphBranch3   ', { fg = c.sand })
-    cset('GitGraphBranch4   ', { fg = mode == 'dark' and c.pear or c.pear2 })
+    cset('GitGraphBranch4   ', { fg = c.pear })
     cset('GitGraphBranch5   ', { fg = c.orange })
-
     cset('GitGraphHash      ', { fg = c.teal })
-
     cset('GitGraphTimestamp ', { fg = c.sand })
     cset('GitGraphAuthor    ', { fg = c.brown })
-    cset('GitGraphBranchName', { fg = mode == 'dark' and c.pear or c.pear2 })
+    cset('GitGraphBranchName', { fg = c.pear })
     cset('GitGraphBranchTag ', { fg = c.pink })
     cset('GitGraphBranchMsg ', { fg = c.gray })
 
+    --- DIFF
     cset('DiffAdd               ', { bg = c.diffadd })
     cset('DiffChange            ', { bg = c.diffchange })
     cset('DiffText              ', { bg = c.difftext })
     cset('DiffDelete            ', { fg = c.hotpink })
     cset('DiffviewDiffDeleteDim ', { fg = c.pink })
 
-    local slbg = mode == 'dark' and c.gray2 or c.black
+    --- STATUSLINE
+    cset('MiniStatuslineBranch           ', { fg = c.sand, bg = c.gray2 })
+    cset('MiniStatuslineWorkspace        ', { reverse = true, fg = c.pear, bg = c.gray2 })
+    cset('MiniStatuslineWorkspaceUnsaved ', { reverse = true, fg = c.hotpink, bg = c.gray2 })
+    cset('MiniStatuslineChanges          ', { fg = c.sand, bg = c.gray2 })
+    cset('MiniStatuslineDiagnostics      ', { fg = c.teal, bg = c.gray2 })
+    cset('MiniStatuslineFileinfo         ', { fg = c.teal, bg = c.gray2 })
+    cset('MiniStatuslineLocation         ', { fg = c.gray2, bg = c.sand })
 
-    cset('MiniStatuslineBranch           ', { fg = mode == 'dark' and c.sand or c.blackboard, bg = slbg })
-    cset('MiniStatuslineWorkspace        ', { reverse = true, fg = c.pear, bg = slbg })
-    cset('MiniStatuslineWorkspaceUnsaved ', { reverse = true, fg = c.hotpink, bg = slbg })
-    cset('MiniStatuslineChanges          ', { fg = c.sand, bg = slbg })
-    cset('MiniStatuslineDiagnostics      ', { fg = c.teal, bg = slbg })
-    cset('MiniStatuslineFileinfo         ', { fg = c.teal, bg = slbg })
-    cset('MiniStatuslineLocation         ', { fg = slbg, bg = c.sand })
+    cset('MiniStatuslineLines', { fg = c.gray2, bg = c.teal })
+    cset('MiniStatuslineSearch', { fg = c.gray2, bg = c.teal })
 
-    cset('MiniStatuslineLines', { fg = slbg, bg = c.teal })
-    cset('MiniStatuslineSearch', { fg = slbg, bg = c.teal })
+    cset('MiniStatuslineFilename', { fg = c.pear, bg = c.gray2 })
+    cset('MiniStatuslineFilenameUnsaved', { fg = c.hotpink, bg = c.gray2 })
 
-    cset('MiniStatuslineFilename', { fg = c.pear, bg = slbg })
-    cset('MiniStatuslineFilenameUnsaved', { fg = c.hotpink, bg = slbg })
-
-    cset('MiniStatuslineModeNormal       ', { fg = slbg, bg = c.sand })
-    cset('MiniStatuslineModeVisual       ', { fg = slbg, bg = c.pink })
-    cset('MiniStatuslineModeInsert       ', { fg = slbg, bg = c.teal })
-
-    cset('MatchParen', { bold = true, underline = true, fg = mode == 'dark' and c.pear or c.darkblue })
+    cset('MiniStatuslineModeNormal       ', { fg = c.gray2, bg = c.sand })
+    cset('MiniStatuslineModeVisual       ', { fg = c.gray2, bg = c.pink })
+    cset('MiniStatuslineModeInsert       ', { fg = c.gray2, bg = c.teal })
 
     ---@diagnostic disable-next-line: undefined-field
     theme:apply(opts)
