@@ -299,14 +299,13 @@ require('lazy').setup({
           ---@diagnostic disable-next-line
           vim.api.nvim_set_hl(0, 'TreesitterContextLineNumber', { fg = hlg.bg, bg = hlg.bg })
 
-          local normHL = vim.api.nvim_get_hl(0, { name = 'Normal' })
-          ---@diagnostic disable-next-line
-          vim.api.nvim_set_hl(0, 'TreesitterContextSeparator', { fg = normHL.bg, bg = hlg.bg })
+          -- make bottom same as rest of context background
+          vim.api.nvim_set_hl(0, 'TreesitterContextSeparator', { link = 'TreesitterContext' })
         end
       end
 
       ---@param contrast "high" | "normal"
-      local function updateHighlight(contrast)
+      local function update_highlight(contrast)
         require('rose-pine').setup({
           dark_variant = 'main',
           styles = {
@@ -333,17 +332,17 @@ require('lazy').setup({
       ---@type "high" | "normal"
       vim.g.contrast = 'normal'
 
-      updateHighlight(vim.g.contrast)
+      update_highlight(vim.g.contrast)
 
       -- toggle between light and dark modes
       KEY('n', '<leader>T', function()
         vim.o.background = vim.o.background == 'dark' and 'light' or 'dark'
-        updateHighlight(vim.g.contrast)
+        update_highlight(vim.g.contrast)
       end, { desc = 'toggle between light and dark modes' })
 
       KEY('n', '<leader>C', function()
         vim.g.contrast = vim.g.contrast == 'normal' and 'high' or 'normal'
-        updateHighlight(vim.g.contrast)
+        update_highlight(vim.g.contrast)
       end, { desc = 'toggle between light and dark modes' })
     end,
   },
