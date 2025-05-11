@@ -70,14 +70,46 @@ return {
 
             if file == nil then return end
 
+            ---@type string[]
+            local keyOrder = {}
+            do
+              -- begin by reading in the order of the colors from the file, so we
+              -- can write in that same order, since lua tables are not oredered
+              local f = io.open(file, 'r')
+              if not f then return end
+
+              local started = false
+              while true do
+                local line = f:read('*l')
+                if not started and string.find(line, '{') ~= nil then
+                  started = true
+                elseif started and string.find(line, '}') ~= nil then
+                  break
+                elseif started then
+                  if line == nil then break end
+                  local s, e = string.find(line, '[^%s]+')
+                  if s then
+                    local name = string.sub(line, s, e)
+                    keyOrder[#keyOrder + 1] = name
+                  end
+                end
+              end
+              f:close()
+            end
+
             local f = io.open(file, 'w')
             if not f then return end
 
             f:write('---@type table<string, string>\n')
             f:write('return {\n')
 
-            for name, color in pairs(colors) do
-              f:write('  ' .. name .. ' = ' .. '"' .. color .. '",\n')
+            for _, name in ipairs(keyOrder) do
+              local color = colors[name]
+              if color then
+                f:write('  ' .. name .. ' = ' .. "'" .. color .. "',\n")
+              else
+                error('DID NOT FIND COLOR: ' .. name)
+              end
             end
 
             f:write('}\n')

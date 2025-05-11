@@ -1,4 +1,4 @@
-local ut = require 'utils'
+local ut = require('utils')
 
 ----------------------------------------------------------------
 
@@ -46,17 +46,13 @@ end
 --- @return string
 function Color:to_hex()
   local r, g, b = self:get_rgb()
-  local function fmt(v)
-    return string.format('%02x', v)
-  end
+  local function fmt(v) return string.format('%02x', v) end
   return '#' .. fmt(r) .. fmt(g) .. fmt(b)
 end
 
 --- get rgb tuple
 --- @return integer, integer, integer
-function Color:get_rgb()
-  return self.r, self.g, self.b
-end
+function Color:get_rgb() return self.r, self.g, self.b end
 
 --- get hsl tuple
 --- @return integer, integer, integer
@@ -133,7 +129,7 @@ end
 ---@return number[]
 function Palette:new_rgb_win_arr(color, on_update, row, avail_width)
   local rgb_win = {}
-  for idx, chan in ipairs { 'r', 'g', 'b' } do
+  for idx, chan in ipairs({ 'r', 'g', 'b' }) do
     local col = idx * 5 + avail_width / 2
     rgb_win[#rgb_win + 1] = self.new_floating_chan_win(color, on_update, row, col, 3, chan, 0, 255, 'rgb')
   end
@@ -265,9 +261,7 @@ function Palette.new_floating_chan_win(color, on_update, row, col, width, channe
       end
 
       -- ignore inside own colorspace
-      if event.data and event.data.channel and event.data.channel == channel then
-        return
-      end
+      if event.data and event.data.channel and event.data.channel == channel then return end
 
       cursor_update(win)
     end,
@@ -291,7 +285,6 @@ function Palette.new_floating_chan_win(color, on_update, row, col, width, channe
   vim.api.nvim_create_autocmd('CursorMoved', {
     callback = function()
       local row = vim.api.nvim_win_get_cursor(win)[1]
-      print('updating: ', channel, 'to', values[row])
       local val = values[row]
       -- prevent accidentally setting completely black using HSL
       -- why ? because otherwise you'll get very annoyed at losing
@@ -319,15 +312,11 @@ function Palette.new_floating_chan_win(color, on_update, row, col, width, channe
   -- that this is actively being edited
   do
     vim.api.nvim_create_autocmd('BufEnter', {
-      callback = function()
-        vim.api.nvim_win_set_config(win, { title = { { win_title, 'ColorEditTitleActive' } } })
-      end,
+      callback = function() vim.api.nvim_win_set_config(win, { title = { { win_title, 'ColorEditTitleActive' } } }) end,
       buffer = buf,
     })
     vim.api.nvim_create_autocmd('BufLeave', {
-      callback = function()
-        vim.api.nvim_win_set_config(win, { title = { { win_title, 'ColorEditTitle' } } })
-      end,
+      callback = function() vim.api.nvim_win_set_config(win, { title = { { win_title, 'ColorEditTitle' } } }) end,
       buffer = buf,
     })
   end
