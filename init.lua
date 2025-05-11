@@ -290,6 +290,19 @@ require('lazy').setup({
           vim.api.nvim_set_hl(0, 'GitGraphBranchTag', { link = '@property' })
           vim.api.nvim_set_hl(0, 'GitGraphBranchMsg', { link = 'Comment' })
         end
+
+        do
+          -- treesitter context
+
+          -- hide line numbers
+          local hlg = vim.api.nvim_get_hl(0, { name = 'TreesitterContext' })
+          ---@diagnostic disable-next-line
+          vim.api.nvim_set_hl(0, 'TreesitterContextLineNumber', { fg = hlg.bg, bg = hlg.bg })
+
+          local normHL = vim.api.nvim_get_hl(0, { name = 'Normal' })
+          ---@diagnostic disable-next-line
+          vim.api.nvim_set_hl(0, 'TreesitterContextSeparator', { fg = normHL.bg, bg = hlg.bg })
+        end
       end
 
       ---@param contrast "high" | "normal"
@@ -1086,7 +1099,7 @@ require('lazy').setup({
     'nvim-treesitter/nvim-treesitter-context',
     opts = {
       multiline_threshold = 1,
-      separator = '─',
+      separator = ' ',
     },
     init = function()
       KEY('n', '[c', function() require('treesitter-context').go_to_context(vim.v.count1) end, { silent = true, desc = 'jump to line of parent context' })
