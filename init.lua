@@ -249,31 +249,46 @@ require('lazy').setup({
     name = 'rose-pine',
     config = function()
       local function tweakHighlights()
-        -- local statusHL = vim.api.nvim_get_hl(0, { name = 'MiniStatuslineDevinfo' })
-        -- local stringHL = vim.api.nvim_get_hl(0, { name = 'String' })
-        -- vim.api.nvim_set_hl(0, 'MiniStatuslineBranch', { fg = stringHL.fg, bg = statusHL.bg })
-
-        -- unline MiniStauslineInactive from MiniStatuslineFilename
         do
-          local g = vim.api.nvim_get_hl(0, { name = 'MiniStatuslineFilename' })
-          ---@diagnostic disable-next-line
-          vim.api.nvim_set_hl(0, 'MiniStatuslineInactive', g)
+          -- statusline
+          do
+            local g = vim.api.nvim_get_hl(0, { name = 'MiniStatuslineFilename' })
+            ---@diagnostic disable-next-line
+            vim.api.nvim_set_hl(0, 'MiniStatuslineInactive', g)
+          end
+
+          local otherHLG = vim.api.nvim_get_hl(0, { name = '@constructor' })
+
+          do
+            local hlg = vim.api.nvim_get_hl(0, { name = 'MiniStatuslineDevinfo' })
+            hlg.fg = otherHLG.fg --- tonumber('0xFF0000', 16)
+            ---@diagnostic disable-next-line
+            vim.api.nvim_set_hl(0, 'MiniStatuslineDevinfo', hlg)
+          end
+
+          do
+            local hlg = vim.api.nvim_get_hl(0, { name = 'MiniStatuslineFilename' })
+            hlg.fg = otherHLG.fg --- tonumber('0xFF0000', 16)
+            ---@diagnostic disable-next-line
+            vim.api.nvim_set_hl(0, 'MiniStatuslineFilename', hlg)
+          end
         end
 
-        local otherHLG = vim.api.nvim_get_hl(0, { name = '@constructor' })
-
         do
-          local hlg = vim.api.nvim_get_hl(0, { name = 'MiniStatuslineDevinfo' })
-          hlg.fg = otherHLG.fg --- tonumber('0xFF0000', 16)
-          ---@diagnostic disable-next-line
-          vim.api.nvim_set_hl(0, 'MiniStatuslineDevinfo', hlg)
-        end
+          -- gitgraph
 
-        do
-          local hlg = vim.api.nvim_get_hl(0, { name = 'MiniStatuslineFilename' })
-          hlg.fg = otherHLG.fg --- tonumber('0xFF0000', 16)
-          ---@diagnostic disable-next-line
-          vim.api.nvim_set_hl(2, 'MiniStatuslineFilename', hlg)
+          vim.api.nvim_set_hl(0, 'GitGraphBranch1', { link = '@variable.builtin' })
+          vim.api.nvim_set_hl(0, 'GitGraphBranch2', { link = '@property' })
+          vim.api.nvim_set_hl(0, 'GitGraphBranch3', { link = '@function.method' })
+          vim.api.nvim_set_hl(0, 'GitGraphBranch4', { link = 'String' })
+          vim.api.nvim_set_hl(0, 'GitGraphBranch5', { link = 'Keyword' })
+
+          vim.api.nvim_set_hl(0, 'GitGraphHash', { link = '@variable.builtin' })
+          vim.api.nvim_set_hl(0, 'GitGraphTimestamp', { link = '@function.method' })
+          vim.api.nvim_set_hl(0, 'GitGraphAuthor', { link = 'Keyword' })
+          vim.api.nvim_set_hl(0, 'GitGraphBranchName', { link = '@property' })
+          vim.api.nvim_set_hl(0, 'GitGraphBranchTag', { link = '@property' })
+          vim.api.nvim_set_hl(0, 'GitGraphBranchMsg', { link = 'Comment' })
         end
       end
 
