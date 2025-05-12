@@ -2,6 +2,10 @@
 
   TODO:
 
+    >> indicate in statusline whether or not conform is on or off (format on save)
+
+    >> 
+
     >> gitgraph and perhaps other non file buffers should also display the
        branch name we're on?
 
