@@ -1109,6 +1109,13 @@ require('lazy').setup({
     end,
   },
 
+  {
+    'andymass/vim-matchup',
+    -- TODO: I do not think this lazy = false is necessary
+    lazy = false, -- or true with an event
+    config = function() vim.g.matchup_matchparen_offscreen = {} end,
+  },
+
   { -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
     build = ':TSUpdate',
@@ -1123,6 +1130,13 @@ require('lazy').setup({
         --  the list of additional_vim_regex_highlighting and disabled languages for indent.
         additional_vim_regex_highlighting = { 'ruby' },
       },
+
+      -- for 'andymass/vim-matchup' integration so that it can use treesitter
+      matchup = {
+        enable = true, -- mandatory, enables treesitter integration
+        disable_virtual_text = true,
+      },
+
       -- indent = { enable = true, disable = { 'ruby', 'lua' } },
       -- incremental selection
       incremental_selection = {
