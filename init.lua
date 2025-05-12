@@ -2,8 +2,6 @@
 
   TODO:
 
-    >> indicate in statusline whether or not conform is on or off (format on save)
-
     >> gitgraph and perhaps other non file buffers should also display the
        branch name we're on?
 
@@ -135,7 +133,6 @@ local isBufferDirty = function() return vim.api.nvim_get_option_value('modified'
 
 --=========================== KEYMAPS =============================
 
---- yeah baby
 local KEY = vim.keymap.set
 local CMD = vim.api.nvim_create_user_command
 local AUTO = vim.api.nvim_create_autocmd
@@ -937,6 +934,11 @@ require('lazy').setup({
         local bufnr = vim.api.nvim_get_current_buf()
         vim.b[bufnr].disable_conform = not vim.b[bufnr].disable_conform
       end, { desc = 'toggle conform.nvim' })
+
+      KEY('n', '<leader>cl', function()
+        local formatters = require('conform').list_formatters()
+        print('formatters:', vim.inspect(formatters))
+      end, { desc = 'list formatters for current buffer' })
     end,
   },
 
@@ -1051,6 +1053,7 @@ require('lazy').setup({
 
             local fileUnsaved = isBufferDirty()
             local workspaceDirty = isWorkspaceDirty()
+            local has_formatter = #require('conform').list_formatters() > 0
 
             local function dhl(unsaved, group)
               local hlg = mode == 'active' and group or 'MiniStatuslineInactive'
@@ -1091,25 +1094,30 @@ require('lazy').setup({
               strings = { git },
             }
 
+            local formatter = {
+              hl = 'Added',
+              strings = { 'fmt' },
+            }
+
             local fileInfo = {
-              hl = dhl(fileUnsaved, 'MinistatuslineFileInfo'),
+              hl = 'MinistatuslineFileInfo',
               strings = { MiniStatusline.section_fileinfo({ trunc_width = 2000 }) },
             }
 
             local search = {
-              hl = dhl(fileUnsaved, 'MinistatuslineFileInfo'),
+              hl = 'MinistatuslineFileInfo',
               strings = {
                 MiniStatusline.section_searchcount({ trunc_width = 75 }),
               },
             }
 
             local location = {
-              hl = dhl(fileUnsaved, 'MinistatuslineFileInfo'),
+              hl = 'MinistatuslineFileInfo',
               strings = { MiniStatusline.section_location({ trunc_width = 75 }) },
             }
 
             local lines = {
-              hl = dhl(fileUnsaved, 'MinistatuslineFileInfo'),
+              hl = 'MinistatuslineFileInfo',
               strings = { '%L' },
             }
 
@@ -1120,6 +1128,7 @@ require('lazy').setup({
               filename.strings[1] ~= '' and filename or workdir,
               branch,
               '%=', -- End left alignment
+              has_formatter and formatter,
               fileInfo,
               search,
               location,
