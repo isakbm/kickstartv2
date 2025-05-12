@@ -94,17 +94,14 @@ vim.opt.tabstop = 2
 
 vim.opt.runtimepath:prepend('/home/isak/.opam/default/share/ocp-indent/vim')
 
-local osname = vim.loop.os_uname()
-
-print('OSNAME:', vim.inspect(osname))
-
 ---@type "wsl2" | "linux" | "mac" | "unknown"
 local host = 'unknown'
 
 do
+  local osname = vim.loop.os_uname()
   local host_fingerprint = string.lower(table.concat(vim.tbl_values(osname), ' '))
   local wsl2 = string.find(host_fingerprint, 'wsl2') ~= nil
-  local mac = string.find(host_fingerprint, 'mac') ~= nil -- FIXME
+  local mac = string.find(host_fingerprint, 'darwin') ~= nil
   local linux = string.find(host_fingerprint, 'linux') ~= nil -- FIXME
   if wsl2 then
     host = 'wsl2'
@@ -114,8 +111,6 @@ do
     host = 'linux'
   end
 end
-
-print('HOST:', host)
 
 WIN_BORDER = { '╭', '─', '╮', '│', '╯', '─', '╰', '│' }
 
@@ -320,6 +315,8 @@ require('lazy').setup({
 
       ---@param contrast "high" | "normal"
       local function update_highlight(contrast)
+        print('updating highlights')
+
         require('rose-pine').setup({
           dark_variant = 'main',
           styles = {
@@ -358,6 +355,45 @@ require('lazy').setup({
         vim.g.contrast = vim.g.contrast == 'normal' and 'high' or 'normal'
         update_highlight(vim.g.contrast)
       end, { desc = 'toggle between light and dark modes' })
+
+      if host == 'mac' then
+        -- FIXME: currently we somehow use up jobs or something keep an eye out, we have increased from 250 ms to 1500 ms
+        local Job = require('plenary.job')
+
+        local prevDarkmode = vim.o.background
+
+        local job = Job:new({
+          command = 'osascript',
+          args = {
+            '-e',
+            'tell app "system events" to tell appearance preferences to get dark mode',
+          },
+          on_exit = function(j, return_val)
+            if return_val ~= 0 then
+              error('osascript err: ' .. vim.inspect(j:stderr_result()))
+              return
+            end
+
+            ---@type string[]
+            local result = j:result()
+            if #result == 0 then
+              error('osascript no result')
+              return
+            end
+
+            local newDarkmode = result[1] == 'true' and 'dark' or 'light'
+            if newDarkmode ~= prevDarkmode then
+              prevDarkmode = newDarkmode
+              vim.schedule(function()
+                vim.o.background = newDarkmode
+                update_highlight(vim.g.contrast)
+              end)
+            end
+          end,
+        })
+
+        vim.loop.new_timer():start(0, 1500, function() job:start() end)
+      end
     end,
   },
 
