@@ -107,6 +107,29 @@ vim.opt.tabstop = 2
 
 vim.opt.runtimepath:prepend('/home/isak/.opam/default/share/ocp-indent/vim')
 
+local osname = vim.loop.os_uname()
+
+print('OSNAME:', vim.inspect(osname))
+
+---@type "wsl2" | "linux" | "mac" | "unknown"
+local host = 'unknown'
+
+do
+  local host_fingerprint = string.lower(table.concat(vim.tbl_values(osname), ' '))
+  local wsl2 = string.find(host_fingerprint, 'wsl2') ~= nil
+  local mac = string.find(host_fingerprint, 'mac') ~= nil -- FIXME
+  local linux = string.find(host_fingerprint, 'linux') ~= nil -- FIXME
+  if wsl2 then
+    host = 'wsl2'
+  elseif mac then
+    host = 'mac'
+  elseif linux then
+    host = 'linux'
+  end
+end
+
+print('HOST:', host)
+
 WIN_BORDER = { '╭', '─', '╮', '│', '╯', '─', '╰', '│' }
 
 local getWorkspaceName = function()
