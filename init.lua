@@ -4,14 +4,8 @@
 
     >> indicate in statusline whether or not conform is on or off (format on save)
 
-    >> 
-
     >> gitgraph and perhaps other non file buffers should also display the
        branch name we're on?
-
-    >> { } etc will match with real ones, that is, if a comment contains } then it will
-       obstruct the pairing of parenthesis etc ... would be amazing if we could fix this
-       it becomes obvious when you place cursor on ( ) or you try to jump using %
 
     >> auto close diffview on :Git commit ? with :tabclose
 
@@ -23,13 +17,6 @@
 
     >> add single branch mode for gitgraph, make it easy to select which
        branch you want to see, consider display a subset of branches, not just ONE
-
-    >> there seems to be an awkward bug with `diffview`
-
-       1. make a modification to a file
-       2. stage it
-       3. make another modification to the same file in the same area
-       4. stage it ...
 
     >> auto update the git graph
 
