@@ -213,6 +213,8 @@ KEY('n', '<leader>F', require('lint-runner').mark_fixed, { desc = '[lint] mark a
 KEY('n', ']n', ':cnext<CR>', { noremap = true, silent = true })
 KEY('n', '[n', ':cprev<CR>', { noremap = true, silent = true })
 
+KEY('n', '<leader>gc', ':!git commit<cr>:DiffviewClose<cr>', { desc = 'git commit' })
+
 -- highlight when yanking
 AUTO('TextYankPost', {
   desc = 'Highlight when yanking (copying) text',
@@ -828,6 +830,7 @@ require('lazy').setup({
         jdtls = {},
         -- ocamllsp = {},
         tsserver = {},
+        terraformls = {},
         prismals = {},
         lua_ls = {
           settings = {
@@ -1175,7 +1178,22 @@ require('lazy').setup({
     'nvim-treesitter/nvim-treesitter',
     build = ':TSUpdate',
     opts = {
-      ensure_installed = { 'bash', 'c', 'dockerfile', 'rust', 'typescript', 'tsx', 'html', 'lua', 'markdown', 'vim', 'vimdoc', 'javascript' },
+      ensure_installed = {
+        'bash',
+        'make',
+        'terraform',
+        'c',
+        'dockerfile',
+        'rust',
+        'typescript',
+        'tsx',
+        'html',
+        'lua',
+        'markdown',
+        'vim',
+        'vimdoc',
+        'javascript',
+      },
       -- Autoinstall languages that are not installed
       auto_install = true,
       highlight = {
