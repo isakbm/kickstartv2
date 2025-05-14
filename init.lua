@@ -73,7 +73,7 @@ vim.opt.signcolumn = 'yes:1' -- Keep signcolumn on by default
 vim.opt.splitright = true -- Configure how new splits should be opened
 vim.opt.splitbelow = true
 vim.opt.list = true -- Sets how neovim will display certain whitespace in the editor.
-vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
+vim.opt.listchars = { tab = '  ', trail = '·', nbsp = '␣' }
 vim.opt.inccommand = 'split' -- Preview substitutions live, as you type!
 vim.opt.cursorline = true -- Show which line your cursor is on
 vim.opt.scrolloff = 10 -- Minimal number of screen lines to keep above and below the cursor.
@@ -1097,9 +1097,13 @@ require('lazy').setup({
               strings = { git },
             }
 
+            local bufnr = vim.api.nvim_get_current_buf()
+
+            local fmt_disabled = vim.b[bufnr].disable_conform
+
             local formatter = {
               hl = 'Added',
-              strings = { 'fmt' },
+              strings = { (fmt_disabled and '✗ ' or '') .. 'fmt' },
             }
 
             local fileInfo = {
