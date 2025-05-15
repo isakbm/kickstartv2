@@ -922,6 +922,8 @@ require('lazy').setup({
         python = { 'isort', 'black' },
         json = { 'jq' },
 
+        terraform = { 'terraform_fmt' },
+
         -- you can use this debian package instead of lemminx if you run into trouble
         -- xml = { 'xmllint' },
         -- svg = { 'xmllint' },
@@ -930,6 +932,13 @@ require('lazy').setup({
         javascript = { 'prettier' },
         typescript = { 'prettier' },
         typescriptreact = { 'prettier' },
+      },
+      formatters = {
+        terraform_fmt = {
+          command = 'tofu',
+          args = { 'fmt', '-' },
+          stdin = true,
+        },
       },
     },
     init = function()
