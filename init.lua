@@ -7,12 +7,6 @@
 
     >> auto close diffview on :Git commit ? with :tabclose
 
-    >> add keymap to quickly go back to state before changes to buffer
-       so basically go back to last save state, equivalent to S marker in the undo tree 
-
-    >> have something like gd (goto definition), but that opens up new buffer for it
-       hint just a combination of Ctrl + w , v and then gd inside that buffer
-
     >> add single branch mode for gitgraph, make it easy to select which
        branch you want to see, consider display a subset of branches, not just ONE
 
@@ -27,7 +21,7 @@
     >> strange highlighting on dockerfiles
 
        1. open a dockerfile
-       2. find a list of commands like a bunch of rows with COPY < ...> 
+       2. find a list of commands like a bunch of rows with COPY < ...>
        3. move your cursor up and down to above and below rows ...
 
     >> popup window reminindg you to stretch and drink water
