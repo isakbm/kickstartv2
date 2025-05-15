@@ -45,6 +45,12 @@
     >> find a way to do grep search over subset of files
 
 --]]
+--
+do
+  -- I'm tired of netrw, gives me bad vibes, so we disable it
+  vim.g.loaded_netrw = 1
+  vim.g.loaded_netrwPlugin = 1
+end
 
 -- :help localleader
 vim.g.mapleader = ' ' -- Set <space> as the leader key
