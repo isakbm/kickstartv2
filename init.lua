@@ -2,6 +2,13 @@
 
   TODO:
 
+    >> backup and version your dotfiles
+
+       - .wezterm.lua
+       - < ghostty configuration >
+       - .config/tmux.conf
+       - .bashrc .profile ... should we just go all in on .zsh ? or the oh my ... something
+
     >> gitgraph and perhaps other non file buffers should also display the
        branch name we're on?
 
