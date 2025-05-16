@@ -2,6 +2,15 @@
 
   TODO:
 
+    >> add the following hotkeys
+
+       - <leader>gif "git fetc"
+       - <leader>gip "git push"
+       - <leader>gic "git commit" <-- should open a buffer to write message etc
+
+    >> we currently show whether or not buffer is saved in the statusline, also show in a very simple
+       and similar way whether or not we have uncommitted changes (ahead of remote)
+
     >> backup and version your dotfiles
 
        - .wezterm.lua
