@@ -127,6 +127,7 @@ do
   end
 end
 
+-- TODO: remove this when we are happy with having moved over to nvim v0.11.x
 WIN_BORDER = { '╭', '─', '╮', '│', '╯', '─', '╰', '│' }
 
 local getWorkspaceName = function()
@@ -214,8 +215,6 @@ KEY('n', 'VV', '<C-v>')
 -- we want high priority, higher than gitsigns and marks
 vim.diagnostic.config({ signs = { priority = 100 } })
 
-KEY('n', '[d', vim.diagnostic.goto_prev, { desc = 'Go to previous [D]iagnostic message' })
-KEY('n', ']d', vim.diagnostic.goto_next, { desc = 'Go to next [D]iagnostic message' })
 KEY('n', '<leader>e', vim.diagnostic.open_float, { desc = 'Show diagnostic [E]rror messages' })
 KEY('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
 
