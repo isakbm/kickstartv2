@@ -75,12 +75,6 @@ vim.opt.clipboard = 'unnamedplus' --  See `:help 'clipboard'`
 vim.opt.updatetime = 250 -- Decrease update time
 vim.opt.timeoutlen = 1000 -- Decrease mapped sequence wait time
 vim.opt.number = true
-
--- NOTE: special settings for v0.11.x
-if vim.version.gt(vim.version(), { 0, 10 }) then
-  vim.opt.winborder = 'rounded' -- Set rounded borders preferred on floating windows
-end
-
 vim.opt.relativenumber = true
 vim.opt.termguicolors = true -- yes use tempr gui colors
 vim.opt.wrap = false -- don't wrap lines
@@ -132,7 +126,6 @@ do
   end
 end
 
--- TODO: remove this when we are happy with having moved over to nvim v0.11.x
 WIN_BORDER = { '╭', '─', '╮', '│', '╯', '─', '╰', '│' }
 
 local getWorkspaceName = function()
@@ -794,7 +787,7 @@ require('lazy').setup({
 
           -- Opens a popup that displays documentation about the word under your cursor
           --  See `:help K` for why this keymap
-          map('K', vim.lsp.buf.hover, 'Hover Documentation')
+          map('K', function() vim.lsp.buf.hover({ border = 'rounded', title = ' hover ' }) end, 'Hover Documentation')
 
           -- WARN: This is not Goto Definition, this is Goto Declaration.
           --  For example, in C this would take you to the header
