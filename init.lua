@@ -75,7 +75,12 @@ vim.opt.clipboard = 'unnamedplus' --  See `:help 'clipboard'`
 vim.opt.updatetime = 250 -- Decrease update time
 vim.opt.timeoutlen = 1000 -- Decrease mapped sequence wait time
 vim.opt.number = true
-vim.opt.winborder = 'rounded' -- Set rounded borders preferred on floating windows
+
+-- NOTE: special settings for v0.11.x
+if vim.version.gt(vim.version(), { 0, 10 }) then
+  vim.opt.winborder = 'rounded' -- Set rounded borders preferred on floating windows
+end
+
 vim.opt.relativenumber = true
 vim.opt.termguicolors = true -- yes use tempr gui colors
 vim.opt.wrap = false -- don't wrap lines
