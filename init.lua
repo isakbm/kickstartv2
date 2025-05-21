@@ -485,6 +485,22 @@ require('lazy').setup({
           },
           cache_picker = { num_pickers = 10 },
           file_ignore_patterns = { '.git/' },
+          vimgrep_arguments = {
+            -- vvv default args see :h telescope.nvim vvv
+            'rg',
+            '--color=never',
+            '--no-heading',
+            '--with-filename',
+            '--line-number',
+            '--column',
+            '--smart-case',
+            -- ^^^ default args see :h telescope.nvim ^^^
+            --
+            -- vvv CUSTOM vvv
+            '--hidden', -- include hidden files
+            --
+            -- if you want to disregard gitignore  '--no-ignore',      -- do NOT respect .gitignore
+          },
         },
         -- pickers = {}
         extensions = {
