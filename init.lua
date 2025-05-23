@@ -676,6 +676,7 @@ require('lazy').setup({
         KEY('n', '<leader>gic', ':Git commit<cr>', { desc = 'git commit', silent = true })
         KEY('n', '<leader>giC', ':Git commit --amend<cr>', { desc = 'git commit ammend', silent = true })
         KEY('n', '<leader>git', ':Git<cr>', { desc = 'git interactive', silent = true })
+        KEY('n', '<leader>gis', function() end, { desc = 'gitlab issues', silent = true })
       end
 
       -- vim.api.nvim_create_autocmd('User', {
@@ -782,9 +783,9 @@ require('lazy').setup({
           --  Most Language Servers support renaming across files, etc.
           map('<leader>rn', function()
             local cursor_pos = vim.api.nvim_win_get_cursor(0)
-
-            local hover_res = vim.lsp.buf_request_sync(0, 'textDocument/hover', vim.lsp.util.make_position_params(), 200)
-
+            local client = vim.lsp.get_clients({ bufnr = 0 })[1] -- assume first is best
+            local utf_enc = client and client.offset_encoding or 'utf-16'
+            local hover_res = vim.lsp.buf_request_sync(0, 'textDocument/hover', vim.lsp.util.make_position_params(0, utf_enc), 200)
             if not hover_res then return end
 
             local hover = hover_res[1]
