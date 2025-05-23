@@ -876,7 +876,7 @@ require('lazy').setup({
 
           vim.api.nvim_buf_set_option(0, 'modifiable', false)
           vim.opt_local.conceallevel = 2
-          vim.opt_local.concealcursor = 'n'
+          vim.opt_local.concealcursor = 'nc'
           local ns = vim.api.nvim_create_namespace('mylinks')
           for _, link in ipairs(link_locs) do
             vim.api.nvim_buf_set_extmark(buf, ns, link.row, link.col, {
