@@ -148,6 +148,100 @@ local isWorkspaceDirty = function()
   return false
 end
 
+--- very useful for creating a centered floating window
+---@param buf integer
+---@param title string?
+---@param width integer?
+---@param height integer?
+---@return integer window
+local function new_centered_float_win(buf, title, width, height)
+  local winWidth = vim.o.columns
+  local winHeight = vim.o.lines
+  local width = math.min(winWidth, width or 64)
+  local height = math.min(winHeight, height or 32)
+
+  local deltaWidth = winWidth - width
+  local deltaHeight = winHeight - height
+
+  local offsetX = math.ceil(deltaWidth / 2)
+  local offsetY = math.ceil(deltaHeight / 2)
+
+  return vim.api.nvim_open_win(buf, false, {
+    title_pos = 'center',
+    title = title and ' ' .. title .. ' ',
+    width = width,
+    height = height,
+    relative = 'editor',
+    row = offsetY,
+    col = offsetX,
+    border = WIN_BORDER,
+    style = 'minimal',
+  })
+end
+
+local function iso_to_utc_timestamp(iso)
+  -- Parse ISO (basic YYYY-MM-DDTHH:MM:SS), ignoring timezone suffixes
+  local y, m, d, H, M, S, _ms = iso:match('(%d+)%-(%d+)%-(%d+)T(%d+):(%d+):(%d+)%.(%d+)Z')
+  if not y then return nil, 'Invalid ISO format' end
+
+  -- Convert to number
+  -- y, m, d, H, M, S = tonumber(y), tonumber(m), tonumber(d), tonumber(H), tonumber(M), tonumber(S)
+
+  -- Convert to timestamp as if local time
+  local t = os.time({ year = y, month = m, day = d, hour = H, min = M, sec = S })
+
+  -- Adjust for local timezone offset to get UTC timestamp
+  local local_offset = os.difftime(t, os.time(os.date('!*t', t)))
+  return t - local_offset
+end
+
+-- Get current UTC timestamp
+local function now_utc()
+  local now = os.time()
+  local offset = os.difftime(now, os.time(os.date('!*t', now)))
+  return now - offset
+end
+
+-- Calculate elapsed time in seconds
+local function elapsed_since(iso)
+  local ts, err = iso_to_utc_timestamp(iso)
+  if not ts then return nil, err end
+  return now_utc() - ts
+end
+
+-- calculate some text string describing age based on seconds input
+---@param seconds integer
+local function seconds_to_age_str(seconds)
+  local rem = seconds
+  local s = rem % 60
+  rem = (rem - s) / 60
+  local min = rem % 60
+  rem = (rem - min) / 60
+  local hours = rem % 24
+  rem = (rem - hours) / 24
+  local days = rem % 7
+  rem = (rem - days) / 7
+  local weeks = rem % 4
+  rem = (rem - weeks) / 4
+  local months = rem % 12
+  rem = (rem - months) / 12
+  local years = rem
+
+  if years > 0 then
+    return years .. ' years and ' .. months .. ' months'
+  elseif months > 0 then
+    return months .. ' months and ' .. weeks .. ' weeks'
+  elseif weeks > 0 then
+    return weeks .. ' weeks and ' .. days .. ' days'
+  elseif days > 0 then
+    return days .. ' days and ' .. hours .. ' hours'
+  elseif hours > 0 then
+    return hours .. ' hours and ' .. min .. ' min'
+  elseif min > 0 then
+    return min .. ' minutes and ' .. s .. ' seconds'
+  end
+end
+
 local isBufferDirty = function() return vim.api.nvim_get_option_value('modified', { buf = 0 }) end
 
 --=========================== KEYMAPS =============================
@@ -676,41 +770,119 @@ require('lazy').setup({
         KEY('n', '<leader>gic', ':Git commit<cr>', { desc = 'git commit', silent = true })
         KEY('n', '<leader>giC', ':Git commit --amend<cr>', { desc = 'git commit ammend', silent = true })
         KEY('n', '<leader>git', ':Git<cr>', { desc = 'git interactive', silent = true })
-        KEY('n', '<leader>gis', function() end, { desc = 'gitlab issues', silent = true })
-      end
+        KEY('n', '<leader>gis', function()
+          local group_id = 45 -- change this if you want, you can find it under dots in UI
+          local win_width = 128
+          local username = 'isakbm'
 
-      -- vim.api.nvim_create_autocmd('User', {
-      --   pattern = { 'FugitiveIndex' },
-      --   callback = function() print('FUGITIVE FOO') end,
-      -- })
+          if not vim.env.GITLAB_TOKEN then
+            print('missing api key')
+            return
+          end
+
+          local curl = require('plenary.curl')
+
+          local max_pages = 3
+
+          local function opts_page(page) return '?per_page=100&page=' .. page .. '&t' end
+          local filt_assignee = '&assignee_username=isakbm'
+          local filt_opened = '&state=opened'
+
+          local gitlab_url = 'https://gitlab.laiout.app'
+
+          local json_issues = {}
+
+          for i = 1, max_pages do
+            local response = curl.get(gitlab_url .. '/api/v4/groups/' .. group_id .. '/issues' .. opts_page(i) .. filt_assignee .. filt_opened, {
+              headers = {
+                ['PRIVATE-TOKEN'] = vim.env.GITLAB_TOKEN,
+              },
+            })
+
+            if response.status == 200 then
+              local more_json_issues = vim.json.decode(response.body)
+              vim.list_extend(json_issues, more_json_issues)
+            else
+              print('Failed to fetch issues: ' .. response.status)
+            end
+          end
+
+          -- print(vim.inspect(json_issues))
+
+          local issues = {}
+          ---@class Loc
+          ---@field col integer
+          ---@field row integer
+          ---@field text string
+          ---@field end_col integer
+
+          ---@type Loc[]
+          local link_locs = {}
+
+          local ctr = 1
+          for _, issue in ipairs(json_issues) do
+            local space_pad = '        '
+            local issue_id = string.format('%d', issue.iid)
+
+            local created_at = issue.created_at
+            local age, _err = elapsed_since(created_at)
+            local age_str = seconds_to_age_str(age)
+
+            issues[#issues + 1] = ''
+
+            --- todo replace me with actual useful values
+            local id_pad_n = 5 - #issue_id
+            link_locs[#link_locs + 1] = {
+              row = #issues,
+              col = 1 + id_pad_n,
+              text = issue_id,
+              end_col = 1 + id_pad_n + #issue.web_url,
+            }
+
+            issues[#issues + 1] = string.rep(' ', 1 + id_pad_n) .. issue.web_url .. ' : ' .. string.format('%03d', ctr) .. ' - ' .. issue.title
+            issues[#issues + 1] = ''
+
+            for _, assignee in ipairs(issue.assignees) do
+              issues[#issues + 1] = space_pad .. '  ' .. assignee.name
+            end
+
+            issues[#issues + 1] = space_pad .. '󱦟  ' .. age_str .. ' old'
+            issues[#issues + 1] = ''
+            -- issues[#issues + 1] = space_pad .. (issue.state == 'opened' and 'OPEN' or 'CLOSED')
+            -- issues[#issues + 1] = ''
+            issues[#issues + 1] = space_pad .. '󰓹  ' .. table.concat(issue.labels, ' ')
+            issues[#issues + 1] = ''
+            issues[#issues + 1] = string.rep('─', win_width)
+            ctr = ctr + 1
+          end
+
+          local buf = vim.api.nvim_create_buf(false, true)
+
+          vim.api.nvim_buf_set_lines(buf, 0, -1, false, issues)
+          local win = new_centered_float_win(buf, 'gitlab issues', win_width)
+          vim.api.nvim_set_current_win(win)
+
+          vim.api.nvim_buf_set_option(0, 'modifiable', false)
+          vim.opt_local.conceallevel = 2
+          vim.opt_local.concealcursor = 'n'
+          local ns = vim.api.nvim_create_namespace('mylinks')
+          for _, link in ipairs(link_locs) do
+            vim.api.nvim_buf_set_extmark(buf, ns, link.row, link.col, {
+              end_col = link.end_col - #link.text + 1,
+              conceal = '*',
+              virt_text = { { link.text, 'Underlined' } }, -- can use your own highlight group
+              virt_text_pos = 'overlay',
+              -- hl_mode = 'combine',
+            })
+          end
+        end, { desc = 'gitlab issues', silent = true })
+      end
 
       -- makes :Git commands open in a nicer floating window
       vim.api.nvim_create_autocmd('User', {
         pattern = { 'FugitiveEditor', 'FugitiveIndex' },
         callback = function(evnt)
-          local winWidth = vim.o.columns
-          local winHeight = vim.o.lines
-          local width = math.min(winWidth, 64)
-          local height = math.min(winHeight, 32)
-
-          local deltaWidth = winWidth - width
-          local deltaHeight = winHeight - height
-
-          local offsetX = math.ceil(deltaWidth / 2)
-          local offsetY = math.ceil(deltaHeight / 2)
-
-          local win = vim.api.nvim_open_win(evnt.buf, false, {
-            title_pos = 'center',
-            title = ' git commit ',
-            width = width,
-            height = height,
-            relative = 'editor',
-            row = offsetY,
-            col = offsetX,
-            border = WIN_BORDER,
-            style = 'minimal',
-          })
-
+          local win = new_centered_float_win(evnt.buf, 'git commit')
           vim.api.nvim_win_close(0, false)
           vim.api.nvim_set_current_win(win)
         end,
