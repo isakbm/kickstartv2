@@ -11,12 +11,6 @@
        down you will ... either we have configured this plugin incorrectly, or
        there is a bug with it
 
-    >> add the following hotkeys
-
-       - <leader>gif "git fetc"
-       - <leader>gip "git push"
-       - <leader>gic "git commit" <-- should open a buffer to write message etc
-
     >> we currently show whether or not buffer is saved in the statusline, also show in a very simple
        and similar way whether or not we have uncommitted changes (ahead of remote)
 
@@ -235,8 +229,6 @@ KEY('n', '<leader>F', require('lint-runner').mark_fixed, { desc = '[lint] mark a
 
 KEY('n', ']n', ':cnext<CR>', { noremap = true, silent = true })
 KEY('n', '[n', ':cprev<CR>', { noremap = true, silent = true })
-
-KEY('n', '<leader>gc', ':!git commit<cr>:DiffviewClose<cr>', { desc = 'git commit' })
 
 -- highlight when yanking
 AUTO('TextYankPost', {
@@ -674,6 +666,55 @@ require('lazy').setup({
   {
     -- :Git command shim
     'tpope/vim-fugitive',
+
+    init = function()
+      -- git shortcuts because we got tired of fugitive ^ ^
+      do
+        KEY('n', '<leader>gif', ':Git fetch<cr>', { desc = 'git fetch', silent = true })
+        KEY('n', '<leader>gip', ':Git pull<cr>', { desc = 'git pull', silent = true })
+        KEY('n', '<leader>giP', ':Git push<cr>', { desc = 'git push', silent = true })
+        KEY('n', '<leader>gic', ':Git commit<cr>', { desc = 'git commit', silent = true })
+        KEY('n', '<leader>giC', ':Git commit --amend<cr>', { desc = 'git commit ammend', silent = true })
+        KEY('n', '<leader>git', ':Git<cr>', { desc = 'git interactive', silent = true })
+      end
+
+      -- vim.api.nvim_create_autocmd('User', {
+      --   pattern = { 'FugitiveIndex' },
+      --   callback = function() print('FUGITIVE FOO') end,
+      -- })
+
+      -- makes :Git commands open in a nicer floating window
+      vim.api.nvim_create_autocmd('User', {
+        pattern = { 'FugitiveEditor', 'FugitiveIndex' },
+        callback = function(evnt)
+          local winWidth = vim.o.columns
+          local winHeight = vim.o.lines
+          local width = math.min(winWidth, 64)
+          local height = math.min(winHeight, 32)
+
+          local deltaWidth = winWidth - width
+          local deltaHeight = winHeight - height
+
+          local offsetX = math.ceil(deltaWidth / 2)
+          local offsetY = math.ceil(deltaHeight / 2)
+
+          local win = vim.api.nvim_open_win(evnt.buf, false, {
+            title_pos = 'center',
+            title = ' git commit ',
+            width = width,
+            height = height,
+            relative = 'editor',
+            row = offsetY,
+            col = offsetX,
+            border = WIN_BORDER,
+            style = 'minimal',
+          })
+
+          vim.api.nvim_win_close(0, false)
+          vim.api.nvim_set_current_win(win)
+        end,
+      })
+    end,
   },
   { -- LSP Configuration & Plugins
     'neovim/nvim-lspconfig',
