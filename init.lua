@@ -787,7 +787,7 @@ require('lazy').setup({
           local show_debug_ctr = false
 
           local function opts_page(page) return '?per_page=' .. page_size .. '&page=' .. page .. '&t' end
-          local filt_assignee = '&assignee_username=isakbm'
+          local filt_assignee = '&assignee_username=' .. username
           local filt_opened = '&state=opened'
 
           local gitlab_url = 'https://gitlab.laiout.app'
