@@ -782,9 +782,11 @@ require('lazy').setup({
 
           local curl = require('plenary.curl')
 
+          local page_size = 100
           local max_pages = 3
+          local show_debug_ctr = false
 
-          local function opts_page(page) return '?per_page=100&page=' .. page .. '&t' end
+          local function opts_page(page) return '?per_page=' .. page_size .. '&page=' .. page .. '&t' end
           local filt_assignee = '&assignee_username=isakbm'
           local filt_opened = '&state=opened'
 
@@ -802,6 +804,11 @@ require('lazy').setup({
             if response.status == 200 then
               local more_json_issues = vim.json.decode(response.body)
               vim.list_extend(json_issues, more_json_issues)
+
+              if #more_json_issues < 100 then
+                -- because we only expect to need to go further if we saturated page size
+                break
+              end
             else
               print('Failed to fetch issues: ' .. response.status)
             end
@@ -839,13 +846,18 @@ require('lazy').setup({
               end_col = 1 + id_pad_n + #issue.web_url,
             }
 
-            issues[#issues + 1] = string.rep(' ', 1 + id_pad_n) .. issue.web_url .. ' : ' .. string.format('%03d', ctr) .. ' - ' .. issue.title
+            issues[#issues + 1] = string.rep(' ', 1 + id_pad_n)
+              .. issue.web_url
+              .. ' -> '
+              .. (show_debug_ctr and string.format('%03d', ctr) .. ' - ' or '')
+              .. issue.title
             issues[#issues + 1] = ''
 
             for _, assignee in ipairs(issue.assignees) do
               issues[#issues + 1] = space_pad .. '  ' .. assignee.name
             end
 
+            issues[#issues + 1] = ''
             issues[#issues + 1] = space_pad .. '󱦟  ' .. age_str .. ' old'
             issues[#issues + 1] = ''
             -- issues[#issues + 1] = space_pad .. (issue.state == 'opened' and 'OPEN' or 'CLOSED')
