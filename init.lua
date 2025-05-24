@@ -83,7 +83,11 @@ vim.opt.number = true
 vim.opt.relativenumber = true
 vim.opt.termguicolors = true -- yes use tempr gui colors
 vim.opt.wrap = false -- don't wrap lines
-vim.opt.fillchars:append({ diff = '' }) -- { diff = '/' } -- fillchars for diffview?
+vim.opt.fillchars:append({
+  diff = '', -- better looking diff (remove) regions
+  vert = ' ', -- used for WinSeparator
+  horiz = ' ', -- used for WinSeparator
+})
 vim.opt.mouse = 'a' -- Enable mouse mode, can be useful for resizing splits for example!
 vim.opt.showmode = false -- Don't show the mode, since it's already in status line
 vim.opt.breakindent = true -- Enable break indent
