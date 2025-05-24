@@ -303,6 +303,9 @@ require('recall_buf_position')
 -- Experimental alternative to `Ctrl + V` which is blocked by some terminals
 KEY('n', 'VV', '<C-v>')
 
+KEY('n', '<M-u>', '<C-e>', { desc = 'scroll down' })
+KEY('n', '<M-i>', '<C-y>', { desc = 'scroll up' })
+
 --
 -- Diagnostic keymaps
 --
