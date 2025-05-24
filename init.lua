@@ -265,6 +265,11 @@ KEY('n', '*', require('nice_star'), { desc = 'highlight all occurrences of curre
 KEY('n', '<C-j>', ':m+1<cr>', { desc = 'swap line with line below' })
 KEY('n', '<C-k>', ':m-2<cr>', { desc = 'swap line with line above' })
 
+-- better macro
+KEY({ 'v', 'n' }, 'q', '<NOP>', { desc = 'disable regular macro biding', noremap = true })
+KEY('n', 'mr', 'q', { desc = 'start/stop recording macro', noremap = true })
+KEY('n', 'ma', '@', { desc = 'apply macro', noremap = true })
+
 -- NOTE: this overrides the default shift + r "aka R" replace ... but I don't find that useful
 --       instead this is quite useful, I often find myself wanting to replace the remaining text on the
 --       line with what I have in my copy buffer or whatever it's called, so something I just yanked or deleted
