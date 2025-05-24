@@ -181,6 +181,33 @@ local function new_centered_float_win(buf, title, width, height)
   })
 end
 
+local popup_open = false
+
+--- very useful for creating a popup notification
+---@param message string
+---@return integer window
+local function new_popup(message)
+  -- prevent more than one popup from being created at a time
+  if popup_open then return end
+  popup_open = true
+  local buf = vim.api.nvim_create_buf(false, true)
+  local win = new_centered_float_win(buf, ' note ', 20, 10)
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, { message })
+  vim.api.nvim_set_current_win(win)
+  vim.api.nvim_create_autocmd('WinLeave', {
+    buffer = 0,
+    callback = function() popup_open = false end,
+  })
+end
+
+do
+  --- popup remindin me to do stuff
+  local timer = vim.loop.new_timer()
+  local minutes = 30
+  local interval = minutes * 60 * 1000
+  timer:start(interval, interval, vim.schedule_wrap(function() new_popup('remember to stretch') end))
+end
+
 local function iso_to_utc_timestamp(iso)
   -- Parse ISO (basic YYYY-MM-DDTHH:MM:SS), ignoring timezone suffixes
   local y, m, d, H, M, S, _ms = iso:match('(%d+)%-(%d+)%-(%d+)T(%d+):(%d+):(%d+)%.(%d+)Z')
@@ -299,9 +326,19 @@ end, { desc = 'open definition in new window' })
 -- checking if you have good smooth color gradients, if you don't, something is wrong with your setup
 require('check_reds')
 
+local function macro_stop_wrap(foo)
+  return function()
+    if vim.fn.reg_recording() ~= '' then
+      new_popup('macro recording')
+      return
+    end
+    foo()
+  end
+end
+
 -- Alt + j / k now glide you up and down in a nice scrolled way
-KEY({ 'v', 'n' }, '<M-j>', require('glide')('j'), { desc = 'glide in the j direction' })
-KEY({ 'v', 'n' }, '<M-k>', require('glide')('k'), { desc = 'glide in the k direction' })
+KEY({ 'v', 'n' }, '<M-j>', macro_stop_wrap(require('glide')('j')), { desc = 'glide in the j direction' })
+KEY({ 'v', 'n' }, '<M-k>', macro_stop_wrap(require('glide')('k')), { desc = 'glide in the k direction' })
 
 -- starts us off where we left off in buffer
 require('recall_buf_position')
