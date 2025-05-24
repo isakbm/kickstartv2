@@ -464,6 +464,12 @@ require('lazy').setup({
             ---@diagnostic disable-next-line
             vim.api.nvim_set_hl(0, 'WinSeparator', { fg = hlg.fg, bg = cline_bg })
           end
+          do
+            -- win separator in statusline
+            local hlg = vim.api.nvim_get_hl(0, { name = 'StatusLineNC' })
+            ---@diagnostic disable-next-line
+            vim.api.nvim_set_hl(0, 'StatusLineNC', { bg = cline_bg })
+          end
         end
 
         do
