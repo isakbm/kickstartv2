@@ -1343,8 +1343,13 @@ require('lazy').setup({
             local workspaceDirty = isWorkspaceDirty()
             local has_formatter = #require('conform').list_formatters() > 0
 
-            local function dhl(unsaved, group)
+            local function dhl(group)
               local hlg = mode == 'active' and group or 'MiniStatuslineInactive'
+              return hlg
+            end
+
+            local function dhl_unsaved(unsaved, group)
+              local hlg = dhl(group)
               local unsavedHlg = mode == 'active' and 'MiniStatuslineModeCommand' or '@variable.builtin'
               return unsaved and unsavedHlg or hlg
             end
@@ -1358,27 +1363,27 @@ require('lazy').setup({
             end
 
             local saveStateIcon = {
-              hl = dhl(fileUnsaved or workspaceDirty, 'MiniStatuslineFileinfo'),
+              hl = dhl_unsaved(fileUnsaved or workspaceDirty, 'MiniStatuslineFileinfo'),
               strings = { fileUnsaved and '✗' or (workspaceDirty and '!' or '✓') },
             }
 
+            local workspace = {
+              hl = dhl_unsaved(workspaceDirty, 'MiniStatuslineFileinfo'),
+              strings = { workspaceName },
+            }
+
             local workdir = {
-              hl = dhl(fileUnsaved, 'MiniStatuslineFilename'),
+              hl = 'MiniStatuslineFilename',
               strings = { workdirPath },
             }
 
             local filename = {
-              hl = dhl(fileUnsaved, 'MiniStatuslineFilename'),
+              hl = dhl('MiniStatuslineFilename'),
               strings = { shortenPath(vim.fn.expand('%')) },
             }
 
-            local workspace = {
-              hl = dhl(workspaceDirty, 'MiniStatuslineFileinfo'),
-              strings = { workspaceName },
-            }
-
             local branch = {
-              hl = dhl(fileUnsaved, 'MiniStatuslineFileinfo'),
+              hl = dhl('MiniStatuslineFileinfo'),
               strings = { git },
             }
 
@@ -1387,29 +1392,29 @@ require('lazy').setup({
             local fmt_disabled = vim.b[bufnr].disable_conform
 
             local formatter = {
-              hl = 'Added',
+              hl = dhl('Added'),
               strings = { (fmt_disabled and '✗ ' or '') .. 'fmt' },
             }
 
             local fileInfo = {
-              hl = 'MinistatuslineFileInfo',
+              hl = dhl('MinistatuslineFileInfo'),
               strings = { MiniStatusline.section_fileinfo({ trunc_width = 2000 }) },
             }
 
             local search = {
-              hl = 'MinistatuslineFileInfo',
+              hl = dhl('MinistatuslineFileInfo'),
               strings = {
                 MiniStatusline.section_searchcount({ trunc_width = 75 }),
               },
             }
 
             local location = {
-              hl = 'MinistatuslineFileInfo',
+              hl = dhl('MinistatuslineFileInfo'),
               strings = { MiniStatusline.section_location({ trunc_width = 75 }) },
             }
 
             local lines = {
-              hl = 'MinistatuslineFileInfo',
+              hl = dhl('MinistatuslineFileInfo'),
               strings = { '%L' },
             }
 
