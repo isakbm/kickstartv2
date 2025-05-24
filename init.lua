@@ -408,7 +408,9 @@ require('lazy').setup({
     lazy = false,
     dependencies = { 'nvim-tree/nvim-web-devicons' },
     config = function()
-      require('nvim-tree').setup({})
+      require('nvim-tree').setup({
+        hijack_netrw = false, -- NOTE: otherwise tree is opened by default
+      })
       KEY('n', 'fs', ':NvimTreeToggle<cr>', { desc = 'toggle file tree', silent = true })
     end,
   },
