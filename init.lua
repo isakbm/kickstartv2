@@ -483,8 +483,6 @@ require('lazy').setup({
 
       ---@param contrast "high" | "normal"
       local function update_highlight(contrast)
-        print('updating highlights')
-
         require('rose-pine').setup({
           dark_variant = 'main',
           styles = {
@@ -795,8 +793,6 @@ require('lazy').setup({
         ---      [C]: in function 'nvim_exec2'
         ---      vim/_editor.lua: in function 'cmd'
         ---      /home/isak/.config/nvim/init.lua:753: in function </home/isak/.config/nvim/init.lua:717>
-
-        print('about to check for local changes?')
 
         local changes = has_local_changes()
         if not changes then
