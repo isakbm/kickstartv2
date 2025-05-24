@@ -431,6 +431,42 @@ require('lazy').setup({
     config = function()
       local function tweakHighlights()
         do
+          local cline_bg = vim.api.nvim_get_hl(0, { name = 'CursorLine' }).bg
+          local bg = vim.api.nvim_get_hl(0, { name = 'Normal' }).bg
+
+          do
+            -- line number
+            local hlg = vim.api.nvim_get_hl(0, { name = 'LineNr' })
+            ---@diagnostic disable-next-line
+            vim.api.nvim_set_hl(0, 'LineNr', { fg = hlg.fg, bg = cline_bg })
+          end
+          do
+            -- cursor line number
+            local hlg = vim.api.nvim_get_hl(0, { name = 'CursorLineNr' })
+            ---@diagnostic disable-next-line
+            vim.api.nvim_set_hl(0, 'CursorLineNr', { fg = hlg.fg, bg = cline_bg })
+          end
+          do
+            -- sign column
+            local hlg = vim.api.nvim_get_hl(0, { name = 'SignColumn' })
+            ---@diagnostic disable-next-line
+            vim.api.nvim_set_hl(0, 'SignColumn', { fg = hlg.fg, bg = cline_bg })
+          end
+          do
+            -- fold column
+            local hlg = vim.api.nvim_get_hl(0, { name = 'FoldColumn' })
+            ---@diagnostic disable-next-line
+            vim.api.nvim_set_hl(0, 'FoldColumn', { fg = hlg.fg, bg = cline_bg })
+          end
+          do
+            -- float border
+            local hlg = vim.api.nvim_get_hl(0, { name = 'WinSeparator' })
+            ---@diagnostic disable-next-line
+            vim.api.nvim_set_hl(0, 'WinSeparator', { fg = hlg.fg, bg = cline_bg })
+          end
+        end
+
+        do
           -- statusline
           do
             local g = vim.api.nvim_get_hl(0, { name = 'MiniStatuslineFilename' })
