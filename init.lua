@@ -355,6 +355,17 @@ KEY('n', '<leader>U', function()
 end, { desc = 'insert unicode' })
 
 require('lazy').setup({
+
+  {
+    'nvim-tree/nvim-tree.lua', -- file tree
+    lazy = false,
+    dependencies = { 'nvim-tree/nvim-web-devicons' },
+    config = function()
+      require('nvim-tree').setup({})
+      KEY('n', 'fs', ':NvimTreeToggle<cr>', { desc = 'toggle file tree', silent = true })
+    end,
+  },
+
   {
     'mbbill/undotree', -- Nice file change history
     config = function() KEY('n', '<leader>u', ':UndotreeToggle<CR>', { desc = 'Toggle Undotree' }) end,
