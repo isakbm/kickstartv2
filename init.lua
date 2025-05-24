@@ -1,15 +1,17 @@
 --[[
 
-  TODO:
+  FIXME:
 
-    >> show list of gitlab issues assigned to me with links !!!
+    >> [NOTE: fixed] --> waiting for upstream response ... see local branch
 
-    >> seems to be an off by one error in treesitter.context, that is
+       seems to be an off by one error in treesitter.context, that is
        simply go inside a scope like a function, then make sure the name
        of the function is just one line off screen hidden behind the header
        of the context, you will not see the header, but if you go ONE more line
        down you will ... either we have configured this plugin incorrectly, or
        there is a bug with it
+
+  TODO:
 
     >> we currently show whether or not buffer is saved in the statusline, also show in a very simple
        and similar way whether or not we have uncommitted changes (ahead of remote)
