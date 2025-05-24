@@ -13,6 +13,18 @@
 
   TODO:
 
+    >> when toggling between showing line numbers and not showing them we can clearly
+       see that treesitter context is being inconsistent in the horizontal sizing
+       of its own window, leading to inconsistent looking separator length we can
+       try to fix this too
+
+    >> could be super nice to make a continuous bubble like rounded left start to
+       the status line, so that it looks like its a part of the buffer window and not
+       kind of separate from it
+
+    >> the new git commit window <leader>gic will cause the workspace to think it has
+       unmodified changes, we should filter out the file that is associated with this
+
     >> we currently show whether or not buffer is saved in the statusline, also show in a very simple
        and similar way whether or not we have uncommitted changes (ahead of remote)
 
@@ -79,14 +91,14 @@ vim.g.have_nerd_font = true -- Set to true if you have a Nerd Font installed
 vim.opt.clipboard = 'unnamedplus' --  See `:help 'clipboard'`
 vim.opt.updatetime = 250 -- Decrease update time
 vim.opt.timeoutlen = 1000 -- Decrease mapped sequence wait time
-vim.opt.number = true
-vim.opt.relativenumber = true
+vim.opt.number = false
+vim.opt.relativenumber = false
 vim.opt.termguicolors = true -- yes use tempr gui colors
 vim.opt.wrap = false -- don't wrap lines
 vim.opt.fillchars:append({
   diff = '', -- better looking diff (remove) regions
-  vert = ' ', -- used for WinSeparator
-  horiz = ' ', -- used for WinSeparator
+  -- vert = ' ', -- used for WinSeparator
+  -- horiz = ' ', -- used for WinSeparator
 })
 vim.opt.mouse = 'a' -- Enable mouse mode, can be useful for resizing splits for example!
 vim.opt.showmode = false -- Don't show the mode, since it's already in status line
@@ -100,7 +112,7 @@ vim.opt.splitbelow = true
 vim.opt.list = true -- Sets how neovim will display certain whitespace in the editor.
 vim.opt.listchars = { tab = '  ', trail = '·', nbsp = '␣' }
 vim.opt.inccommand = 'split' -- Preview substitutions live, as you type!
-vim.opt.cursorline = true -- Show which line your cursor is on
+vim.opt.cursorline = false -- Show which line your cursor is on
 vim.opt.scrolloff = 10 -- Minimal number of screen lines to keep above and below the cursor.
 vim.opt.hlsearch = true -- Set highlight on search, but clear on pressing <Esc> in normal mode
 
@@ -434,24 +446,24 @@ require('lazy').setup({
           local cline_bg = vim.api.nvim_get_hl(0, { name = 'CursorLine' }).bg
           local bg = vim.api.nvim_get_hl(0, { name = 'Normal' }).bg
 
-          do
-            -- line number
-            local hlg = vim.api.nvim_get_hl(0, { name = 'LineNr' })
-            ---@diagnostic disable-next-line
-            vim.api.nvim_set_hl(0, 'LineNr', { fg = hlg.fg, bg = cline_bg })
-          end
+          -- do
+          --   -- line number
+          --   local hlg = vim.api.nvim_get_hl(0, { name = 'LineNr' })
+          --   ---@diagnostic disable-next-line
+          --   vim.api.nvim_set_hl(0, 'LineNr', { fg = hlg.fg, bg = cline_bg })
+          -- end
           do
             -- cursor line number
             local hlg = vim.api.nvim_get_hl(0, { name = 'CursorLineNr' })
             ---@diagnostic disable-next-line
             vim.api.nvim_set_hl(0, 'CursorLineNr', { fg = hlg.fg, bg = cline_bg })
           end
-          do
-            -- sign column
-            local hlg = vim.api.nvim_get_hl(0, { name = 'SignColumn' })
-            ---@diagnostic disable-next-line
-            vim.api.nvim_set_hl(0, 'SignColumn', { fg = hlg.fg, bg = cline_bg })
-          end
+          -- do
+          --   -- sign column
+          --   local hlg = vim.api.nvim_get_hl(0, { name = 'SignColumn' })
+          --   ---@diagnostic disable-next-line
+          --   vim.api.nvim_set_hl(0, 'SignColumn', { fg = hlg.fg, bg = cline_bg })
+          -- end
           do
             -- fold column
             local hlg = vim.api.nvim_get_hl(0, { name = 'FoldColumn' })
@@ -459,10 +471,10 @@ require('lazy').setup({
             vim.api.nvim_set_hl(0, 'FoldColumn', { fg = hlg.fg, bg = cline_bg })
           end
           do
-            -- float border
+            -- window separator
             local hlg = vim.api.nvim_get_hl(0, { name = 'WinSeparator' })
             ---@diagnostic disable-next-line
-            vim.api.nvim_set_hl(0, 'WinSeparator', { fg = hlg.fg, bg = cline_bg })
+            vim.api.nvim_set_hl(0, 'WinSeparator', { fg = cline_bg, bg = bg })
           end
           do
             -- win separator in statusline
@@ -516,6 +528,9 @@ require('lazy').setup({
 
         do
           -- treesitter context
+          local normal = vim.api.nvim_get_hl(0, { name = 'Normal' })
+          ---@diagnostic disable-next-line
+          vim.api.nvim_set_hl(0, 'TreesitterContext', { fg = normal.fg, bg = normal.bg })
 
           -- hide line numbers
           local hlg = vim.api.nvim_get_hl(0, { name = 'TreesitterContext' })
@@ -523,7 +538,8 @@ require('lazy').setup({
           vim.api.nvim_set_hl(0, 'TreesitterContextLineNumber', { fg = hlg.bg, bg = hlg.bg })
 
           -- make bottom same as rest of context background
-          vim.api.nvim_set_hl(0, 'TreesitterContextSeparator', { link = 'TreesitterContext' })
+          -- vim.api.nvim_set_hl(0, 'TreesitterContextSeparator', { link = 'TreesitterContext' })
+          vim.api.nvim_set_hl(0, 'TreesitterContextSeparator', { link = 'WinSeparator' })
         end
       end
 
@@ -1504,7 +1520,7 @@ require('lazy').setup({
               strings = { '%L' },
             }
 
-            return MiniStatusline.combine_groups({
+            local stuff = MiniStatusline.combine_groups({
               saveStateIcon,
               workspace,
               '%<', -- Mark general truncate point
@@ -1517,6 +1533,9 @@ require('lazy').setup({
               location,
               lines,
             })
+
+            -- we add this to make an offset of the statusline consistent with WinSeparator
+            return '%#StatusLineNC#  ' .. stuff
           end
         end
 
@@ -1540,7 +1559,7 @@ require('lazy').setup({
     'nvim-treesitter/nvim-treesitter-context',
     opts = {
       multiline_threshold = 1,
-      separator = ' ',
+      separator = '─',
     },
     init = function()
       KEY('n', '[c', function() require('treesitter-context').go_to_context(vim.v.count1) end, { silent = true, desc = 'jump to line of parent context' })
