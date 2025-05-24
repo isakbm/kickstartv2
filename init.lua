@@ -147,7 +147,9 @@ do
   end
 end
 
-WIN_BORDER = { '╭', '─', '╮', '│', '╯', '─', '╰', '│' }
+-- WIN_BORDER = { '', '█', '', '█', '', '█', '', '█' }
+WIN_BORDER = { '█', '█', '█', '█', '█', '█', '█', '█' }
+-- WIN_BORDER = { '╭', '─', '╮', '│', '╯', '─', '╰', '│' }
 
 local getWorkspaceName = function()
   local workdir = vim.fn.systemlist('git rev-parse --show-toplevel')[1]
@@ -464,12 +466,12 @@ require('lazy').setup({
           --   ---@diagnostic disable-next-line
           --   vim.api.nvim_set_hl(0, 'SignColumn', { fg = hlg.fg, bg = cline_bg })
           -- end
-          do
-            -- fold column
-            local hlg = vim.api.nvim_get_hl(0, { name = 'FoldColumn' })
-            ---@diagnostic disable-next-line
-            vim.api.nvim_set_hl(0, 'FoldColumn', { fg = hlg.fg, bg = cline_bg })
-          end
+          -- do
+          --   -- fold column
+          --   local hlg = vim.api.nvim_get_hl(0, { name = 'FoldColumn' })
+          --   ---@diagnostic disable-next-line
+          --   vim.api.nvim_set_hl(0, 'FoldColumn', { fg = hlg.fg, bg = cline_bg })
+          -- end
           do
             -- window separator
             local hlg = vim.api.nvim_get_hl(0, { name = 'WinSeparator' })
@@ -480,7 +482,39 @@ require('lazy').setup({
             -- win separator in statusline
             local hlg = vim.api.nvim_get_hl(0, { name = 'StatusLineNC' })
             ---@diagnostic disable-next-line
-            vim.api.nvim_set_hl(0, 'StatusLineNC', { bg = cline_bg })
+            vim.api.nvim_set_hl(0, 'StatusLineNC', { bg = bg })
+          end
+
+          do
+            -- window border and title
+            local hlg = vim.api.nvim_get_hl(0, { name = 'FloatBorder' })
+
+            local norm_float = vim.api.nvim_get_hl(0, { name = 'NormalFloat' })
+            ---@diagnostic disable-next-line
+            vim.api.nvim_set_hl(0, 'FloatBorder', { fg = norm_float.bg, bg = bg })
+            vim.api.nvim_set_hl(0, 'TelescopeBorder', { fg = norm_float.bg, bg = bg })
+            local ftg = vim.api.nvim_get_hl(0, { name = 'FloatTitle' })
+            vim.api.nvim_set_hl(0, 'FloatTitle', { fg = ftg.fg, bg = norm_float.bg })
+            vim.api.nvim_set_hl(0, 'TelescopeTitle', { fg = ftg.fg, bg = norm_float.bg })
+          end
+
+          do
+            -- win separator in statusline
+            ---@diagnostic disable-next-line
+            vim.api.nvim_set_hl(0, 'StatusLineWedgeActive', { fg = cline_bg, bg = bg })
+            local g = vim.api.nvim_get_hl(0, { name = 'MiniStatuslineFilename' })
+            vim.api.nvim_set_hl(0, 'StatusLineWedgeInactive', { fg = g.bg, bg = bg })
+
+            local unsaved_fg = vim.api.nvim_get_hl(0, { name = '@variable.builtin' }).fg
+            local inactive_bg = vim.api.nvim_get_hl(0, { name = 'MiniStatuslineFilename' }).bg
+
+            do
+              vim.api.nvim_set_hl(0, 'StatusLineWedgeUnsaved', { fg = unsaved_fg, bg = bg })
+            end
+
+            do
+              vim.api.nvim_set_hl(0, 'StatusLineUnsavedInactive', { fg = unsaved_fg, bg = inactive_bg })
+            end
           end
         end
 
@@ -687,6 +721,13 @@ require('lazy').setup({
       { 'nvim-tree/nvim-web-devicons', enabled = vim.g.have_nerd_font },
     },
     config = function()
+      local w = WIN_BORDER
+      --       1     2     3     4     5     6     7     8
+      --   { '',   '█',  '',  '█',  '',  '█',  '',  '█' }
+      --   { '╭',   '─',  '╮',  '│',  '╯',  '─',  '╰',  '│' }
+      --   { "─",   "│",  "─",  "│",  "╭",  "╮",  "╯",  "╰" }
+      local borderchars = { w[2], w[4], w[6], w[8], w[1], w[3], w[5], w[7] }
+
       -- Two important keymaps to use while in telescope are:
       --  - Insert mode: <c-/>
       --  - Normal mode: ?
@@ -698,6 +739,7 @@ require('lazy').setup({
             i = { ['<Esc><Esc>'] = require('telescope.actions').close },
             n = { ['<Esc><Esc>'] = require('telescope.actions').close },
           },
+          borderchars = borderchars,
           cache_picker = { num_pickers = 10 },
           file_ignore_patterns = { '.git/' },
           vimgrep_arguments = {
@@ -1157,7 +1199,8 @@ require('lazy').setup({
 
           -- Opens a popup that displays documentation about the word under your cursor
           --  See `:help K` for why this keymap
-          map('K', function() vim.lsp.buf.hover({ border = 'rounded', title = ' hover ' }) end, 'Hover Documentation')
+          map('K', function() vim.lsp.buf.hover({ border = WIN_BORDER, title = ' hover ' }) end, 'Hover Documentation')
+          -- map('K', function() vim.lsp.buf.hover({ border = WIN_BORDER'rounded', title = ' hover ' }) end, 'Hover Documentation')
 
           -- WARN: This is not Goto Definition, this is Goto Declaration.
           --  For example, in C this would take you to the header
@@ -1452,7 +1495,7 @@ require('lazy').setup({
 
             local function dhl_unsaved(unsaved, group)
               local hlg = dhl(group)
-              local unsavedHlg = mode == 'active' and 'MiniStatuslineModeCommand' or '@variable.builtin'
+              local unsavedHlg = mode == 'active' and 'MiniStatuslineModeCommand' or 'StatusLineUnsavedInactive'
               return unsaved and unsavedHlg or hlg
             end
 
@@ -1534,8 +1577,13 @@ require('lazy').setup({
               lines,
             })
 
-            -- we add this to make an offset of the statusline consistent with WinSeparator
-            return '%#StatusLineNC#  ' .. stuff
+            local wedge_left_hl = mode == 'active' and 'StatusLineWedgeActive' or 'StatusLineWedgeInactive'
+            local wedge_right_hl = mode == 'active' and 'StatusLineWedgeActive' or 'StatusLineWedgeInactive'
+
+            if mode == 'active' and fileUnsaved then wedge_left_hl = 'StatusLineWedgeUnsaved' end
+
+            -- really ricing it up ^ ^
+            return '%#Normal#  ' .. '%#' .. wedge_left_hl .. '#' .. stuff .. '%#' .. wedge_right_hl .. '#█' .. '%#Normal#  '
           end
         end
 
