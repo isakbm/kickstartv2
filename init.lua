@@ -11,16 +11,14 @@
        down you will ... either we have configured this plugin incorrectly, or
        there is a bug with it
 
-  TODO:
+    >> [NOTE: fixed] --> waiting for upstream response ... see local branch 
 
-    >> when toggling between showing line numbers and not showing them we can clearly
+       when toggling between showing line numbers and not showing them we can clearly
        see that treesitter context is being inconsistent in the horizontal sizing
        of its own window, leading to inconsistent looking separator length we can
        try to fix this too
 
-    >> could be super nice to make a continuous bubble like rounded left start to
-       the status line, so that it looks like its a part of the buffer window and not
-       kind of separate from it
+  TODO:
 
     >> the new git commit window <leader>gic will cause the workspace to think it has
        unmodified changes, we should filter out the file that is associated with this
@@ -106,7 +104,7 @@ vim.opt.breakindent = true -- Enable break indent
 vim.opt.undofile = true -- Save undo history
 vim.opt.ignorecase = true -- case insensitive search
 vim.opt.smartcase = true -- ... actually lets make it sensitive if an upper case is involved
-vim.opt.signcolumn = 'yes:1' -- Keep signcolumn on by default
+vim.opt.signcolumn = 'yes' -- Keep signcolumn on by default
 vim.opt.splitright = true -- Configure how new splits should be opened
 vim.opt.splitbelow = true
 vim.opt.list = true -- Sets how neovim will display certain whitespace in the editor.
