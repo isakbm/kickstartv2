@@ -71,6 +71,12 @@
 
 --]]
 --
+--
+--
+local KEY = vim.keymap.set
+local CMD = vim.api.nvim_create_user_command
+local AUTO = vim.api.nvim_create_autocmd
+
 do
   -- I'm tired of netrw, gives me bad vibes, so we disable it
   vim.g.loaded_netrw = 1
@@ -151,7 +157,9 @@ WIN_BORDER = { '█', '█', '█', '█', '█', '█', '█', '█' }
 
 local getWorkspaceName = function()
   local workdir = vim.fn.systemlist('git rev-parse --show-toplevel')[1]
-  if vim.v.shell_error ~= 0 or not workdir then workdir = vim.fn.getcwd() end
+  if vim.v.shell_error ~= 0 or not workdir then
+    workdir = vim.fn.getcwd()
+  end
   local workdirBasename = vim.fn.fnamemodify(workdir, ':t')
   return workdirBasename, workdir
 end
@@ -161,7 +169,9 @@ local isWorkspaceDirty = function()
   for _, buf in pairs(bufs) do
     local unsaved = vim.api.nvim_get_option_value('modified', { buf = buf })
     local bufname = vim.api.nvim_buf_get_name(buf)
-    if unsaved and bufname ~= '' then return true end
+    if unsaved and bufname ~= '' then
+      return true
+    end
   end
   return false
 end
@@ -204,7 +214,9 @@ local popup_open = false
 ---@return integer window
 local function new_popup(message)
   -- prevent more than one popup from being created at a time
-  if popup_open then return end
+  if popup_open then
+    return
+  end
   popup_open = true
   local buf = vim.api.nvim_create_buf(false, true)
   local win = new_centered_float_win(buf, ' note ', 20, 10)
@@ -212,7 +224,9 @@ local function new_popup(message)
   vim.api.nvim_set_current_win(win)
   vim.api.nvim_create_autocmd('WinLeave', {
     buffer = 0,
-    callback = function() popup_open = false end,
+    callback = function()
+      popup_open = false
+    end,
   })
 end
 
@@ -221,13 +235,183 @@ do
   local timer = vim.loop.new_timer()
   local minutes = 30
   local interval = minutes * 60 * 1000
-  timer:start(interval, interval, vim.schedule_wrap(function() new_popup('remember to stretch') end))
+  timer:start(
+    interval,
+    interval,
+    vim.schedule_wrap(function()
+      new_popup('remember to stretch')
+    end)
+  )
+end
+
+--- @class GptRenderOpts
+--- @field width integer
+
+--- @param prompt string
+--- @param opts GptRenderOpts
+local function gpt(prompt, opts)
+  local api_key = os.getenv('OPENAI_API_KEY')
+  if not api_key then
+    vim.api.nvim_err_writeln('Missing OPENAI_API_KEY')
+    return
+  end
+
+  -- Prepare JSON payload (escape double quotes in prompt)
+  local payload = vim.fn.json_encode({
+    model = 'gpt-4o-mini',
+    messages = {
+      { role = 'user', content = prompt },
+    },
+    stream = true,
+  })
+
+  -- Build curl command
+  local cmd = {
+    'curl',
+    '-sN',
+    '-H',
+    'Authorization: Bearer ' .. api_key,
+    '-H',
+    'Content-Type: application/json',
+    '-d',
+    payload,
+    -- TODO: use the responses endpoint instead
+    'https://api.openai.com/v1/chat/completions',
+  }
+
+  local current_line = ''
+
+  -- Start the async curl job
+  vim.fn.jobstart(cmd, {
+    stdout_buffered = false,
+    on_stdout = function(_, data)
+      if not data then
+        return
+      end
+
+      for _, line in ipairs(data) do
+        -- Filter out empty lines or "data: [DONE]"
+        if line:match('^data: ') then
+          local json_str = line:match('^data: (.+)')
+          if json_str and json_str ~= '[DONE]' then
+            local ok, decoded = pcall(vim.fn.json_decode, json_str)
+            if ok and decoded and decoded.choices then
+              --- @class Delta
+              --- @field content string
+              local delta = decoded.choices[1].delta
+              if delta and delta.content then
+                local nl_s = delta.content:find('\n')
+                if nl_s then
+                  -- Append to the current line and write it
+                  local current_line_1 = string.gsub(current_line .. delta.content:sub(0, nl_s - 1), '\n', '')
+                  local current_line_2 = string.gsub(delta.content:sub(nl_s + 1), '\n', '')
+
+                  current_line = current_line_2
+                  vim.schedule(function()
+                    -- Replace the last line in the buffer with current_line
+                    local last = vim.api.nvim_buf_line_count(0)
+                    vim.api.nvim_buf_set_lines(0, last - 1, -1, false, { current_line_1 })
+                    vim.api.nvim_buf_set_lines(0, last, -1, false, { current_line_2 })
+                  end)
+                else
+                  -- Append to the current line and write it
+                  current_line = string.gsub(current_line .. delta.content, '\n', '')
+                  vim.schedule(function()
+                    -- Replace the last line in the buffer with current_line
+                    local last = vim.api.nvim_buf_line_count(0)
+                    vim.api.nvim_buf_set_lines(0, last - 1, -1, false, { current_line })
+                  end)
+                end
+              end
+            end
+          end
+        end
+      end
+    end,
+    on_stderr = function(_, err)
+      if err then
+        print('stderr: ', vim.inspect(err))
+      end
+    end,
+    on_exit = function(_, code, _)
+      if code ~= 0 then
+        vim.api.nvim_err_writeln('GPT stream exited with code ' .. code)
+      end
+    end,
+  })
+
+  -- Add an empty line to buffer to start writing
+  vim.api.nvim_buf_set_lines(0, -1, -1, false, { '' })
+end
+
+local function get_visual_selection()
+  vim.cmd([[normal! "vy]])
+  local content = vim.fn.getreg('v', 1, true) --- @type string[]
+  return content
+end
+
+--- @param lines []string
+local function remove_indent(lines)
+  local min_indent = 2 ^ 32
+  for _, line in ipairs(lines) do
+    local indent = line:match('^(%s*)')
+    local line_empty = line:match('^%s*$') ~= nil
+    if not line_empty then
+      local indent_n = indent and #indent or 0
+      if min_indent > indent_n then
+        min_indent = indent_n
+      end
+    end
+  end
+
+  print('min indent:', min_indent)
+
+  for i, line in ipairs(lines) do
+    lines[i] = line:sub(min_indent + 1)
+  end
+end
+
+local function open_gpt_window()
+  local wrapped_code = { '```' }
+
+  local code = get_visual_selection()
+
+  -- remove the indenting
+  remove_indent(code)
+
+  -- add surrounding quotes
+  vim.list_extend(wrapped_code, code)
+  vim.list_extend(wrapped_code, { '```' })
+
+  local buf = vim.api.nvim_create_buf(false, true)
+  local win = new_centered_float_win(buf, ' chat-gpt ', 100, 40)
+  vim.api.nvim_set_current_win(win)
+
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, wrapped_code)
+
+  --- place us two lines below the code text
+  vim.cmd([[normal! G]])
+  vim.cmd([[normal! 2o]])
+  vim.cmd('startinsert')
+
+  KEY('n', 'K', function()
+    local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+    local query = table.concat(lines, '\n')
+
+    --- add some lines to separate our promtp from the result
+    local last = vim.api.nvim_buf_line_count(0)
+    vim.api.nvim_buf_set_lines(buf, last, -1, false, { '', '', ' --- response --- ', '', '' })
+
+    gpt(query .. '\n please be very terse and code oriented, avoid very long lines of text', {})
+  end, { buffer = 0 })
 end
 
 local function iso_to_utc_timestamp(iso)
   -- Parse ISO (basic YYYY-MM-DDTHH:MM:SS), ignoring timezone suffixes
   local y, m, d, H, M, S, _ms = iso:match('(%d+)%-(%d+)%-(%d+)T(%d+):(%d+):(%d+)%.(%d+)Z')
-  if not y then return nil, 'Invalid ISO format' end
+  if not y then
+    return nil, 'Invalid ISO format'
+  end
 
   -- Convert to number
   -- y, m, d, H, M, S = tonumber(y), tonumber(m), tonumber(d), tonumber(H), tonumber(M), tonumber(S)
@@ -250,7 +434,9 @@ end
 -- Calculate elapsed time in seconds
 local function elapsed_since(iso)
   local ts, err = iso_to_utc_timestamp(iso)
-  if not ts then return nil, err end
+  if not ts then
+    return nil, err
+  end
   return now_utc() - ts
 end
 
@@ -287,13 +473,11 @@ local function seconds_to_age_str(seconds)
   end
 end
 
-local isBufferDirty = function() return vim.api.nvim_get_option_value('modified', { buf = 0 }) end
+local isBufferDirty = function()
+  return vim.api.nvim_get_option_value('modified', { buf = 0 })
+end
 
 --=========================== KEYMAPS =============================
-
-local KEY = vim.keymap.set
-local CMD = vim.api.nvim_create_user_command
-local AUTO = vim.api.nvim_create_autocmd
 
 KEY('n', 'U', '<cmd>earlier 1f<cr>', { desc = 'undo all the way to previous (earlier) save' })
 KEY('n', 'W', '<cmd>later 1f<cr>', { desc = 'redo all the way to later save' })
@@ -312,6 +496,16 @@ KEY('n', '<C-k>', ':m-2<cr>', { desc = 'swap line with line above' })
 KEY({ 'v', 'n' }, 'q', '<NOP>', { desc = 'disable regular macro biding', noremap = true })
 KEY('n', 'mr', 'q', { desc = 'start/stop recording macro', noremap = true })
 KEY('n', 'ma', '@', { desc = 'apply macro', noremap = true })
+
+-- GPT
+KEY({ 'v', 'n' }, '<leader>G', open_gpt_window, { desc = 'chat gpt' })
+
+KEY('n', '<leader>X', function()
+  local winid = vim.api.nvim_get_current_win()
+  local width = vim.api.nvim_win_get_width(winid)
+  local height = vim.api.nvim_win_get_height(winid)
+  print('Width:', width, 'Height:', height)
+end, { desc = 'get window dimensions' })
 
 -- NOTE: this overrides the default shift + r "aka R" replace ... but I don't find that useful
 --       instead this is quite useful, I often find myself wanting to replace the remaining text on the
@@ -377,7 +571,9 @@ KEY('n', '<leader>e', vim.diagnostic.open_float, { desc = 'Show diagnostic [E]rr
 KEY('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
 
 -- useful for figuring out what higlight groups are relevant for stuff under cursor
-KEY('n', '<leader>I', function() vim.show_pos() end)
+KEY('n', '<leader>I', function()
+  vim.show_pos()
+end)
 
 CMD('Lint', require('lint-runner').lint_workspace, { desc = 'workspace lint' })
 CMD('LintClear', require('lint-runner').clear_diagnostics, { desc = 'clear workspace lint' })
@@ -391,7 +587,9 @@ KEY('n', '[n', ':cprev<CR>', { noremap = true, silent = true })
 AUTO('TextYankPost', {
   desc = 'Highlight when yanking (copying) text',
   group = vim.api.nvim_create_augroup('kickstart-highlight-yank', { clear = true }),
-  callback = function() vim.highlight.on_yank() end,
+  callback = function()
+    vim.highlight.on_yank()
+  end,
 })
 
 -- bootstrap lazy -_-
@@ -433,7 +631,9 @@ require('lazy').setup({
 
   {
     'mbbill/undotree', -- Nice file change history
-    config = function() KEY('n', '<leader>u', ':UndotreeToggle<CR>', { desc = 'Toggle Undotree' }) end,
+    config = function()
+      KEY('n', '<leader>u', ':UndotreeToggle<CR>', { desc = 'Toggle Undotree' })
+    end,
   },
 
   {
@@ -480,6 +680,7 @@ require('lazy').setup({
             -- win separator in statusline
             local hlg = vim.api.nvim_get_hl(0, { name = 'StatusLineNC' })
             ---@diagnostic disable-next-line
+            vim.api.nvim_set_hl(0, 'StatusLine', { bg = bg })
             vim.api.nvim_set_hl(0, 'StatusLineNC', { bg = bg })
           end
 
@@ -652,7 +853,9 @@ require('lazy').setup({
           end,
         })
 
-        vim.loop.new_timer():start(0, 1500, function() job:start() end)
+        vim.loop.new_timer():start(0, 1500, function()
+          job:start()
+        end)
       end
     end,
   },
@@ -672,20 +875,28 @@ require('lazy').setup({
         fields = { 'hash', 'timestamp', 'author', 'branch_name', 'tag' },
       },
       hooks = {
-        on_select_commit = function(commit) vim.cmd(':DiffviewOpen ' .. commit.hash .. '^!') end,
-        on_select_range_commit = function(from, to) vim.cmd(':DiffviewOpen ' .. from.hash .. '~1..' .. to.hash) end,
+        on_select_commit = function(commit)
+          vim.cmd(':DiffviewOpen ' .. commit.hash .. '^!')
+        end,
+        on_select_range_commit = function(from, to)
+          vim.cmd(':DiffviewOpen ' .. from.hash .. '~1..' .. to.hash)
+        end,
       },
       log_level = vim.log.levels.INFO,
     },
     keys = {
       {
         '<leader>gl',
-        function() require('gitgraph').draw({}, { all = true }) end,
+        function()
+          require('gitgraph').draw({}, { all = true })
+        end,
         desc = 'GitGraph - Draw',
       },
       {
         '<leader>gt',
-        function() require('gitgraph').test() end,
+        function()
+          require('gitgraph').test()
+        end,
         desc = 'GitGraph - Draw',
       },
     },
@@ -713,7 +924,9 @@ require('lazy').setup({
       { -- If encountering errors, see telescope-fzf-native README for install instructions
         'nvim-telescope/telescope-fzf-native.nvim',
         build = 'make',
-        cond = function() return vim.fn.executable('make') == 1 end,
+        cond = function()
+          return vim.fn.executable('make') == 1
+        end,
       },
       { 'nvim-telescope/telescope-ui-select.nvim' },
       { 'nvim-tree/nvim-web-devicons', enabled = vim.g.have_nerd_font },
@@ -773,7 +986,9 @@ require('lazy').setup({
       local builtin = require('telescope.builtin')
       KEY('n', '<leader>sh', builtin.help_tags, { desc = '[S]earch [H]elp' })
       KEY('n', '<leader>sk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
-      KEY('n', '<leader>sf', function() builtin.find_files({ hidden = true }) end, { desc = '[S]earch [F]iles' })
+      KEY('n', '<leader>sf', function()
+        builtin.find_files({ hidden = true })
+      end, { desc = '[S]earch [F]iles' })
       KEY('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
       KEY('n', '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
       KEY('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
@@ -794,20 +1009,17 @@ require('lazy').setup({
 
       -- Also possible to pass additional configuration options.
       --  See `:help telescope.builtin.live_grep()` for information about particular keys
-      KEY(
-        'n',
-        '<leader>s/',
-        function()
-          builtin.live_grep({
-            grep_open_files = true,
-            prompt_title = 'Live Grep in Open Files',
-          })
-        end,
-        { desc = '[S]earch [/] in Open Files' }
-      )
+      KEY('n', '<leader>s/', function()
+        builtin.live_grep({
+          grep_open_files = true,
+          prompt_title = 'Live Grep in Open Files',
+        })
+      end, { desc = '[S]earch [/] in Open Files' })
 
       -- Shortcut for searching your neovim configuration files
-      KEY('n', '<leader>sn', function() builtin.find_files({ cwd = vim.fn.stdpath('config') }) end, { desc = '[S]earch [N]eovim files' })
+      KEY('n', '<leader>sn', function()
+        builtin.find_files({ cwd = vim.fn.stdpath('config') })
+      end, { desc = '[S]earch [N]eovim files' })
     end,
   },
 
@@ -874,7 +1086,9 @@ require('lazy').setup({
         local tp = vim.g.diffview_tp
         if tp then
           for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tp)) do
-            if vim.api.nvim_win_is_valid(win) then vim.api.nvim_win_close(win, true) end
+            if vim.api.nvim_win_is_valid(win) then
+              vim.api.nvim_win_close(win, true)
+            end
           end
           vim.g.diffview_tp = nil
         end
@@ -882,7 +1096,9 @@ require('lazy').setup({
         --- check for local changes using git
         local function has_local_changes()
           local handle = io.popen('git status --porcelain 2>/dev/null')
-          if not handle then return false end
+          if not handle then
+            return false
+          end
           local result = handle:read('*a')
           handle:close()
           return result ~= ''
@@ -945,7 +1161,9 @@ require('lazy').setup({
           local max_pages = 3
           local show_debug_ctr = false
 
-          local function opts_page(page) return '?per_page=' .. page_size .. '&page=' .. page .. '&t' end
+          local function opts_page(page)
+            return '?per_page=' .. page_size .. '&page=' .. page .. '&t'
+          end
           local filt_assignee = '&assignee_username=' .. username
           local filt_opened = '&state=opened'
 
@@ -1101,7 +1319,9 @@ require('lazy').setup({
           --
           -- In this case, we create a function that lets us more easily define mappings specific
           -- for LSP related items. It sets the mode, buffer and description for us each time.
-          local map = function(keys, func, desc) KEY('n', keys, func, { buffer = event.buf, desc = 'LSP: ' .. desc }) end
+          local map = function(keys, func, desc)
+            KEY('n', keys, func, { buffer = event.buf, desc = 'LSP: ' .. desc })
+          end
 
           local tele = require('telescope.builtin')
 
@@ -1111,7 +1331,9 @@ require('lazy').setup({
           map('gd', tele.lsp_definitions, '[G]oto [D]efinition')
 
           -- Find references for the word under your cursor.
-          map('gr', function() tele.lsp_references({ show_line = false }) end, '[G]oto [R]eferences')
+          map('gr', function()
+            tele.lsp_references({ show_line = false })
+          end, '[G]oto [R]eferences')
 
           -- Jump to the implementation of the word under your cursor.
           map('gI', tele.lsp_implementations, '[G]oto [I]mplementation')
@@ -1129,7 +1351,9 @@ require('lazy').setup({
             local client = vim.lsp.get_clients({ bufnr = 0 })[1] -- assume first is best
             local utf_enc = client and client.offset_encoding or 'utf-16'
             local hover_res = vim.lsp.buf_request_sync(0, 'textDocument/hover', vim.lsp.util.make_position_params(0, utf_enc), 200)
-            if not hover_res then return end
+            if not hover_res then
+              return
+            end
 
             local hover = hover_res[1]
 
@@ -1178,7 +1402,9 @@ require('lazy').setup({
                 -- the cursor where it was
                 local original_handler = vim.lsp.handlers['textDocument/rename']
                 vim.lsp.handlers['textDocument/rename'] = function(err, result, ctx, config)
-                  if original_handler then original_handler(err, result, ctx, config) end
+                  if original_handler then
+                    original_handler(err, result, ctx, config)
+                  end
                   if not err and result then
                     vim.cmd.stopi()
                     cursor_pos[2] = cursor_pos[2] + 1
@@ -1197,7 +1423,9 @@ require('lazy').setup({
 
           -- Opens a popup that displays documentation about the word under your cursor
           --  See `:help K` for why this keymap
-          map('K', function() vim.lsp.buf.hover({ border = WIN_BORDER, title = ' hover ' }) end, 'Hover Documentation')
+          map('K', function()
+            vim.lsp.buf.hover({ border = WIN_BORDER, title = ' hover ' })
+          end, 'Hover Documentation')
           -- map('K', function() vim.lsp.buf.hover({ border = WIN_BORDER'rounded', title = ' hover ' }) end, 'Hover Documentation')
 
           -- WARN: This is not Goto Definition, this is Goto Declaration.
@@ -1324,7 +1552,9 @@ require('lazy').setup({
     opts = {
       notify_on_error = false,
       format_on_save = function(bufnr)
-        if vim.g.disable_conform or vim.b[bufnr].disable_conform then return end
+        if vim.g.disable_conform or vim.b[bufnr].disable_conform then
+          return
+        end
 
         -- Disable "format_on_save lsp_fallback" for languages that don't
         -- have a well standardized coding style. You can add additional
@@ -1500,7 +1730,9 @@ require('lazy').setup({
             local function shortenPath(path)
               if #path > 24 then
                 local ff = vim.fn.split(path, '/')
-                if #ff > 3 then path = ff[1] .. '/.../' .. ff[#ff - 1] .. '/' .. ff[#ff] end
+                if #ff > 3 then
+                  path = ff[1] .. '/.../' .. ff[#ff - 1] .. '/' .. ff[#ff]
+                end
               end
               return path
             end
@@ -1578,10 +1810,13 @@ require('lazy').setup({
             local wedge_left_hl = mode == 'active' and 'StatusLineWedgeActive' or 'StatusLineWedgeInactive'
             local wedge_right_hl = mode == 'active' and 'StatusLineWedgeActive' or 'StatusLineWedgeInactive'
 
-            if mode == 'active' and fileUnsaved then wedge_left_hl = 'StatusLineWedgeUnsaved' end
+            if mode == 'active' and fileUnsaved then
+              wedge_left_hl = 'StatusLineWedgeUnsaved'
+            end
 
             -- really ricing it up ^ ^
             return '%#Normal#  ' .. '%#' .. wedge_left_hl .. '#' .. stuff .. '%#' .. wedge_right_hl .. '#█' .. '%#Normal#  '
+            -- return '%#Normal#  ' .. '#' .. ' ' .. '#█' .. '%#Normal#  '
           end
         end
 
@@ -1595,7 +1830,9 @@ require('lazy').setup({
         })
 
         ---@diagnostic disable-next-line: duplicate-set-field
-        statusline.section_location = function() return '%2l:%-2v' end
+        statusline.section_location = function()
+          return '%2l:%-2v'
+        end
 
         -- statusline.section_diff(args)
       end
@@ -1606,9 +1843,16 @@ require('lazy').setup({
     opts = {
       multiline_threshold = 1,
       separator = '─',
+      -- max_lines = '1%',
     },
     init = function()
-      KEY('n', '[c', function() require('treesitter-context').go_to_context(vim.v.count1) end, { silent = true, desc = 'jump to line of parent context' })
+      KEY('n', '[C', function()
+        require('treesitter-context').go_to_context(vim.v.count1)
+      end, { silent = true, desc = 'jump to line of parent scope in context' })
+
+      KEY('n', '[c', function()
+        require('treesitter-context').go_to_parent(vim.v.count1)
+      end, { silent = true, desc = 'jump to line of parent scope' })
     end,
   },
 
@@ -1616,7 +1860,9 @@ require('lazy').setup({
     'andymass/vim-matchup',
     -- TODO: I do not think this lazy = false is necessary
     lazy = false, -- or true with an event
-    config = function() vim.g.matchup_matchparen_offscreen = {} end,
+    config = function()
+      vim.g.matchup_matchparen_offscreen = {}
+    end,
   },
 
   { -- Highlight, edit, and navigate code
