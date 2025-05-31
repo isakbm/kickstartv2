@@ -20,6 +20,11 @@
 
   TODO:
 
+    >> the GPT completion thing is great, but if the window is full, it does not auto
+       scroll, make it auto scroll, that would be cool!!! :D to see what I mean
+       make a prompt that fills entire window then hit 'K' to run the query.
+
+
     >> the new git commit window <leader>gic will cause the workspace to think it has
        unmodified changes, we should filter out the file that is associated with this
 
@@ -279,7 +284,23 @@ local function gpt(prompt, opts)
     'https://api.openai.com/v1/chat/completions',
   }
 
+  --- NOTE: you may change this, it controls the wrapping width of things outside of code blocks
+  local wrap_n = 50
+
+  --- NOTE: dont touch these vars
+  local wrap = true
+  local wrap_upd_line = 0
+  local line_ctr = 1
   local current_line = ''
+
+  --- @param line string
+  --- @param pattern string
+  local function toggle_linewrap(line, pattern)
+    if wrap_upd_line ~= line_ctr and line:sub(1, 3) == '```' then
+      wrap = not wrap
+      wrap_upd_line = line_ctr
+    end
+  end
 
   -- Start the async curl job
   vim.fn.jobstart(cmd, {
@@ -301,12 +322,20 @@ local function gpt(prompt, opts)
               local delta = decoded.choices[1].delta
               if delta and delta.content then
                 local nl_s = delta.content:find('\n')
+
+                -- cane you give me three examples of rust code with a bit of a short explanation between each snippet?
+
                 if nl_s then
                   -- Append to the current line and write it
                   local current_line_1 = string.gsub(current_line .. delta.content:sub(0, nl_s - 1), '\n', '')
                   local current_line_2 = string.gsub(delta.content:sub(nl_s + 1), '\n', '')
 
+                  toggle_linewrap(current_line_1, '```')
+
                   current_line = current_line_2
+
+                  line_ctr = line_ctr + 1
+
                   vim.schedule(function()
                     -- Replace the last line in the buffer with current_line
                     local last = vim.api.nvim_buf_line_count(0)
@@ -315,11 +344,35 @@ local function gpt(prompt, opts)
                   end)
                 else
                   -- Append to the current line and write it
-                  current_line = string.gsub(current_line .. delta.content, '\n', '')
+                  local current_line_1 = string.gsub(current_line .. delta.content, '\n', '')
+                  local current_line_2 = ''
+
+                  toggle_linewrap(current_line_1, '```')
+
+                  current_line = current_line_1
+
+                  if wrap then
+                    if #current_line_1 > wrap_n then
+                      for i = wrap_n, 1, -1 do
+                        local c = current_line_1:sub(i, i)
+                        if c == ' ' and i < wrap_n then
+                          current_line_2 = current_line_1:sub(i + 1)
+                          current_line_1 = current_line_1:sub(0, i - 1)
+                          current_line = current_line_2
+                          line_ctr = line_ctr + 1
+                          break
+                        end
+                      end
+                    end
+                  end
+
                   vim.schedule(function()
                     -- Replace the last line in the buffer with current_line
                     local last = vim.api.nvim_buf_line_count(0)
-                    vim.api.nvim_buf_set_lines(0, last - 1, -1, false, { current_line })
+                    vim.api.nvim_buf_set_lines(0, last - 1, -1, false, { current_line_1 })
+                    if #current_line_2 > 0 then
+                      vim.api.nvim_buf_set_lines(0, last, -1, false, { current_line_2 })
+                    end
                   end)
                 end
               end
@@ -402,7 +455,7 @@ local function open_gpt_window()
     local last = vim.api.nvim_buf_line_count(0)
     vim.api.nvim_buf_set_lines(buf, last, -1, false, { '', '', ' --- response --- ', '', '' })
 
-    gpt(query .. '\n please be very terse and code oriented, avoid very long lines of text', {})
+    gpt(query, '\n please be very terse and code oriented, avoid very long lines of text. also always write code inside ``` blocks.', {})
   end, { buffer = 0 })
 end
 
@@ -625,7 +678,8 @@ require('lazy').setup({
       require('nvim-tree').setup({
         hijack_netrw = false, -- NOTE: otherwise tree is opened by default
       })
-      KEY('n', 'fs', ':NvimTreeToggle<cr>', { desc = 'toggle file tree', silent = true })
+      -- NOTE: find something better, this conflicts with `find` `'s'`
+      -- KEY('n', 'fs', ':NvimTreeToggle<cr>', { desc = 'toggle file tree', silent = true })
     end,
   },
 
@@ -1145,6 +1199,17 @@ require('lazy').setup({
         KEY('n', '<leader>gic', ':Git commit<cr>', { desc = 'git commit', silent = true })
         KEY('n', '<leader>giC', ':Git commit --amend<cr>', { desc = 'git commit ammend', silent = true })
         KEY('n', '<leader>git', ':Git<cr>', { desc = 'git interactive', silent = true })
+
+        KEY('n', '<leader>gg', function()
+          vim.ui.input({ prompt = 'commit message: ' }, function(input)
+            if input then
+              vim.fn.system('git add .')
+              vim.fn.system('git commit -m "' .. input .. '"')
+              vim.fn.system('git push')
+            end
+          end)
+        end, { desc = 'git gg yolo ... adds everything asks for commit meshes and pushes all in one go', silent = true })
+
         KEY('n', '<leader>gis', function()
           local group_id = 45 -- change this if you want, you can find it under dots in UI
           local win_width = 128
