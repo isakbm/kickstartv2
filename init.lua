@@ -254,7 +254,7 @@ end
 
 --- @param prompt string
 --- @param opts GptRenderOpts
-local function gpt(prompt, opts)
+local function gpt(prompt, buf, win, opts)
   local api_key = os.getenv('OPENAI_API_KEY')
   if not api_key then
     vim.api.nvim_err_writeln('Missing OPENAI_API_KEY')
@@ -338,9 +338,10 @@ local function gpt(prompt, opts)
 
                   vim.schedule(function()
                     -- Replace the last line in the buffer with current_line
-                    local last = vim.api.nvim_buf_line_count(0)
-                    vim.api.nvim_buf_set_lines(0, last - 1, -1, false, { current_line_1 })
-                    vim.api.nvim_buf_set_lines(0, last, -1, false, { current_line_2 })
+                    local last = vim.api.nvim_buf_line_count(buf)
+                    vim.api.nvim_buf_set_lines(buf, last - 1, -1, false, { current_line_1 })
+                    vim.api.nvim_buf_set_lines(buf, last, -1, false, { current_line_2 })
+                    vim.api.nvim_win_set_cursor(win, { last + 1, #current_line_2 })
                   end)
                 else
                   -- Append to the current line and write it
@@ -368,10 +369,12 @@ local function gpt(prompt, opts)
 
                   vim.schedule(function()
                     -- Replace the last line in the buffer with current_line
-                    local last = vim.api.nvim_buf_line_count(0)
-                    vim.api.nvim_buf_set_lines(0, last - 1, -1, false, { current_line_1 })
+                    local last = vim.api.nvim_buf_line_count(buf)
+                    vim.api.nvim_buf_set_lines(buf, last - 1, -1, false, { current_line_1 })
+                    vim.api.nvim_win_set_cursor(win, { last, #current_line_1 })
                     if #current_line_2 > 0 then
-                      vim.api.nvim_buf_set_lines(0, last, -1, false, { current_line_2 })
+                      vim.api.nvim_buf_set_lines(buf, last, -1, false, { current_line_2 })
+                      vim.api.nvim_win_set_cursor(win, { last + 1, #current_line_2 })
                     end
                   end)
                 end
@@ -455,7 +458,7 @@ local function open_gpt_window()
     local last = vim.api.nvim_buf_line_count(0)
     vim.api.nvim_buf_set_lines(buf, last, -1, false, { '', '', ' --- response --- ', '', '' })
 
-    gpt(query, '\n please be very terse and code oriented, avoid very long lines of text. also always write code inside ``` blocks.', {})
+    gpt(query, buf, win, '\n please be very terse and code oriented, avoid very long lines of text. also always write code inside ``` blocks.', {})
   end, { buffer = 0 })
 end
 
@@ -936,13 +939,13 @@ require('lazy').setup({
           vim.cmd(':DiffviewOpen ' .. from.hash .. '~1..' .. to.hash)
         end,
       },
-      log_level = vim.log.levels.INFO,
+      log_level = vim.log.levels.ERROR,
     },
     keys = {
       {
         '<leader>gl',
         function()
-          require('gitgraph').draw({}, { all = true })
+          require('gitgraph').draw({}, { all = true, max_count = 2500 })
         end,
         desc = 'GitGraph - Draw',
       },
