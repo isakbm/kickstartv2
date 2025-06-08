@@ -20,10 +20,7 @@
 
   TODO:
 
-    >> the GPT completion thing is great, but if the window is full, it does not auto
-       scroll, make it auto scroll, that would be cool!!! :D to see what I mean
-       make a prompt that fills entire window then hit 'K' to run the query.
-
+    >> should be possible to jump up and down commits in a branch lane maybe?
 
     >> the new git commit window <leader>gic will cause the workspace to think it has
        unmodified changes, we should filter out the file that is associated with this
@@ -213,26 +210,30 @@ local function new_centered_float_win(buf, title, width, height)
 end
 
 local popup_open = false
+---@type integer?
+local popup_win = nil
 
 --- very useful for creating a popup notification
 ---@param message string
----@return integer window
+---@return integer? window
 local function new_popup(message)
   -- prevent more than one popup from being created at a time
   if popup_open then
-    return
+    return popup_win
   end
   popup_open = true
   local buf = vim.api.nvim_create_buf(false, true)
-  local win = new_centered_float_win(buf, ' note ', 20, 10)
+  local popup_win = new_centered_float_win(buf, ' note ', 20, 10)
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, { message })
-  vim.api.nvim_set_current_win(win)
+  vim.api.nvim_set_current_win(popup_win)
   vim.api.nvim_create_autocmd('WinLeave', {
     buffer = 0,
     callback = function()
       popup_open = false
     end,
   })
+
+  return popup_win
 end
 
 do
@@ -249,12 +250,10 @@ do
   )
 end
 
---- @class GptRenderOpts
---- @field width integer
-
 --- @param prompt string
---- @param opts GptRenderOpts
-local function gpt(prompt, buf, win, opts)
+--- @param buf integer
+--- @param win integer
+local function gpt(prompt, buf, win)
   local api_key = os.getenv('OPENAI_API_KEY')
   if not api_key then
     vim.api.nvim_err_writeln('Missing OPENAI_API_KEY')
@@ -293,13 +292,21 @@ local function gpt(prompt, buf, win, opts)
   local line_ctr = 1
   local current_line = ''
 
+  --- @type 'text' | 'code'
+  local mode = 'text'
+
   --- @param line string
   --- @param pattern string
-  local function toggle_linewrap(line, pattern)
-    if wrap_upd_line ~= line_ctr and line:sub(1, 3) == '```' then
+  --- @return 'begin' | 'end' | 'inside' | 'outside'
+  local function process_code_block_delim(line, pattern)
+    if wrap_upd_line ~= line_ctr and line:sub(1, 3) == pattern then
       wrap = not wrap
       wrap_upd_line = line_ctr
+      local previous_mode = mode -- needed for return
+      mode = mode == 'text' and 'code' or 'text' -- update mode
+      return previous_mode == 'text' and 'begin' or 'end'
     end
+    return mode == 'text' and 'outside' or 'inside'
   end
 
   -- Start the async curl job
@@ -322,24 +329,35 @@ local function gpt(prompt, buf, win, opts)
               local delta = decoded.choices[1].delta
               if delta and delta.content then
                 local nl_s = delta.content:find('\n')
+                local multi_nl = delta.content:find('\n\n') ~= nil
 
-                -- cane you give me three examples of rust code with a bit of a short explanation between each snippet?
+                -- can you give me three examples of rust code with a bit of a short explanation between each snippet?
 
                 if nl_s then
                   -- Append to the current line and write it
                   local current_line_1 = string.gsub(current_line .. delta.content:sub(0, nl_s - 1), '\n', '')
                   local current_line_2 = string.gsub(delta.content:sub(nl_s + 1), '\n', '')
 
-                  toggle_linewrap(current_line_1, '```')
+                  process_code_block_delim(current_line_1, '```')
 
                   current_line = current_line_2
 
                   line_ctr = line_ctr + 1
 
+                  if multi_nl then
+                    line_ctr = line_ctr + 1
+                  end
+
                   vim.schedule(function()
-                    -- Replace the last line in the buffer with current_line
                     local last = vim.api.nvim_buf_line_count(buf)
+
                     vim.api.nvim_buf_set_lines(buf, last - 1, -1, false, { current_line_1 })
+
+                    if multi_nl then
+                      vim.api.nvim_buf_set_lines(buf, last, -1, false, { '' })
+                      last = last + 1
+                    end
+
                     vim.api.nvim_buf_set_lines(buf, last, -1, false, { current_line_2 })
                     vim.api.nvim_win_set_cursor(win, { last + 1, #current_line_2 })
                   end)
@@ -348,7 +366,7 @@ local function gpt(prompt, buf, win, opts)
                   local current_line_1 = string.gsub(current_line .. delta.content, '\n', '')
                   local current_line_2 = ''
 
-                  toggle_linewrap(current_line_1, '```')
+                  process_code_block_delim(current_line_1, '```')
 
                   current_line = current_line_1
 
@@ -368,10 +386,11 @@ local function gpt(prompt, buf, win, opts)
                   end
 
                   vim.schedule(function()
-                    -- Replace the last line in the buffer with current_line
                     local last = vim.api.nvim_buf_line_count(buf)
+
                     vim.api.nvim_buf_set_lines(buf, last - 1, -1, false, { current_line_1 })
                     vim.api.nvim_win_set_cursor(win, { last, #current_line_1 })
+
                     if #current_line_2 > 0 then
                       vim.api.nvim_buf_set_lines(buf, last, -1, false, { current_line_2 })
                       vim.api.nvim_win_set_cursor(win, { last + 1, #current_line_2 })
@@ -402,11 +421,12 @@ end
 
 local function get_visual_selection()
   vim.cmd([[normal! "vy]])
+  ---@diagnostic disable-next-line: assign-type-mismatch, param-type-mismatch
   local content = vim.fn.getreg('v', 1, true) --- @type string[]
   return content
 end
 
---- @param lines []string
+--- @param lines string[]
 local function remove_indent(lines)
   local min_indent = 2 ^ 32
   for _, line in ipairs(lines) do
@@ -443,6 +463,8 @@ local function open_gpt_window()
   local win = new_centered_float_win(buf, ' chat-gpt ', 100, 40)
   vim.api.nvim_set_current_win(win)
 
+  vim.api.nvim_buf_set_option(buf, 'filetype', 'markdown')
+
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, wrapped_code)
 
   --- place us two lines below the code text
@@ -452,18 +474,25 @@ local function open_gpt_window()
 
   KEY('n', 'K', function()
     local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
-    local query = table.concat(lines, '\n')
+    local query = table.concat(
+      vim.list_extend(lines, {
+        'please be very terse and code oriented, avoid very long lines of text. also always write code inside ``` blocks.',
+      }),
+      '\n'
+    )
 
     --- add some lines to separate our promtp from the result
     local last = vim.api.nvim_buf_line_count(0)
     vim.api.nvim_buf_set_lines(buf, last, -1, false, { '', '', ' --- response --- ', '', '' })
 
-    gpt(query, buf, win, '\n please be very terse and code oriented, avoid very long lines of text. also always write code inside ``` blocks.', {})
+    gpt(query, buf, win)
   end, { buffer = 0 })
 end
 
 local function iso_to_utc_timestamp(iso)
   -- Parse ISO (basic YYYY-MM-DDTHH:MM:SS), ignoring timezone suffixes
+
+  ---@diagnostic disable-next-line: unused-local
   local y, m, d, H, M, S, _ms = iso:match('(%d+)%-(%d+)%-(%d+)T(%d+):(%d+):(%d+)%.(%d+)Z')
   if not y then
     return nil, 'Invalid ISO format'
@@ -476,6 +505,7 @@ local function iso_to_utc_timestamp(iso)
   local t = os.time({ year = y, month = m, day = d, hour = H, min = M, sec = S })
 
   -- Adjust for local timezone offset to get UTC timestamp
+  ---@diagnostic disable-next-line: param-type-mismatch
   local local_offset = os.difftime(t, os.time(os.date('!*t', t)))
   return t - local_offset
 end
@@ -483,6 +513,7 @@ end
 -- Get current UTC timestamp
 local function now_utc()
   local now = os.time()
+  ---@diagnostic disable-next-line: param-type-mismatch
   local offset = os.difftime(now, os.time(os.date('!*t', now)))
   return now - offset
 end
@@ -659,7 +690,8 @@ if not vim.loop.fs_stat(lazypath) then
     'https://github.com/folke/lazy.nvim.git',
     lazypath,
   })
-end ---@diagnostic disable-next-line: undefined-field
+end
+
 vim.opt.rtp:prepend(lazypath)
 
 KEY('n', '<leader>U', function()
@@ -729,13 +761,11 @@ require('lazy').setup({
           -- end
           do
             -- window separator
-            local hlg = vim.api.nvim_get_hl(0, { name = 'WinSeparator' })
             ---@diagnostic disable-next-line
             vim.api.nvim_set_hl(0, 'WinSeparator', { fg = cline_bg, bg = bg })
           end
           do
             -- win separator in statusline
-            local hlg = vim.api.nvim_get_hl(0, { name = 'StatusLineNC' })
             ---@diagnostic disable-next-line
             vim.api.nvim_set_hl(0, 'StatusLine', { bg = bg })
             vim.api.nvim_set_hl(0, 'StatusLineNC', { bg = bg })
@@ -743,8 +773,6 @@ require('lazy').setup({
 
           do
             -- window border and title
-            local hlg = vim.api.nvim_get_hl(0, { name = 'FloatBorder' })
-
             local norm_float = vim.api.nvim_get_hl(0, { name = 'NormalFloat' })
             ---@diagnostic disable-next-line
             vim.api.nvim_set_hl(0, 'FloatBorder', { fg = norm_float.bg, bg = bg })
@@ -1277,8 +1305,13 @@ require('lazy').setup({
             local issue_id = string.format('%d', issue.iid)
 
             local created_at = issue.created_at
-            local age, _err = elapsed_since(created_at)
-            local age_str = seconds_to_age_str(age)
+            local age, err = elapsed_since(created_at)
+
+            if err then
+              error('error in elapsed_since(): ' .. err)
+            end
+
+            local age_str = age and seconds_to_age_str(age) or '?'
 
             issues[#issues + 1] = ''
 
@@ -1945,6 +1978,7 @@ require('lazy').setup({
         'dockerfile',
         'rust',
         'typescript',
+        'prisma',
         'tsx',
         'html',
         'lua',
