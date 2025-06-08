@@ -428,7 +428,7 @@ end
 
 --- @param lines string[]
 local function remove_indent(lines)
-  local min_indent = 2 ^ 32
+  local min_indent = math.huge
   for _, line in ipairs(lines) do
     local indent = line:match('^(%s*)')
     local line_empty = line:match('^%s*$') ~= nil
@@ -440,15 +440,21 @@ local function remove_indent(lines)
     end
   end
 
-  print('min indent:', min_indent)
-
   for i, line in ipairs(lines) do
     lines[i] = line:sub(min_indent + 1)
   end
 end
 
 local function open_gpt_window()
-  local wrapped_code = { '```' }
+  local lname = ({
+    javascript = 'js',
+    typescript = 'ts',
+    typescriptreact = 'tsx',
+    javascriptreact = 'jsx',
+  })[vim.bo.filetype]
+  lname = lname or vim.bo.filetype
+
+  local wrapped_code = { '', '```' .. lname }
 
   local code = get_visual_selection()
 
