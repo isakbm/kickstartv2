@@ -1,23 +1,5 @@
 --[[
 
-  FIXME:
-
-    >> [NOTE: fixed] --> waiting for upstream response ... see local branch
-
-       seems to be an off by one error in treesitter.context, that is
-       simply go inside a scope like a function, then make sure the name
-       of the function is just one line off screen hidden behind the header
-       of the context, you will not see the header, but if you go ONE more line
-       down you will ... either we have configured this plugin incorrectly, or
-       there is a bug with it
-
-    >> [NOTE: fixed] --> waiting for upstream response ... see local branch 
-
-       when toggling between showing line numbers and not showing them we can clearly
-       see that treesitter context is being inconsistent in the horizontal sizing
-       of its own window, leading to inconsistent looking separator length we can
-       try to fix this too
-
   TODO:
 
     >> should be possible to jump up and down commits in a branch lane maybe?
