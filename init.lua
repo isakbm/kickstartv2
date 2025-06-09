@@ -2,6 +2,10 @@
 
   TODO:
 
+    >> The GPT scratch buffer should be something that we can keep open, but it should not be
+       'in the way' like it currently is. Perhaps some kind of keybinding to quickly bring it to
+       front or send it to background?
+
     >> should be possible to jump up and down commits in a branch lane maybe?
 
     >> the new git commit window <leader>gic will cause the workspace to think it has
@@ -474,7 +478,11 @@ local function open_gpt_window()
     vim.api.nvim_buf_set_lines(buf, last, -1, false, { '', '', ' --- response --- ', '', '' })
 
     gpt(query, buf, win)
-  end, { buffer = 0 })
+  end, { buffer = 0, desc = 'gpt: send prompt' })
+
+  KEY({ 'n', 'i' }, '<C-x>', function()
+    vim.api.nvim_buf_set_lines(0, 0, -1, false, {})
+  end, { buffer = 0, desc = 'gpt: clear the prompt buffer' })
 end
 
 local function iso_to_utc_timestamp(iso)
@@ -632,8 +640,8 @@ require('recall_buf_position')
 -- Experimental alternative to `Ctrl + V` which is blocked by some terminals
 KEY('n', 'VV', '<C-v>')
 
-KEY('n', '<M-u>', '<C-e>', { desc = 'scroll down' })
-KEY('n', '<M-i>', '<C-y>', { desc = 'scroll up' })
+-- KEY('n', '<M-u>', '<C-e>', { desc = 'scroll down' })
+-- KEY('n', '<M-i>', '<C-y>', { desc = 'scroll up' })
 
 --
 -- Diagnostic keymaps
