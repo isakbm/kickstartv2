@@ -2,6 +2,18 @@
 
   TODO:
 
+    >> context breadcrumbs could be cool
+
+    >> when writing commands with : or / etc, it would be nice to see them somewhere a bit
+       more local and in view, than in the command line, for example, when you have two buffer
+       windows side by side in a split, the command line is all the way down on lower left
+       perhaps it would be more convenient to have it closer to the active window 
+
+    >> Project idea that has nothing to do with nvim config, but that I would like to write
+       down somewhere. You know those cogs with holes, and you put a pencil inside the hole
+       and you drag the cog around another cog, and it produces these nice patterns if you complete
+       several revolutions. Make a simulation of that in THREE.js.
+
     >> The GPT scratch buffer should be something that we can keep open, but it should not be
        'in the way' like it currently is. Perhaps some kind of keybinding to quickly bring it to
        front or send it to background?
@@ -200,7 +212,7 @@ local popup_open = false
 local popup_win = nil
 
 --- very useful for creating a popup notification
----@param message string
+---@param message string[]
 ---@return integer? window
 local function new_popup(message)
   -- prevent more than one popup from being created at a time
@@ -210,7 +222,7 @@ local function new_popup(message)
   popup_open = true
   local buf = vim.api.nvim_create_buf(false, true)
   local popup_win = new_centered_float_win(buf, ' note ', 20, 10)
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, { message })
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, message)
   vim.api.nvim_set_current_win(popup_win)
   vim.api.nvim_create_autocmd('WinLeave', {
     buffer = 0,
@@ -231,7 +243,7 @@ do
     interval,
     interval,
     vim.schedule_wrap(function()
-      new_popup('remember to stretch')
+      new_popup({ 'remember to stretch', 'and', 'watch your posture!' })
     end)
   )
 end
@@ -622,7 +634,7 @@ require('check_reds')
 local function macro_stop_wrap(foo)
   return function()
     if vim.fn.reg_recording() ~= '' then
-      new_popup('macro recording')
+      new_popup({ 'macro recording' })
       return
     end
     foo()
@@ -712,6 +724,84 @@ require('lazy').setup({
       -- NOTE: find something better, this conflicts with `find` `'s'`
       -- KEY('n', 'fs', ':NvimTreeToggle<cr>', { desc = 'toggle file tree', silent = true })
     end,
+  },
+
+  {
+    'hedyhli/outline.nvim',
+    lazy = true,
+    cmd = { 'Outline', 'OutlineOpen' },
+    keys = { -- Example mapping to toggle outline
+      { '<leader>o', '<cmd>Outline<CR>', desc = 'Toggle outline' },
+    },
+    dependencies = {
+      'epheien/outline-treesitter-provider.nvim',
+    },
+    opts = {
+      providers = {
+        priority = { 'lsp', 'treesitter' },
+      },
+      outline_items = {
+        highlight_name = true,
+      },
+      symbols = {
+        -- Filter by kinds (string) for symbols in the outline.
+        -- Possible kinds are the Keys in the icons table below.
+        -- A filter list is a string[] with an optional exclude (boolean) field.
+        -- The symbols.filter option takes either a filter list or ft:filterList
+        -- key-value pairs.
+        -- Put  exclude=true  in the string list to filter by excluding the list of
+        -- kinds instead.
+        -- Include all except String and Constant:
+        --   filter = { 'String', 'Constant', exclude = true }
+        -- Only include Package, Module, and Function:
+        --   filter = { 'Package', 'Module', 'Function' }
+        -- See more examples below.
+        filter = nil,
+        icons = {
+          File = { icon = '󰈔', hl = 'Identifier' },
+          Module = { icon = '󰅩', hl = 'Include' },
+          Namespace = { icon = '󰨑', hl = 'Include' },
+          Package = { icon = '󰏗', hl = 'Include' },
+          Class = { icon = '𝓒', hl = 'Type' },
+
+          Constructor = { icon = '󰆦', hl = '@constructor' },
+          Method = { icon = '󰆧', hl = 'Function' },
+          StaticMethod = { icon = '󰆦', hl = 'Function' },
+          Field = { icon = '', hl = '@property' },
+          Property = { icon = '', hl = '@property' },
+
+          Function = { icon = '', hl = 'Function' },
+
+          Enum = { icon = 'ℰ', hl = 'Type' },
+          EnumMember = { icon = '', hl = 'Identifier' },
+
+          Constant = { icon = '', hl = 'Constant' },
+          Interface = { icon = '󰠳', hl = 'Type' },
+          Variable = { icon = '󱕃', hl = '@variable' },
+
+          String = { icon = '󰬴', hl = 'String' },
+          Number = { icon = '', hl = 'Number' },
+          Boolean = { icon = '', hl = 'Boolean' },
+          Array = { icon = '󰅪', hl = 'Constant' },
+          Object = { icon = '󰅩', hl = 'Type' },
+          Struct = { icon = '󰅩', hl = 'Structure' },
+
+          Key = { icon = '󰌆', hl = 'Type' },
+          Null = { icon = 'NULL', hl = 'Type' },
+
+          Event = { icon = '🗲', hl = 'Type' },
+          Operator = { icon = '+', hl = 'Identifier' },
+
+          TypeParameter = { icon = '󰊄', hl = 'Identifier' },
+          TypeAlias = { icon = '󰊄', hl = 'Type' },
+
+          Component = { icon = '󰅴', hl = 'Function' },
+          Fragment = { icon = '󰅴', hl = 'Constant' },
+          Parameter = { icon = '', hl = 'Identifier' },
+          Macro = { icon = '', hl = 'Function' },
+        },
+      },
+    },
   },
 
   {
