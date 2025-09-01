@@ -1057,11 +1057,18 @@ require('lazy').setup({
     },
     keys = {
       {
-        '<leader>gl',
+        '<leader>gal',
         function()
           require('gitgraph').draw({}, { all = true, max_count = 2500 })
         end,
-        desc = 'GitGraph - Draw',
+        desc = 'GitGraph - Draw all branches',
+      },
+      {
+        '<leader>gl',
+        function()
+          require('gitgraph').draw({}, { max_count = 2500 })
+        end,
+        desc = 'GitGraph - Draw current branch',
       },
       {
         '<leader>gt',
