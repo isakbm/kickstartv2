@@ -1765,6 +1765,7 @@ require('lazy').setup({
         -- svg = { 'xmllint' },
 
         -- You can use a sub-list to tell conform to run *until* a formatter is found.
+        html = { 'prettier' },
         javascript = { 'prettier' },
         typescript = { 'prettier' },
         typescriptreact = { 'prettier' },
