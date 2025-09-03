@@ -980,6 +980,21 @@ require('lazy').setup({
 
       update_highlight(vim.g.contrast)
 
+      -- zoom feature
+      KEY('n', '<leader>z', function()
+        if vim.t.zoomed then
+          -- we're in a zoomed tab, so close it
+          vim.cmd('tabclose')
+        else
+          -- mark this tab as not zoomed (just in case)
+          vim.t.zoomed = false
+
+          -- open zoomed version in new tab
+          vim.cmd('tabnew %')
+          vim.t.zoomed = true
+        end
+      end, { desc = 'zoom into current buffer - toggles' })
+
       -- toggle between light and dark modes
       KEY('n', '<leader>T', function()
         vim.o.background = vim.o.background == 'dark' and 'light' or 'dark'
