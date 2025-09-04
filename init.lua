@@ -14,6 +14,9 @@
        and you drag the cog around another cog, and it produces these nice patterns if you complete
        several revolutions. Make a simulation of that in THREE.js.
 
+    >> Would be great to have a history of prompts, or at least to be able to see the most recent
+       prompt
+
     >> The GPT scratch buffer should be something that we can keep open, but it should not be
        'in the way' like it currently is. Perhaps some kind of keybinding to quickly bring it to
        front or send it to background?
@@ -988,7 +991,8 @@ require('lazy').setup({
         update_highlight(vim.g.contrast)
       end, { desc = 'toggle between light and dark modes' })
 
-      if host == 'mac' then
+      --- TODO: remove this entirely or just fix it?
+      if false then -- host == 'mac' then
         -- FIXME: currently we somehow use up jobs or something keep an eye out, we have increased from 250 ms to 1500 ms
         local Job = require('plenary.job')
 
