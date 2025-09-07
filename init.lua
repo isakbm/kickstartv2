@@ -86,6 +86,10 @@ do
   vim.g.loaded_netrwPlugin = 1
 end
 
+-- I use this constant in several places to decide whether or not to turn off
+-- certain features that would otherwise freeze up nvim, such as tressitter or lsps
+vim.g.max_line_len = 1000
+
 -- :help localleader
 vim.g.mapleader = ' ' -- Set <space> as the leader key
 vim.g.maplocalleader = ' ' --- Set <space> as the local leader key
@@ -1689,7 +1693,24 @@ require('lazy').setup({
         lemminx = {},
         jdtls = {},
         -- ocamllsp = {},
-        tsserver = {},
+        tsserver = {
+          on_attach = function(client, bufnr)
+            local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+            local has_long_lines = false
+            for _, line in ipairs(lines) do
+              if #line > vim.g.max_line_len then
+                has_long_lines = true
+                break
+              end
+            end
+
+            if has_long_lines then
+              require('fidget').notify('stopping lsp', vim.log.levels.WARN)
+              -- print('WARN: stopping lsp')
+              client.stop()
+            end
+          end,
+        },
         terraformls = {},
         prismals = {},
         lua_ls = {
@@ -2108,6 +2129,16 @@ require('lazy').setup({
         --  If you are experiencing weird indenting issues, add the language to
         --  the list of additional_vim_regex_highlighting and disabled languages for indent.
         additional_vim_regex_highlighting = { 'ruby' },
+
+        disable = function(lang, buf)
+          for _, line in ipairs(vim.api.nvim_buf_get_lines(buf, 0, -1, false)) do
+            if #line > vim.g.max_line_len then -- adjust threshold
+              require('fidget').notify('disabling treesitter highlight', vim.log.levels.WARN)
+              return true
+            end
+          end
+          return false
+        end,
       },
 
       -- for 'andymass/vim-matchup' integration so that it can use treesitter
