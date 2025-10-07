@@ -2,6 +2,15 @@
 
   TODO:
 
+    >> <leader>dd is great ... I can imagine it being greater though, like you go go go
+        so repeated use of it just slides things to the left and closes, ... so you always
+        have only two windows open!
+
+    >> we are currently using a heuristic that looks at files with long lines of code
+       to turn off certain features that would otherwise stall nvim ... it looks however
+       like the issue is not really long lines, but just large files in general, so
+       perhaps we should change the heuristic to simply act on the file size ...?
+
     >> context breadcrumbs could be cool
 
     >> when writing commands with : or / etc, it would be nice to see them somewhere a bit
@@ -84,6 +93,27 @@ do
   -- I'm tired of netrw, gives me bad vibes, so we disable it
   vim.g.loaded_netrw = 1
   vim.g.loaded_netrwPlugin = 1
+end
+
+-- since gx stopped using wslview recently ... we force it here
+-- only for wslview though ...
+if vim.fn.has('wsl') == 1 then
+  local function open_in_windows(url)
+    -- Escape quotes
+    url = url:gsub('"', '\\"')
+    -- Prefer wslview if available
+    local has_wslview = vim.fn.executable('wslview') == 1
+    if has_wslview then
+      vim.fn.jobstart({ 'wslview', url }, { detach = true })
+    else
+      vim.fn.jobstart({ 'explorer.exe', url }, { detach = true })
+    end
+  end
+
+  -- Override vim.ui.open globally
+  vim.ui.open = function(path)
+    open_in_windows(path)
+  end
 end
 
 -- I use this constant in several places to decide whether or not to turn off
