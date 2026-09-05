@@ -2,6 +2,12 @@
 
   TODO:
 
+
+    >> make it possible to go to next change when looking at ANY diff in diffview
+       not just local changes with gitsigns
+
+    >> new 0.11.2 should not have issue with gx ... so then you can remove that fix ...
+
     >> <leader>dd is great ... I can imagine it being greater though, like you go go go
         so repeated use of it just slides things to the left and closes, ... so you always
         have only two windows open!
@@ -759,7 +765,7 @@ require('lazy').setup({
         hijack_netrw = false, -- NOTE: otherwise tree is opened by default
       })
       -- NOTE: find something better, this conflicts with `find` `'s'`
-      -- KEY('n', 'fs', ':NvimTreeToggle<cr>', { desc = 'toggle file tree', silent = true })
+      KEY('n', '<leader>fs', ':NvimTreeToggle<cr>', { desc = 'toggle file tree', silent = true })
     end,
   },
 
@@ -1699,11 +1705,12 @@ require('lazy').setup({
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
         pyright = {},
+        glsl_analyzer = {},
         rust_analyzer = {
           settings = {
             ['rust-analyzer'] = {
               check = {
-                command = 'clippy',
+                -- command = 'clippy',
               },
               diagnostics = {
                 enable = true,
@@ -1725,20 +1732,20 @@ require('lazy').setup({
         -- ocamllsp = {},
         tsserver = {
           on_attach = function(client, bufnr)
-            local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-            local has_long_lines = false
-            for _, line in ipairs(lines) do
-              if #line > vim.g.max_line_len then
-                has_long_lines = true
-                break
-              end
-            end
-
-            if has_long_lines then
-              require('fidget').notify('stopping lsp', vim.log.levels.WARN)
-              -- print('WARN: stopping lsp')
-              client.stop()
-            end
+            -- local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+            -- local has_long_lines = false
+            -- for _, line in ipairs(lines) do
+            --   if #line > vim.g.max_line_len then
+            --     has_long_lines = true
+            --     break
+            --   end
+            -- end
+            --
+            -- if has_long_lines then
+            --   require('fidget').notify('stopping lsp', vim.log.levels.WARN)
+            --   -- print('WARN: stopping lsp')
+            --   client.stop()
+            -- end
           end,
         },
         terraformls = {},
@@ -1979,7 +1986,9 @@ require('lazy').setup({
 
             local fileUnsaved = isBufferDirty()
             local workspaceDirty = isWorkspaceDirty()
+
             local has_formatter = #require('conform').list_formatters() > 0
+              or next(vim.lsp.get_clients({ bufnr = 0, method = 'textDocument/formatting' })) ~= nil
 
             local function dhl(group)
               local hlg = mode == 'active' and group or 'MiniStatuslineInactive'
@@ -2161,12 +2170,12 @@ require('lazy').setup({
         additional_vim_regex_highlighting = { 'ruby' },
 
         disable = function(lang, buf)
-          for _, line in ipairs(vim.api.nvim_buf_get_lines(buf, 0, -1, false)) do
-            if #line > vim.g.max_line_len then -- adjust threshold
-              require('fidget').notify('disabling treesitter highlight', vim.log.levels.WARN)
-              return true
-            end
-          end
+          -- for _, line in ipairs(vim.api.nvim_buf_get_lines(buf, 0, -1, false)) do
+          --   if #line > vim.g.max_line_len then -- adjust threshold
+          --     require('fidget').notify('disabling treesitter highlight', vim.log.levels.WARN)
+          --     return true
+          --   end
+          -- end
           return false
         end,
       },
