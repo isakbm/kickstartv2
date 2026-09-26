@@ -715,6 +715,7 @@ end)
 
 CMD('Lint', require('lint-runner').lint_workspace, { desc = 'workspace lint' })
 CMD('LintClear', require('lint-runner').clear_diagnostics, { desc = 'clear workspace lint' })
+CMD('LspToggle', require('lsp_toggle'), { desc = '[claude] toggle LSP autostart for this session' })
 
 KEY('n', '<leader>F', require('lint-runner').mark_fixed, { desc = '[lint] mark as fixed' })
 
